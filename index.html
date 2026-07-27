@@ -327,7 +327,7 @@ function orderCardHtml(o){
         <span class="status-pill ${o.estado}">${statusLabel(o.estado)}</span>
       </div>
       <ul>
-        ${o.items.map(i => `<li><span class="line">${i.cantidad}× ${i.nombre}${i.nota?`<span class="note">📝 ${i.nota}</span>`:''}</span></li>`).join('')}
+        ${o.items.map(i => `<li><span class="line">${i.cantidad}× ${i.nombre}${i.categoria ? ` <span style="color:var(--text-muted);font-weight:400">· ${i.categoria}</span>` : ''}${i.nota?`<span class="note">📝 ${i.nota}</span>`:''}</span></li>`).join('')}
       </ul>
       <div class="order-actions">
         ${nextActionButtons(o)}
@@ -406,7 +406,7 @@ function imprimirComprobanteCocina(o){
     <div class="nota">${o.tipo === 'mesa' ? 'Mesa ' + o.mesa : TIPO_LABEL[o.tipo] + ' — ' + (o.nombre_cliente||'')}</div>
     <div class="nota">#${o.id_pedido} · ${new Date().toLocaleTimeString('es-AR')}</div>
     <br>
-    ${o.items.map(i => `<div class="linea"><span>${i.cantidad}× ${i.nombre}</span></div>${i.nota ? `<div class="nota">↳ ${i.nota}</div>` : ''}`).join('')}
+    ${o.items.map(i => `<div class="linea"><span>${i.categoria ? `<strong>${i.categoria}</strong> — ` : ''}${i.cantidad}× ${i.nombre}</span></div>${i.nota ? `<div class="nota">↳ ${i.nota}</div>` : ''}`).join('')}
   `;
   window.print();
 }
