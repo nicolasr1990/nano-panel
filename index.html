@@ -186,17 +186,6 @@
 </head>
 <body>
 
-<!-- Login del panel -->
-<div id="loginOverlay">
-  <div class="box">
-    <h2>Panel del local</h2>
-    <p>Ingresá la clave para ver los pedidos</p>
-    <input id="claveInput" type="password" inputmode="numeric" placeholder="Clave" autofocus>
-    <button onclick="intentarLogin()">Ingresar</button>
-    <div class="err" id="loginErr"></div>
-  </div>
-</div>
-
 <div class="wrap">
   <div id="app-local">
     <div class="local-top">
@@ -220,28 +209,14 @@
 const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbwZbKOiZmtimoOVp8dt5wAehccD1J-fQTLfGLk8oMf6AAdFkoN1_G3x7zGoQXFHMHqubg/exec';
 const POLL_MS = 8000; // cada cuánto se refresca la lista de pedidos sola
 
-let CLAVE = '';         // se guarda en memoria una vez logueado (no en localStorage)
+let CLAVE = '';         // se pide recién cuando se abre el módulo de productos/precios (no hace falta para ver pedidos)
 let staffOrders = [];   // pedidos que trae el backend
 let filter = 'todos';
 
-/* ======================= LOGIN ======================= */
-function intentarLogin(){
-  const val = document.getElementById('claveInput').value.trim();
-  if(!val){ document.getElementById('loginErr').textContent = 'Ingresá la clave'; return; }
-  CLAVE = val;
-  // Probamos la clave con una acción real de escritura liviana: si el server la rechaza, avisamos.
-  postAction('login', {}).then(res => {
-    if(res.ok){
-      document.getElementById('loginOverlay').style.display = 'none';
-      cargarPedidos();
-      setInterval(cargarPedidos, POLL_MS);
-    } else {
-      document.getElementById('loginErr').textContent = 'Clave incorrecta';
-      CLAVE = '';
-    }
-  });
-}
-document.getElementById('claveInput').addEventListener('keydown', e => { if(e.key === 'Enter') intentarLogin(); });
+/* ======================= INICIO ======================= */
+// El panel de pedidos no pide login: se ve todo apenas se abre el HTML.
+cargarPedidos();
+setInterval(cargarPedidos, POLL_MS);
 
 /* ======================= RED ======================= */
 function postAction(action, data){
