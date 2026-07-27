@@ -171,6 +171,28 @@
   }
   #loginOverlay .err{color:var(--danger);font-size:11.5px;margin-top:8px;min-height:14px}
 
+  /* Módulo de productos */
+  .cat-block{margin-bottom:20px}
+  .cat-titulo{
+    font-family:var(--display);font-size:13px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;
+    color:var(--accent-light);margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--glass-border);
+  }
+  .prod-row{
+    display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;
+    background:var(--glass);border:1px solid var(--glass-border);border-radius:var(--radius-md);
+    padding:10px 12px;margin-bottom:8px;transition:var(--transition);
+  }
+  .prod-row.inactivo{opacity:0.45}
+  .prod-nombre{font-size:13.5px;color:var(--text);flex:1 1 140px;min-width:110px}
+  .prod-controles{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  .prod-precio{display:flex;align-items:center;gap:3px;font-size:13px;color:var(--accent-light);font-weight:600}
+  .prod-precio input{
+    width:70px;background:var(--surface);border:1px solid var(--glass-border);border-radius:var(--radius-sm);
+    color:var(--text);font-family:var(--body);font-size:13px;padding:5px 6px;
+  }
+  .switch-mini{display:flex;align-items:center;gap:5px;font-size:10.5px;color:var(--text-secondary);cursor:pointer;user-select:none}
+  .switch-mini input{accent-color:var(--accent);width:15px;height:15px;cursor:pointer}
+
   @keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
   ::-webkit-scrollbar{width:3px}
   ::-webkit-scrollbar-track{background:transparent}
@@ -191,16 +213,42 @@
 </head>
 <body>
 
+<!-- Login del módulo de productos (los pedidos NO piden esta clave) -->
+<div id="loginOverlay" style="display:none">
+  <div class="box">
+    <h2>Editar menú</h2>
+    <p>Ingresá la clave para modificar precios y disponibilidad</p>
+    <input id="claveInput" type="password" inputmode="numeric" placeholder="Clave">
+    <button onclick="intentarLoginProductos()">Ingresar</button>
+    <div class="err" id="loginErr"></div>
+  </div>
+</div>
+
 <div class="wrap">
   <div id="app-local">
     <div class="local-top">
       <div class="local-h">Nano Resto Bar</div>
-      <div class="local-h"><a href="cliente.html">Ver vista cliente →</a></div>
+      <div class="local-h" style="display:flex;gap:14px">
+        <a href="cliente.html">Ver vista cliente →</a>
+        <a href="#" onclick="abrirProductos();return false;">Editar menú</a>
+      </div>
     </div>
-    <div class="local-title">Pedidos en curso</div>
-    <div class="local-sub" id="countLine">Cargando pedidos…</div>
-    <div class="filters" id="filters"></div>
-    <div id="ordersList"></div>
+    <div id="vistaPedidos">
+      <div class="local-title">Pedidos en curso</div>
+      <div class="local-sub" id="countLine">Cargando pedidos…</div>
+      <div class="filters" id="filters"></div>
+      <div id="ordersList"></div>
+    </div>
+
+    <div id="vistaProductos" style="display:none">
+      <div class="local-top" style="margin-bottom:14px">
+        <div class="local-title" style="margin:0">Menú y precios</div>
+        <div class="local-h"><a href="#" onclick="cerrarProductos();return false;">← Volver a pedidos</a></div>
+      </div>
+      <div class="local-sub" id="productosSub"></div>
+      <div id="listaProductos"></div>
+      <button class="cerrar-mesa-btn" style="margin-top:6px" onclick="guardarCambiosProductos()">Guardar cambios</button>
+    </div>
   </div>
 </div>
 
@@ -238,6 +286,138 @@ function postActionConClave(action, data){
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
     body: JSON.stringify({ action, clave: CLAVE, ...data }),
   }).then(r => r.json()).catch(() => ({ ok:false, error:'sin_conexion' }));
+}
+
+/* ======================= MÓDULO DE PRODUCTOS ======================= */
+let productosData = [];
+let categoriasData = [];
+let cambiosProductos = {}; // { id: {precio, activo, disponible_mesa, disponible_retiro, disponible_envio} }
+
+function abrirProductos(){
+  document.getElementById('loginOverlay').style.display = 'flex';
+  document.getElementById('claveInput').value = '';
+  document.getElementById('loginErr').textContent = '';
+  document.getElementById('claveInput').focus();
+}
+
+document.addEventListener('keydown', e => {
+  if(e.key === 'Enter' && document.getElementById('loginOverlay').style.display === 'flex') intentarLoginProductos();
+});
+
+function intentarLoginProductos(){
+  const val = document.getElementById('claveInput').value.trim();
+  if(!val){ document.getElementById('loginErr').textContent = 'Ingresá la clave'; return; }
+  CLAVE = val;
+  fetch(`${WEBAPP_URL}?action=listarProductos&clave=${encodeURIComponent(CLAVE)}`)
+    .then(r => r.json())
+    .then(res => {
+      if(!res.ok){
+        document.getElementById('loginErr').textContent = 'Clave incorrecta';
+        CLAVE = '';
+        return;
+      }
+      productosData = res.productos;
+      document.getElementById('loginOverlay').style.display = 'none';
+      document.getElementById('vistaPedidos').style.display = 'none';
+      document.getElementById('vistaProductos').style.display = 'block';
+      cambiosProductos = {};
+      cargarCategoriasYRenderProductos();
+    })
+    .catch(() => { document.getElementById('loginErr').textContent = 'Sin conexión, probá de nuevo'; });
+}
+
+function cargarCategoriasYRenderProductos(){
+  if(categoriasData.length){ renderProductos(); return; }
+  fetch(`${WEBAPP_URL}?action=menu&canal=mesa`)
+    .then(r => r.json())
+    .then(res => { categoriasData = res.categorias || []; renderProductos(); });
+}
+
+function cerrarProductos(){
+  if(Object.keys(cambiosProductos).length && !confirm('Tenés cambios sin guardar, ¿salir igual y perderlos?')) return;
+  document.getElementById('vistaProductos').style.display = 'none';
+  document.getElementById('vistaPedidos').style.display = 'block';
+}
+
+function nombreCategoria(id){
+  const c = categoriasData.find(c => c.id === id);
+  return c ? c.nombre : 'Sin categoría';
+}
+
+function renderProductos(){
+  document.getElementById('productosSub').textContent =
+    `${productosData.length} productos · tocá un precio o un switch, y guardá cuando termines`;
+
+  // Agrupar por categoría, respetando el orden de Categorias
+  const porCategoria = {};
+  productosData.forEach(p => {
+    if(!porCategoria[p.categoria_id]) porCategoria[p.categoria_id] = [];
+    porCategoria[p.categoria_id].push(p);
+  });
+
+  const el = document.getElementById('listaProductos');
+  el.innerHTML = Object.keys(porCategoria).map(catId => `
+    <div class="cat-block">
+      <div class="cat-titulo">${nombreCategoria(catId)}</div>
+      ${porCategoria[catId].map(productoRowHtml).join('')}
+    </div>
+  `).join('');
+}
+
+function productoRowHtml(p){
+  const activo = isSiJs(p.activo);
+  const dispoMesa = isSiJs(p.disponible_mesa);
+  const dispoRetiro = isSiJs(p.disponible_retiro);
+  const dispoEnvio = isSiJs(p.disponible_envio);
+  return `
+    <div class="prod-row ${activo ? '' : 'inactivo'}" data-id="${p.id}">
+      <div class="prod-nombre">${p.nombre}</div>
+      <div class="prod-controles">
+        <label class="prod-precio">
+          $<input type="number" value="${Number(p.precio)}" min="0" step="50"
+            onchange="editarProducto('${p.id}', 'precio', this.valueAsNumber)">
+        </label>
+        <label class="switch-mini" title="Visible ahora en el menú">
+          <input type="checkbox" ${activo ? 'checked' : ''} onchange="editarProducto('${p.id}', 'activo', this.checked)">
+          <span>Visible</span>
+        </label>
+        <label class="switch-mini" title="Disponible para mesa">
+          <input type="checkbox" ${dispoMesa ? 'checked' : ''} onchange="editarProducto('${p.id}', 'disponible_mesa', this.checked)">
+          <span>Mesa</span>
+        </label>
+        <label class="switch-mini" title="Disponible para retiro">
+          <input type="checkbox" ${dispoRetiro ? 'checked' : ''} onchange="editarProducto('${p.id}', 'disponible_retiro', this.checked)">
+          <span>Retiro</span>
+        </label>
+        <label class="switch-mini" title="Disponible para envío">
+          <input type="checkbox" ${dispoEnvio ? 'checked' : ''} onchange="editarProducto('${p.id}', 'disponible_envio', this.checked)">
+          <span>Envío</span>
+        </label>
+      </div>
+    </div>`;
+}
+
+function isSiJs(v){ return String(v).trim().toUpperCase() === 'SI'; }
+
+function editarProducto(id, campo, valor){
+  if(!cambiosProductos[id]) cambiosProductos[id] = { id };
+  cambiosProductos[id][campo] = valor;
+  // refleja el cambio en memoria para que si tocás otro campo del mismo producto no se pierda
+  const p = productosData.find(p => p.id === id);
+  if(p) p[campo] = (typeof valor === 'boolean') ? (valor ? 'SI' : 'NO') : valor;
+  // atenúa visualmente la fila si quedó "no visible"
+  const fila = document.querySelector(`.prod-row[data-id="${CSS.escape(id)}"]`);
+  if(fila) fila.classList.toggle('inactivo', !isSiJs(p.activo));
+}
+
+function guardarCambiosProductos(){
+  const cambios = Object.values(cambiosProductos);
+  if(!cambios.length){ showToast('No hay cambios para guardar'); return; }
+  postActionConClave('guardarProductos', { productos: cambios }).then(res => {
+    if(!res.ok) return showToast('No se pudo guardar: ' + (res.error || ''));
+    showToast(`Guardado: ${res.productos_actualizados} producto(s) actualizados`);
+    cambiosProductos = {};
+  });
 }
 
 function cargarPedidos(){
