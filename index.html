@@ -90,9 +90,14 @@
     border-left:3px solid transparent;transition:var(--transition);
     animation:slideUp 0.35s ease backwards;
   }
-  .mesa-group .order-card{margin-bottom:10px;background:rgba(255,255,255,0.03)}
+  /* Toda la tarjeta se tiñe según el tipo de pedido */
+  .order-card.tipo-mesa{background:linear-gradient(155deg,var(--tipo-mesa-bg),rgba(255,255,255,0.03) 65%);border-color:var(--tipo-mesa-border)}
+  .order-card.tipo-retiro{background:linear-gradient(155deg,var(--tipo-retiro-bg),rgba(255,255,255,0.03) 65%);border-color:var(--tipo-retiro-border)}
+  .order-card.tipo-envio{background:linear-gradient(155deg,var(--tipo-envio-bg),rgba(255,255,255,0.03) 65%);border-color:var(--tipo-envio-border)}
+  .mesa-group .order-card{margin-bottom:10px}
   .mesa-group .order-card:last-child{margin-bottom:0}
-  .order-card:hover{border-color:var(--glass-border-hover);transform:translateY(-1px);box-shadow:var(--shadow-md)}
+  .order-card:hover{transform:translateY(-1px);box-shadow:var(--shadow-md)}
+  /* El estado sigue marcado en el borde izquierdo, encima del color de tipo */
   .order-card.nuevo{border-left-color:var(--danger)}
   .order-card.prep{border-left-color:var(--warning)}
   .order-card.listo{border-left-color:var(--success)}
@@ -223,6 +228,14 @@ function postAction(action, data){
   return fetch(WEBAPP_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // evita preflight en Apps Script
+    body: JSON.stringify({ action, ...data }), // la clave solo se manda desde las acciones del módulo de productos
+  }).then(r => r.json()).catch(() => ({ ok:false, error:'sin_conexion' }));
+}
+
+function postActionConClave(action, data){
+  return fetch(WEBAPP_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
     body: JSON.stringify({ action, clave: CLAVE, ...data }),
   }).then(r => r.json()).catch(() => ({ ok:false, error:'sin_conexion' }));
 }
@@ -308,7 +321,7 @@ function orderCardHtml(o){
     ? `#${o.id_pedido.slice(-4)}`
     : `${tipoChip(o.tipo)} ${o.nombre_cliente || 'Sin nombre'} · #${o.id_pedido.slice(-4)}`;
   return `
-    <div class="order-card ${o.estado}">
+    <div class="order-card ${o.estado} tipo-${o.tipo}">
       <div class="head">
         <span class="src">${encabezado}</span>
         <span class="status-pill ${o.estado}">${statusLabel(o.estado)}</span>
