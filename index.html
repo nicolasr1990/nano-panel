@@ -8,28 +8,29 @@
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
-    /* ---- Aurora UI: fondo lavanda suave, tarjetas claras, acentos vivos ---- */
-    --bg:#EDEAFA; --bg-soft:#F3F1FC; --bg-deep:#E2DDF6;
-    --ink:#211B3E; --ink-soft:#6E699194; --ink-secondary:#6D6890; --ink-muted:#A6A1C5;
-    --surface:#FFFFFF; --surface-alt:#F7F5FE; --surface-tint:#EFEBFC;
-    --border:#E7E2F7; --border-soft:#EFECFA; --border-strong:#D8D1F2;
-    --navy:#211B3E; --navy-soft:#312A57;
+    /* ---- Paleta pastel de restaurante: fondo cálido crema + acentos vivos ---- */
+    --bg:#FAF6EE; --bg-soft:#FCFAF4; --bg-deep:#F1E7D2;
+    --ink:#2E2820; --ink-secondary:#7C7364; --ink-muted:#B7AD98;
+    --surface:#FFFFFF; --surface-alt:#FBF7EF; --surface-tint:#F3ECDD;
+    --border:#EEE3CC; --border-soft:#F5EEDF; --border-strong:#E2D2AC;
 
-    --accent:#7C6BF0; --accent-light:#9C8FF7; --accent-soft:#EFEAFF;
-    --coral:#FF6161; --coral-light:#FF8A83; --coral-soft:#FFE7E4;
-    --shadow-tint:rgba(124,107,240,0.18);
+    --navy:#2E2820; --navy-soft:#463C2E; /* barra superior, tono "espresso" en vez de navy-violeta */
 
-    /* Colores por tipo de pedido — para que se distingan de un vistazo sobre el fondo claro */
-    --tipo-mesa:#E29A2E; --tipo-mesa-bg:#FFF2D9; --tipo-mesa-border:#F2CE8C; --tipo-mesa-ink:#8A5B10;
-    --tipo-retiro:#0FAE9B; --tipo-retiro-bg:#DDF7F2; --tipo-retiro-border:#98E4D6; --tipo-retiro-ink:#0A7566;
-    --tipo-envio:#8452E0; --tipo-envio-bg:#EFE7FE; --tipo-envio-border:#CBB4F6; --tipo-envio-ink:#5B31A8;
+    --accent:#FA897B; --accent-light:#FCA99D; --accent-soft:#FFEAE6;
+    --coral:#FA897B; --coral-light:#FCA99D; --coral-soft:#FFEAE6;
+    --shadow-tint:rgba(250,137,123,0.25);
 
-    --success:#1FAE6A; --success-bg:#E1F8EC; --success-border:#9BE3C0;
-    --warning:#2F80ED; --warning-bg:#E4EEFF; --warning-border:#AECBFA;
-    --danger:#FF5A5F; --danger-bg:#FFE6E6; --danger-border:#FFB6B8;
+    /* Colores por tipo de pedido — para que se distingan de un vistazo */
+    --tipo-mesa:#D9A02A; --tipo-mesa-bg:#FFF6DE; --tipo-mesa-border:#F3D98A; --tipo-mesa-ink:#8A6510;
+    --tipo-retiro:#1FAE93; --tipo-retiro-bg:#E3FBF4; --tipo-retiro-border:#A9EBDA; --tipo-retiro-ink:#0F7A66;
+    --tipo-envio:#9B6FC9; --tipo-envio-bg:#F5EDFB; --tipo-envio-border:#DFC7EE; --tipo-envio-ink:#6B3F91;
+
+    --success:#6E9C3E; --success-bg:#EFF6DE; --success-border:#D2E6A8;
+    --warning:#E8944A; --warning-bg:#FFEEDC; --warning-border:#F7CA98;
+    --danger:#E85D4C; --danger-bg:#FFE9E5; --danger-border:#FCC5BC;
 
     --radius-sm:10px; --radius-md:16px; --radius-lg:22px; --radius-xl:30px;
-    --shadow-sm:0 2px 10px rgba(76,63,150,0.06); --shadow-md:0 14px 34px rgba(76,63,150,0.14);
+    --shadow-sm:0 2px 10px rgba(70,55,30,0.06); --shadow-md:0 14px 34px rgba(70,55,30,0.14);
     --display:'Outfit',sans-serif; --body:'Inter',-apple-system,sans-serif;
     --transition:all 0.25s cubic-bezier(0.4,0,0.2,1);
   }
@@ -39,24 +40,24 @@
   #app-local{
     min-height:100vh;position:relative;overflow:hidden;padding:18px 16px 100px;
     background:
-      radial-gradient(420px 300px at 110% -8%,rgba(124,107,240,0.16),transparent 60%),
-      radial-gradient(360px 280px at -10% 18%,rgba(255,97,97,0.10),transparent 55%),
+      radial-gradient(420px 300px at 110% -8%,rgba(250,137,123,0.14),transparent 60%),
+      radial-gradient(360px 280px at -10% 18%,rgba(31,174,147,0.10),transparent 55%),
       linear-gradient(180deg,var(--bg) 0%,var(--bg-deep) 100%);
   }
   #app-local::before{content:'';position:fixed;width:280px;height:280px;border-radius:50%;
-    background:radial-gradient(circle,rgba(124,107,240,0.16),transparent 70%);top:-70px;right:-80px;filter:blur(40px);pointer-events:none}
+    background:radial-gradient(circle,rgba(217,160,42,0.14),transparent 70%);top:-70px;right:-80px;filter:blur(40px);pointer-events:none}
 
-  /* Top — barra oscura tipo "header de app", ancla visual del panel */
+  /* Top — barra oscura "espresso" tipo header de app, ancla visual del panel */
   .local-top{
     display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;
     background:linear-gradient(135deg,var(--navy),var(--navy-soft));
-    border-radius:var(--radius-lg);padding:14px 16px;box-shadow:0 12px 28px rgba(33,27,62,0.28);
+    border-radius:var(--radius-lg);padding:14px 16px;box-shadow:0 12px 28px rgba(46,40,32,0.28);
     position:relative;overflow:hidden;
   }
   .local-top::after{content:'';position:absolute;width:120px;height:120px;border-radius:50%;
-    background:radial-gradient(circle,rgba(124,107,240,0.35),transparent 70%);top:-40px;right:-30px;pointer-events:none}
-  .local-h{font-family:var(--display);font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#C9BFFB;font-weight:600;position:relative;z-index:1}
-  .local-h a{color:#C9BFFB;text-decoration:none;font-size:11px;letter-spacing:0.06em;text-transform:none;font-family:var(--body);transition:color 0.2s;font-weight:500}
+    background:radial-gradient(circle,rgba(250,137,123,0.35),transparent 70%);top:-40px;right:-30px;pointer-events:none}
+  .local-h{font-family:var(--display);font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#F0C9A0;font-weight:600;position:relative;z-index:1}
+  .local-h a{color:#F0C9A0;text-decoration:none;font-size:11px;letter-spacing:0.06em;text-transform:none;font-family:var(--body);transition:color 0.2s;font-weight:500}
   .local-h a:hover{color:#fff}
   .local-title{font-family:var(--display);font-size:23px;font-weight:700;color:var(--ink);margin:2px 0 4px;letter-spacing:-0.02em}
   .local-sub{font-family:var(--body);font-size:12.5px;color:var(--ink-secondary);margin-bottom:18px}
@@ -66,9 +67,9 @@
     border-radius:var(--radius-xl);border:none;
     background:linear-gradient(135deg,var(--coral-light),var(--coral));
     color:#fff;cursor:pointer;transition:var(--transition);white-space:nowrap;
-    box-shadow:0 8px 18px rgba(255,97,97,0.35);position:relative;z-index:1;
+    box-shadow:0 8px 18px rgba(250,137,123,0.4);position:relative;z-index:1;
   }
-  .editar-menu-btn:hover{transform:translateY(-1px);box-shadow:0 10px 22px rgba(255,97,97,0.45)}
+  .editar-menu-btn:hover{transform:translateY(-1px);box-shadow:0 10px 22px rgba(250,137,123,0.5)}
 
   /* Filters */
   .filters{display:flex;gap:8px;margin-bottom:18px;overflow-x:auto;padding:2px 0 6px;scrollbar-width:none}
@@ -81,7 +82,7 @@
   }
   .filters button:hover{border-color:var(--border-strong);color:var(--ink)}
   .filters button.active{
-    background:linear-gradient(135deg,var(--accent),#6552E0);
+    background:linear-gradient(135deg,var(--accent-light),var(--accent));
     border-color:transparent;color:#fff;
     box-shadow:0 8px 20px var(--shadow-tint);
   }
@@ -110,11 +111,11 @@
   .mesa-group-head .total{font-family:var(--display);font-size:15px;color:var(--tipo-mesa-ink);font-weight:700}
   .cerrar-mesa-btn{
     width:100%;margin-top:10px;padding:12px;border-radius:var(--radius-md);border:none;
-    background:linear-gradient(135deg,var(--tipo-mesa),#C9821F);color:#fff;font-family:var(--body);font-weight:700;
+    background:linear-gradient(135deg,var(--tipo-mesa),#B8830E);color:#fff;font-family:var(--body);font-weight:700;
     font-size:12.5px;letter-spacing:0.02em;cursor:pointer;transition:var(--transition);
-    box-shadow:0 10px 22px rgba(226,154,46,0.35);
+    box-shadow:0 10px 22px rgba(217,160,42,0.35);
   }
-  .cerrar-mesa-btn:hover{transform:translateY(-1px);box-shadow:0 12px 26px rgba(226,154,46,0.45)}
+  .cerrar-mesa-btn:hover{transform:translateY(-1px);box-shadow:0 12px 26px rgba(217,160,42,0.45)}
 
   /* Order Cards */
   .order-card{
@@ -172,7 +173,7 @@
     color:#fff;padding:12px 20px;border-radius:var(--radius-md);font-size:13px;
     font-family:var(--body);font-weight:500;opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;
     max-width:340px;text-align:center;z-index:50;border:1px solid rgba(255,255,255,0.08);
-    box-shadow:0 14px 34px rgba(33,27,62,0.35);
+    box-shadow:0 14px 34px rgba(46,40,32,0.35);
   }
   .toast.show{opacity:1;transform:translateX(-50%) translateY(-6px)}
 
@@ -201,22 +202,38 @@
   #loginOverlay .err{color:var(--danger);font-size:11.5px;margin-top:8px;min-height:14px;font-weight:600}
 
   /* Módulo de productos */
-  .cat-block{margin-bottom:20px}
-  .cat-titulo{
-    font-family:var(--display);font-size:13px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;
-    color:var(--accent);margin-bottom:8px;padding-bottom:6px;border-bottom:2px solid var(--accent-soft);
+  .cat-block{
+    margin-bottom:10px;background:var(--surface);border:1px solid var(--border);
+    border-radius:var(--radius-md);overflow:hidden;box-shadow:var(--shadow-sm);
   }
+  .cat-block summary{
+    cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between;gap:8px;
+    padding:13px 14px;font-family:var(--display);font-size:13px;font-weight:700;letter-spacing:0.02em;
+    color:var(--ink);user-select:none;
+  }
+  .cat-block summary::-webkit-details-marker{display:none}
+  .cat-block summary::marker{content:''}
+  .cat-block summary .cat-titulo-text{text-transform:uppercase;letter-spacing:0.04em;font-size:12.5px;color:var(--accent)}
+  .cat-block summary .cat-count{color:var(--ink-muted);font-family:var(--body);font-weight:500;font-size:11.5px;margin-right:auto;margin-left:6px}
+  .cat-block summary .cat-chevron{
+    font-size:11px;color:var(--ink-muted);transition:transform .25s;flex-shrink:0;
+    width:22px;height:22px;border-radius:50%;background:var(--surface-tint);display:flex;align-items:center;justify-content:center;
+  }
+  .cat-block[open] summary .cat-chevron{transform:rotate(180deg);color:var(--accent);background:var(--accent-soft)}
+  .cat-block[open] summary{border-bottom:1px solid var(--border-soft)}
+  .cat-block .cat-body{padding:10px 12px 12px}
   .prod-row{
     display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;
-    background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);
-    padding:10px 12px;margin-bottom:8px;transition:var(--transition);box-shadow:var(--shadow-sm);
+    background:var(--surface-alt);border:1px solid var(--border-soft);border-radius:var(--radius-md);
+    padding:10px 12px;margin-bottom:8px;transition:var(--transition);
   }
+  .prod-row:last-child{margin-bottom:0}
   .prod-row.inactivo{opacity:0.5}
   .prod-nombre{font-size:13.5px;color:var(--ink);font-weight:500;flex:1 1 140px;min-width:110px}
   .prod-controles{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
   .prod-precio{display:flex;align-items:center;gap:3px;font-size:13px;color:var(--accent);font-weight:700}
   .prod-precio input{
-    width:70px;background:var(--surface-alt);border:1px solid var(--border);border-radius:var(--radius-sm);
+    width:70px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);
     color:var(--ink);font-family:var(--body);font-size:13px;padding:5px 6px;
   }
   .switch-mini{display:flex;align-items:center;gap:5px;font-size:10.5px;color:var(--ink-secondary);cursor:pointer;user-select:none;font-weight:500}
@@ -412,10 +429,16 @@ function renderProductos(){
 
   const el = document.getElementById('listaProductos');
   el.innerHTML = Object.keys(porCategoria).map(catId => `
-    <div class="cat-block">
-      <div class="cat-titulo">${nombreCategoria(catId)}</div>
-      ${porCategoria[catId].map(productoRowHtml).join('')}
-    </div>
+    <details class="cat-block">
+      <summary>
+        <span class="cat-titulo-text">${nombreCategoria(catId)}</span>
+        <span class="cat-count">${porCategoria[catId].length} producto${porCategoria[catId].length===1?'':'s'}</span>
+        <span class="cat-chevron">▾</span>
+      </summary>
+      <div class="cat-body">
+        ${porCategoria[catId].map(productoRowHtml).join('')}
+      </div>
+    </details>
   `).join('');
 }
 
@@ -666,7 +689,6 @@ function fechaHoraTicket(){
 
 function imprimirComprobanteCocina(o){
   const el = document.getElementById('comprobante');
-  let ultimaCategoria = '';
   el.innerHTML = `
     <div class="ticket-logo"><img src="${LOGO_SRC}" alt="Logo"></div>
     <h1>Pedido para cocina</h1>
@@ -674,12 +696,7 @@ function imprimirComprobanteCocina(o){
     <div class="nota">#${o.id_pedido.slice(-4)} · ${horaTicket()}</div>
     <div class="sep"></div>
     ${o.items.map(i => {
-      let bloque = '';
-      if(i.categoria && i.categoria !== ultimaCategoria){
-        bloque += `<div class="cat-label">${i.categoria}</div>`;
-        ultimaCategoria = i.categoria;
-      }
-      bloque += `<div class="linea"><span class="cant">${i.cantidad}×</span><span>${i.nombre}</span></div>`;
+      let bloque = `<div class="linea"><span class="cant">${i.cantidad}×</span><span>${i.nombre}${i.categoria ? ' - ' + i.categoria : ''}</span></div>`;
       if(i.nota) bloque += `<div class="item-nota">↳ ${i.nota}</div>`;
       return bloque;
     }).join('')}
@@ -698,7 +715,7 @@ function imprimirComprobanteFinal(cabecera, rondas){
     <div class="sep"></div>
     ${rondas.map((r,idx) => `
       ${rondas.length>1 ? `<div class="cat-label">Ronda ${idx+1}</div>` : ''}
-      ${r.items.map(i => `<div class="linea"><span>${i.cantidad}× ${i.nombre}</span><span>${formatPrecio(i.precio_unit*i.cantidad)}</span></div>`).join('')}
+      ${r.items.map(i => `<div class="linea"><span>${i.cantidad}× ${i.nombre}${i.categoria ? ' - ' + i.categoria : ''}</span><span>${formatPrecio(i.precio_unit*i.cantidad)}</span></div>`).join('')}
     `).join('')}
     <div class="linea total"><span>TOTAL</span><span>${formatPrecio(total)}</span></div>
     <div class="footer">¡Gracias por tu visita!</div>
