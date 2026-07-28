@@ -201,6 +201,13 @@
   .switch-mini{display:flex;align-items:center;gap:5px;font-size:10.5px;color:var(--text-secondary);cursor:pointer;user-select:none}
   .switch-mini input{accent-color:var(--accent);width:15px;height:15px;cursor:pointer}
 
+  /* Bloqueo temporal de botones mientras se procesa una acción, para evitar doble clic */
+  body.ui-locked .order-actions button,
+  body.ui-locked .cerrar-mesa-btn,
+  body.ui-locked .editar-menu-btn{
+    opacity:0.45;pointer-events:none;filter:grayscale(0.3);
+  }
+
   @keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
   ::-webkit-scrollbar{width:3px}
   ::-webkit-scrollbar-track{background:transparent}
@@ -438,13 +445,15 @@ function editarProducto(id, campo, valor){
 }
 
 function guardarCambiosProductos(){
+  if(uiBloqueada) return;
   const cambios = Object.values(cambiosProductos);
   if(!cambios.length){ showToast('No hay cambios para guardar'); return; }
+  lockUI();
   postActionConClave('guardarProductos', { productos: cambios }).then(res => {
     if(!res.ok) return showToast('No se pudo guardar: ' + (res.error || ''));
     showToast(`Guardado: ${res.productos_actualizados} producto(s) actualizados`);
     cambiosProductos = {};
-  });
+  }).finally(unlockUI);
 }
 
 function cargarPedidos(){
@@ -554,17 +563,25 @@ function nextActionButtons(o){
 }
 
 /* ======================= ACCIONES ======================= */
+let uiBloqueada = false;
+function lockUI(){ uiBloqueada = true; document.body.classList.add('ui-locked'); }
+function unlockUI(){ uiBloqueada = false; document.body.classList.remove('ui-locked'); }
+
 function tomarPedido(id){
+  if(uiBloqueada) return;
+  lockUI();
   const o = staffOrders.find(x => x.id_pedido === id);
   postAction('actualizarEstado', { id_pedido:id, estado:'prep' }).then(res => {
     if(!res.ok) return showToast('No se pudo actualizar: ' + (res.error||''));
     imprimirComprobanteCocina(o);
     showToast('Pedido enviado a cocina');
     cargarPedidos();
-  });
+  }).finally(unlockUI);
 }
 
 function marcarListo(id, tipo){
+  if(uiBloqueada) return;
+  lockUI();
   postAction('actualizarEstado', { id_pedido:id, estado:'listo' }).then(res => {
     if(!res.ok) return showToast('No se pudo actualizar: ' + (res.error||''));
     if(tipo === 'mesa'){
@@ -573,36 +590,42 @@ function marcarListo(id, tipo){
       showToast('📲 Aviso enviado: tu pedido está listo'); // acá se conecta después el WhatsApp real
     }
     cargarPedidos();
-  });
+  }).finally(unlockUI);
 }
 
 function marcarEntregado(id, tipo){
+  if(uiBloqueada) return;
+  lockUI();
   const o = staffOrders.find(x => x.id_pedido === id);
   postAction('actualizarEstado', { id_pedido:id, estado:'cerrado' }).then(res => {
     if(!res.ok) return showToast('No se pudo cerrar: ' + (res.error||''));
     imprimirComprobanteFinal(o, [o]);
     showToast('Pedido cerrado');
     cargarPedidos();
-  });
+  }).finally(unlockUI);
 }
 
 function deshacer(id){
+  if(uiBloqueada) return;
+  lockUI();
   postAction('deshacerEstado', { id_pedido:id }).then(res => {
     if(!res.ok) return showToast('Nada para deshacer');
     showToast('Se deshizo el último cambio');
     cargarPedidos();
-  });
+  }).finally(unlockUI);
 }
 
 function cerrarMesa(mesa, cantRondas){
+  if(uiBloqueada) return;
   if(!confirm(`¿Cerrar Mesa ${mesa}? Se van a cerrar sus ${cantRondas} ronda(s) y no se van a poder editar más.`)) return;
+  lockUI();
   const rondas = staffOrders.filter(o => o.tipo === 'mesa' && String(o.mesa) === String(mesa));
   postAction('cerrarMesa', { mesa }).then(res => {
     if(!res.ok) return showToast('No se pudo cerrar la mesa: ' + (res.error||''));
     imprimirComprobanteFinal({ tipo:'mesa', mesa }, rondas);
     showToast(`Mesa ${mesa} cerrada`);
     cargarPedidos();
-  });
+  }).finally(unlockUI);
 }
 
 /* ======================= IMPRESIÓN ======================= */
@@ -613,7 +636,7 @@ function formatPrecio(n){
   return '$' + Math.round(Number(n) || 0).toLocaleString('es-AR');
 }
 function horaTicket(){
-  return new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}) + ' hs.';
+  return new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit',hour12:false}) + ' hs.';
 }
 function fechaHoraTicket(){
   const f = new Date().toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'});
