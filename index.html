@@ -42,6 +42,14 @@
   .local-title{font-family:var(--display);font-size:24px;font-weight:700;color:var(--text);margin:6px 0 4px;letter-spacing:-0.02em}
   .local-sub{font-family:var(--body);font-size:12.5px;color:var(--text-secondary);margin-bottom:20px}
 
+  .editar-menu-btn{
+    font-family:var(--body);font-size:11.5px;font-weight:600;letter-spacing:0.02em;padding:7px 13px;
+    border-radius:var(--radius-xl);border:1px solid var(--glass-border-hover);
+    background:linear-gradient(135deg,rgba(232,140,60,0.18),rgba(232,90,60,0.1));
+    color:var(--accent-light);cursor:pointer;transition:var(--transition);white-space:nowrap;
+  }
+  .editar-menu-btn:hover{background:linear-gradient(135deg,rgba(232,140,60,0.28),rgba(232,90,60,0.16));transform:translateY(-1px)}
+
   /* Filters */
   .filters{display:flex;gap:8px;margin-bottom:18px;overflow-x:auto;padding:2px 0 6px;scrollbar-width:none}
   .filters::-webkit-scrollbar{display:none}
@@ -209,26 +217,27 @@
       width:92mm;                 /* ancho aprox. de un cuarto de A4, con margen para cortar */
       padding:5mm 6mm;
       color:#000;background:#fff;
-      font-family:'Courier New',Courier,monospace;
+      font-family:Arial,Helvetica,sans-serif;font-weight:700;
     }
-    #comprobante .ticket-logo{
-      text-align:center;font-size:15px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;
-      color:#c9531f;margin-bottom:2mm;
+    #comprobante .ticket-logo{text-align:center;margin-bottom:2mm}
+    #comprobante .ticket-logo img{width:26mm;height:26mm;object-fit:contain}
+    #comprobante .ticket-logo span{
+      display:block;font-size:16px;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#c9531f;
     }
     #comprobante .ticket-tag{text-align:center;font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:#666;margin-bottom:3mm}
     #comprobante h1{
-      text-align:center;font-size:13px;letter-spacing:0.08em;text-transform:uppercase;
-      border-top:1px dashed #999;border-bottom:1px dashed #999;padding:2mm 0;margin-bottom:3mm;
+      text-align:center;font-size:15px;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;
+      border-top:2px dashed #000;border-bottom:2px dashed #000;padding:2.5mm 0;margin-bottom:3mm;
     }
-    #comprobante .nota{font-size:10.5px;text-align:center;color:#333;line-height:1.5}
-    #comprobante .sep{border-top:1px dashed #999;margin:2.5mm 0}
-    #comprobante .linea{display:flex;justify-content:space-between;gap:6px;font-size:11.5px;padding:1.5mm 0}
-    #comprobante .linea .cant{font-weight:700}
-    #comprobante .item-nota{font-size:10px;color:#555;padding-left:4mm;margin-bottom:1mm}
-    #comprobante .cat-label{font-size:9px;text-transform:uppercase;letter-spacing:0.05em;color:#c9531f;font-weight:700;margin-top:2mm}
-    #comprobante .total{font-weight:700;font-size:15px;margin-top:2mm;padding-top:2mm;border-top:1px dashed #999}
-    #comprobante .footer{text-align:center;font-size:10.5px;color:#c9531f;font-weight:700;margin-top:4mm}
-    #comprobante .footer-sub{text-align:center;font-size:9px;color:#888;margin-top:1mm}
+    #comprobante .nota{font-size:12px;font-weight:700;text-align:center;color:#000;line-height:1.5}
+    #comprobante .sep{border-top:2px dashed #000;margin:2.5mm 0}
+    #comprobante .linea{display:flex;justify-content:space-between;gap:6px;font-size:14px;font-weight:800;padding:2mm 0}
+    #comprobante .linea .cant{font-weight:800}
+    #comprobante .item-nota{font-size:11px;font-weight:700;color:#333;padding-left:4mm;margin-bottom:1.5mm}
+    #comprobante .cat-label{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:0.04em;color:#c9531f;margin-top:2.5mm}
+    #comprobante .total{font-weight:800;font-size:17px;margin-top:2.5mm;padding-top:2.5mm;border-top:2px dashed #000}
+    #comprobante .footer{text-align:center;font-size:12px;font-weight:800;color:#c9531f;margin-top:4mm}
+    #comprobante .footer-sub{text-align:center;font-size:10px;font-weight:700;color:#888;margin-top:1mm}
   }
 </style>
 </head>
@@ -239,7 +248,7 @@
   <div class="box">
     <h2>Editar menú</h2>
     <p>Ingresá la clave para modificar precios y disponibilidad</p>
-    <input id="claveInput" type="password" inputmode="numeric" placeholder="Clave">
+    <input id="claveInput" type="password" placeholder="Clave">
     <button onclick="intentarLoginProductos()">Ingresar</button>
     <div class="err" id="loginErr"></div>
   </div>
@@ -249,10 +258,7 @@
   <div id="app-local">
     <div class="local-top">
       <div class="local-h">Nano Resto Bar</div>
-      <div class="local-h" style="display:flex;gap:14px">
-        <a href="cliente.html">Ver vista cliente →</a>
-        <a href="#" onclick="abrirProductos();return false;">Editar menú</a>
-      </div>
+      <button class="editar-menu-btn" onclick="abrirProductos()">✎ Editar menú</button>
     </div>
     <div id="vistaPedidos">
       <div class="local-title">Pedidos en curso</div>
@@ -600,20 +606,28 @@ function cerrarMesa(mesa, cantRondas){
 }
 
 /* ======================= IMPRESIÓN ======================= */
-const NOMBRE_LOCAL = 'Nano Resto Bar'; // reemplazar acá cuando sumemos el logo como imagen
+// Reemplazá LOGO_SRC por la ruta real del logo cuando subas panel-local.html junto con logo.png
+const LOGO_SRC = 'logo.png';
 
 function formatPrecio(n){
   return '$' + Math.round(Number(n) || 0).toLocaleString('es-AR');
+}
+function horaTicket(){
+  return new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}) + ' hs.';
+}
+function fechaHoraTicket(){
+  const f = new Date().toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'});
+  return `${f} · ${horaTicket()}`;
 }
 
 function imprimirComprobanteCocina(o){
   const el = document.getElementById('comprobante');
   let ultimaCategoria = '';
   el.innerHTML = `
-    <div class="ticket-logo">${NOMBRE_LOCAL}</div>
+    <div class="ticket-logo"><img src="${LOGO_SRC}" alt="Logo"></div>
     <h1>Pedido para cocina</h1>
     <div class="nota">${o.tipo === 'mesa' ? 'MESA ' + o.mesa : TIPO_LABEL[o.tipo].toUpperCase() + (o.nombre_cliente ? ' — ' + o.nombre_cliente : '')}</div>
-    <div class="nota">#${o.id_pedido.slice(-4)} · ${new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'})}</div>
+    <div class="nota">#${o.id_pedido.slice(-4)} · ${horaTicket()}</div>
     <div class="sep"></div>
     ${o.items.map(i => {
       let bloque = '';
@@ -633,10 +647,10 @@ function imprimirComprobanteFinal(cabecera, rondas){
   const el = document.getElementById('comprobante');
   const total = rondas.reduce((s,r) => s + r.total, 0);
   el.innerHTML = `
-    <div class="ticket-logo">${NOMBRE_LOCAL}</div>
+    <div class="ticket-logo"><img src="${LOGO_SRC}" alt="Logo"></div>
     <h1>Comprobante</h1>
     <div class="nota">${cabecera.tipo === 'mesa' ? 'Mesa ' + cabecera.mesa : TIPO_LABEL[cabecera.tipo] + (cabecera.nombre_cliente ? ' — ' + cabecera.nombre_cliente : '')}</div>
-    <div class="nota">${new Date().toLocaleString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}</div>
+    <div class="nota">${fechaHoraTicket()}</div>
     <div class="sep"></div>
     ${rondas.map((r,idx) => `
       ${rondas.length>1 ? `<div class="cat-label">Ronda ${idx+1}</div>` : ''}
