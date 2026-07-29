@@ -25,9 +25,9 @@
     --tipo-retiro:#3E9D9E; --tipo-retiro-bg:#E3F4F4; --tipo-retiro-border:#A9DBDC; --tipo-retiro-ink:#1F6C6D;
     --tipo-envio:#182B2D; --tipo-envio-bg:#E7ECEC; --tipo-envio-border:#B9C7C7; --tipo-envio-ink:#182B2D;
 
-    --success:#1F7A75; --success-bg:#DFF3F1; --success-border:#A9DEDA;
-    --warning:#474747; --warning-bg:#EDEDED; --warning-border:#CFCFCF;
-    --danger:#FF8505; --danger-bg:#FFEBD5; --danger-border:#FBC98A;
+    --success:#2E9E5B; --success-bg:#E4F7EC; --success-border:#A9E4C0;
+    --warning:#A8790A; --warning-bg:#FFF2C4; --warning-border:#F6DD86;
+    --danger:#E4483C; --danger-bg:#FDE6E3; --danger-border:#F7B8B0;
 
     --radius-sm:10px; --radius-md:16px; --radius-lg:22px; --radius-xl:30px;
     --shadow-sm:0 2px 10px rgba(24,43,45,0.06); --shadow-md:0 14px 34px rgba(24,43,45,0.14);
@@ -277,6 +277,9 @@
     @page{ size:A4; margin:0; }
     body *{visibility:hidden}
     #comprobante, #comprobante *{visibility:visible}
+    /* El panel completo (min-height:100vh) sigue ocupando espacio aunque esté oculto por visibility,
+       y eso genera una segunda hoja en blanco al imprimir. Lo sacamos del flujo del todo. */
+    .wrap, #loginOverlay, .toast{ display:none !important; }
     #comprobante{
       display:block;position:absolute;top:6mm;left:6mm;
       width:92mm;                 /* ancho aprox. de un cuarto de A4, con margen para cortar */
