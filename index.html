@@ -8,29 +8,29 @@
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
-    /* ---- Paleta pastel de restaurante: fondo cálido crema + acentos vivos ---- */
-    --bg:#FAF6EE; --bg-soft:#FCFAF4; --bg-deep:#F1E7D2;
-    --ink:#2E2820; --ink-secondary:#7C7364; --ink-muted:#B7AD98;
-    --surface:#FFFFFF; --surface-alt:#FBF7EF; --surface-tint:#F3ECDD;
-    --border:#EEE3CC; --border-soft:#F5EEDF; --border-strong:#E2D2AC;
+    /* ---- Paleta: navy profundo, teal, gris, amarillo y naranja ---- */
+    --bg:#F3F6F6; --bg-soft:#F8FAFA; --bg-deep:#E5EBEB;
+    --ink:#182B2D; --ink-secondary:#474747; --ink-muted:#94A0A0;
+    --surface:#FFFFFF; --surface-alt:#F6F9F9; --surface-tint:#EBF1F1;
+    --border:#DEE7E7; --border-soft:#E9EFEF; --border-strong:#C7D4D4;
 
-    --navy:#2E2820; --navy-soft:#463C2E; /* barra superior, tono "espresso" en vez de navy-violeta */
+    --navy:#182B2D; --navy-soft:#26403F; /* barra superior */
 
-    --accent:#FA897B; --accent-light:#FCA99D; --accent-soft:#FFEAE6;
-    --coral:#FA897B; --coral-light:#FCA99D; --coral-soft:#FFEAE6;
-    --shadow-tint:rgba(250,137,123,0.25);
+    --accent:#FF8505; --accent-light:#FFA23D; --accent-soft:#FFE9D2;
+    --coral:#FF8505; --coral-light:#FFA23D; --coral-soft:#FFE9D2;
+    --shadow-tint:rgba(255,133,5,0.24);
 
     /* Colores por tipo de pedido — para que se distingan de un vistazo */
-    --tipo-mesa:#D9A02A; --tipo-mesa-bg:#FFF6DE; --tipo-mesa-border:#F3D98A; --tipo-mesa-ink:#8A6510;
-    --tipo-retiro:#1FAE93; --tipo-retiro-bg:#E3FBF4; --tipo-retiro-border:#A9EBDA; --tipo-retiro-ink:#0F7A66;
-    --tipo-envio:#9B6FC9; --tipo-envio-bg:#F5EDFB; --tipo-envio-border:#DFC7EE; --tipo-envio-ink:#6B3F91;
+    --tipo-mesa:#E0AC1E; --tipo-mesa-bg:#FFF6DA; --tipo-mesa-border:#F5DE94; --tipo-mesa-ink:#8A6510;
+    --tipo-retiro:#3E9D9E; --tipo-retiro-bg:#E3F4F4; --tipo-retiro-border:#A9DBDC; --tipo-retiro-ink:#1F6C6D;
+    --tipo-envio:#182B2D; --tipo-envio-bg:#E7ECEC; --tipo-envio-border:#B9C7C7; --tipo-envio-ink:#182B2D;
 
-    --success:#6E9C3E; --success-bg:#EFF6DE; --success-border:#D2E6A8;
-    --warning:#E8944A; --warning-bg:#FFEEDC; --warning-border:#F7CA98;
-    --danger:#E85D4C; --danger-bg:#FFE9E5; --danger-border:#FCC5BC;
+    --success:#1F7A75; --success-bg:#DFF3F1; --success-border:#A9DEDA;
+    --warning:#474747; --warning-bg:#EDEDED; --warning-border:#CFCFCF;
+    --danger:#FF8505; --danger-bg:#FFEBD5; --danger-border:#FBC98A;
 
     --radius-sm:10px; --radius-md:16px; --radius-lg:22px; --radius-xl:30px;
-    --shadow-sm:0 2px 10px rgba(70,55,30,0.06); --shadow-md:0 14px 34px rgba(70,55,30,0.14);
+    --shadow-sm:0 2px 10px rgba(24,43,45,0.06); --shadow-md:0 14px 34px rgba(24,43,45,0.14);
     --display:'Outfit',sans-serif; --body:'Inter',-apple-system,sans-serif;
     --transition:all 0.25s cubic-bezier(0.4,0,0.2,1);
   }
@@ -40,36 +40,50 @@
   #app-local{
     min-height:100vh;position:relative;overflow:hidden;padding:18px 16px 100px;
     background:
-      radial-gradient(420px 300px at 110% -8%,rgba(250,137,123,0.14),transparent 60%),
-      radial-gradient(360px 280px at -10% 18%,rgba(31,174,147,0.10),transparent 55%),
+      radial-gradient(420px 300px at 110% -8%,rgba(62,157,158,0.14),transparent 60%),
+      radial-gradient(360px 280px at -10% 18%,rgba(255,133,5,0.08),transparent 55%),
       linear-gradient(180deg,var(--bg) 0%,var(--bg-deep) 100%);
   }
   #app-local::before{content:'';position:fixed;width:280px;height:280px;border-radius:50%;
-    background:radial-gradient(circle,rgba(217,160,42,0.14),transparent 70%);top:-70px;right:-80px;filter:blur(40px);pointer-events:none}
+    background:radial-gradient(circle,rgba(224,172,30,0.14),transparent 70%);top:-70px;right:-80px;filter:blur(40px);pointer-events:none}
 
-  /* Top — barra oscura "espresso" tipo header de app, ancla visual del panel */
+  /* Top — barra navy tipo header de app, ancla visual del panel */
   .local-top{
     display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;
     background:linear-gradient(135deg,var(--navy),var(--navy-soft));
-    border-radius:var(--radius-lg);padding:14px 16px;box-shadow:0 12px 28px rgba(46,40,32,0.28);
+    border-radius:var(--radius-lg);padding:14px 16px;box-shadow:0 12px 28px rgba(24,43,45,0.3);
     position:relative;overflow:hidden;
   }
   .local-top::after{content:'';position:absolute;width:120px;height:120px;border-radius:50%;
-    background:radial-gradient(circle,rgba(250,137,123,0.35),transparent 70%);top:-40px;right:-30px;pointer-events:none}
-  .local-h{font-family:var(--display);font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#F0C9A0;font-weight:600;position:relative;z-index:1}
-  .local-h a{color:#F0C9A0;text-decoration:none;font-size:11px;letter-spacing:0.06em;text-transform:none;font-family:var(--body);transition:color 0.2s;font-weight:500}
+    background:radial-gradient(circle,rgba(117,191,192,0.35),transparent 70%);top:-40px;right:-30px;pointer-events:none}
+  .local-h{font-family:var(--display);font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#9CD4D3;font-weight:600;position:relative;z-index:1}
+  .local-h a{color:#9CD4D3;text-decoration:none;font-size:11px;letter-spacing:0.06em;text-transform:none;font-family:var(--body);transition:var(--transition);font-weight:600}
   .local-h a:hover{color:#fff}
+  /* Cuando el título "Menú y precios" cae dentro de la barra navy, necesita texto claro (antes quedaba negro sobre negro) */
+  .local-top .local-title{color:#fff;position:relative;z-index:1}
+  /* El link "Volver a pedidos" se ve como una píldora clara para que quede claro que es un botón */
+  .local-top .local-h{position:relative;z-index:1;flex-shrink:0}
+  .local-top .local-h a{
+    display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:var(--radius-xl);
+    background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);
+  }
+  .local-top .local-h a:hover{background:rgba(255,255,255,0.2)}
   .local-title{font-family:var(--display);font-size:23px;font-weight:700;color:var(--ink);margin:2px 0 4px;letter-spacing:-0.02em}
   .local-sub{font-family:var(--body);font-size:12.5px;color:var(--ink-secondary);margin-bottom:18px}
 
   .editar-menu-btn{
     font-family:var(--body);font-size:11.5px;font-weight:700;letter-spacing:0.02em;padding:8px 15px;
     border-radius:var(--radius-xl);border:none;
-    background:linear-gradient(135deg,var(--coral-light),var(--coral));
+    background:linear-gradient(135deg,var(--accent-light),var(--accent));
     color:#fff;cursor:pointer;transition:var(--transition);white-space:nowrap;
-    box-shadow:0 8px 18px rgba(250,137,123,0.4);position:relative;z-index:1;
+    box-shadow:0 8px 18px rgba(255,133,5,0.4);position:relative;z-index:1;
   }
-  .editar-menu-btn:hover{transform:translateY(-1px);box-shadow:0 10px 22px rgba(250,137,123,0.5)}
+  .editar-menu-btn:hover{transform:translateY(-1px);box-shadow:0 10px 22px rgba(255,133,5,0.5)}
+  /* Deshabilitado cuando ya se está dentro del módulo de edición */
+  .editar-menu-btn:disabled{
+    opacity:0.35;cursor:not-allowed;box-shadow:none;transform:none;
+    background:rgba(255,255,255,0.14);color:rgba(255,255,255,0.6);
+  }
 
   /* Filters */
   .filters{display:flex;gap:8px;margin-bottom:18px;overflow-x:auto;padding:2px 0 6px;scrollbar-width:none}
@@ -113,9 +127,9 @@
     width:100%;margin-top:10px;padding:12px;border-radius:var(--radius-md);border:none;
     background:linear-gradient(135deg,var(--tipo-mesa),#B8830E);color:#fff;font-family:var(--body);font-weight:700;
     font-size:12.5px;letter-spacing:0.02em;cursor:pointer;transition:var(--transition);
-    box-shadow:0 10px 22px rgba(217,160,42,0.35);
+    box-shadow:0 10px 22px rgba(224,172,30,0.35);
   }
-  .cerrar-mesa-btn:hover{transform:translateY(-1px);box-shadow:0 12px 26px rgba(217,160,42,0.45)}
+  .cerrar-mesa-btn:hover{transform:translateY(-1px);box-shadow:0 12px 26px rgba(224,172,30,0.45)}
 
   /* Order Cards */
   .order-card{
@@ -173,7 +187,7 @@
     color:#fff;padding:12px 20px;border-radius:var(--radius-md);font-size:13px;
     font-family:var(--body);font-weight:500;opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;
     max-width:340px;text-align:center;z-index:50;border:1px solid rgba(255,255,255,0.08);
-    box-shadow:0 14px 34px rgba(46,40,32,0.35);
+    box-shadow:0 14px 34px rgba(24,43,45,0.35);
   }
   .toast.show{opacity:1;transform:translateX(-50%) translateY(-6px)}
 
@@ -197,8 +211,14 @@
   #loginOverlay button{
     width:100%;padding:12px;border-radius:var(--radius-md);border:none;
     background:linear-gradient(135deg,var(--accent-light),var(--accent));color:#fff;font-family:var(--body);
-    font-weight:700;font-size:13px;cursor:pointer;box-shadow:0 10px 22px var(--shadow-tint);
+    font-weight:700;font-size:13px;cursor:pointer;box-shadow:0 10px 22px var(--shadow-tint);margin-bottom:8px;
   }
+  /* Botón "Volver" del login: acción secundaria, sin fondo llamativo, para poder salir sin ingresar clave */
+  #loginOverlay button.volver{
+    background:var(--surface-alt);color:var(--ink-secondary);box-shadow:none;
+    border:1px solid var(--border);font-weight:600;margin-bottom:0;
+  }
+  #loginOverlay button.volver:hover{background:var(--surface-tint);color:var(--ink)}
   #loginOverlay .err{color:var(--danger);font-size:11.5px;margin-top:8px;min-height:14px;font-weight:600}
 
   /* Módulo de productos */
@@ -295,6 +315,7 @@
     <p>Ingresá la clave para modificar precios y disponibilidad</p>
     <input id="claveInput" type="password" placeholder="Clave">
     <button onclick="intentarLoginProductos()">Ingresar</button>
+    <button class="volver" onclick="cerrarLoginOverlay()">← Volver</button>
     <div class="err" id="loginErr"></div>
   </div>
 </div>
@@ -303,7 +324,7 @@
   <div id="app-local">
     <div class="local-top">
       <div class="local-h">Nano Resto Bar</div>
-      <button class="editar-menu-btn" onclick="abrirProductos()">✎ Editar menú</button>
+      <button class="editar-menu-btn" id="editarMenuBtn" onclick="abrirProductos()">✎ Editar menú</button>
     </div>
     <div id="vistaPedidos">
       <div class="local-title">Pedidos en curso</div>
@@ -372,6 +393,10 @@ function abrirProductos(){
   document.getElementById('claveInput').focus();
 }
 
+function cerrarLoginOverlay(){
+  document.getElementById('loginOverlay').style.display = 'none';
+}
+
 document.addEventListener('keydown', e => {
   if(e.key === 'Enter' && document.getElementById('loginOverlay').style.display === 'flex') intentarLoginProductos();
 });
@@ -392,6 +417,7 @@ function intentarLoginProductos(){
       document.getElementById('loginOverlay').style.display = 'none';
       document.getElementById('vistaPedidos').style.display = 'none';
       document.getElementById('vistaProductos').style.display = 'block';
+      document.getElementById('editarMenuBtn').disabled = true;
       cambiosProductos = {};
       cargarCategoriasYRenderProductos();
     })
@@ -409,6 +435,7 @@ function cerrarProductos(){
   if(Object.keys(cambiosProductos).length && !confirm('Tenés cambios sin guardar, ¿salir igual y perderlos?')) return;
   document.getElementById('vistaProductos').style.display = 'none';
   document.getElementById('vistaPedidos').style.display = 'block';
+  document.getElementById('editarMenuBtn').disabled = false;
 }
 
 function nombreCategoria(id){
@@ -587,7 +614,7 @@ function orderCardHtml(o){
         <span class="status-pill ${o.estado}">${statusLabel(o.estado)}</span>
       </div>
       <ul>
-        ${o.items.map(i => `<li><span class="line">${i.cantidad}× ${i.nombre}${i.categoria ? ` <span style="color:var(--text-muted);font-weight:400">· ${i.categoria}</span>` : ''}${i.nota?`<span class="note">📝 ${i.nota}</span>`:''}</span></li>`).join('')}
+        ${o.items.map(i => `<li><span class="line">${i.cantidad}× ${i.categoria ? `<span style="color:var(--ink-muted);font-weight:600">${i.categoria}</span> - ` : ''}${i.nombre}${i.nota?`<span class="note">📝 ${i.nota}</span>`:''}</span></li>`).join('')}
       </ul>
       <div class="order-actions">
         ${nextActionButtons(o)}
@@ -602,7 +629,7 @@ function nextActionButtons(o){
   if(o.estado === 'nuevo') return `<button class="primary" onclick="tomarPedido('${o.id_pedido}')">Tomar pedido</button>`;
   if(o.estado === 'prep') return `<button class="primary" onclick="marcarListo('${o.id_pedido}', '${o.tipo}')">Marcar listo</button>`;
   // listo:
-  if(o.tipo === 'mesa') return `<span style="flex:2;display:flex;align-items:center;justify-content:center;font-size:11.5px;color:var(--text-muted)">Se cierra junto con la mesa</span>`;
+  if(o.tipo === 'mesa') return `<span style="flex:2;display:flex;align-items:center;justify-content:center;font-size:11.5px;color:var(--ink-muted)">Se cierra junto con la mesa</span>`;
   return `<button class="primary" onclick="marcarEntregado('${o.id_pedido}', '${o.tipo}')">Marcar entregado</button>`;
 }
 
@@ -696,7 +723,7 @@ function imprimirComprobanteCocina(o){
     <div class="nota">#${o.id_pedido.slice(-4)} · ${horaTicket()}</div>
     <div class="sep"></div>
     ${o.items.map(i => {
-      let bloque = `<div class="linea"><span class="cant">${i.cantidad}×</span><span>${i.nombre}${i.categoria ? ' - ' + i.categoria : ''}</span></div>`;
+      let bloque = `<div class="linea"><span class="cant">${i.cantidad}×</span><span>${i.categoria ? i.categoria + ' - ' : ''}${i.nombre}</span></div>`;
       if(i.nota) bloque += `<div class="item-nota">↳ ${i.nota}</div>`;
       return bloque;
     }).join('')}
@@ -715,7 +742,7 @@ function imprimirComprobanteFinal(cabecera, rondas){
     <div class="sep"></div>
     ${rondas.map((r,idx) => `
       ${rondas.length>1 ? `<div class="cat-label">Ronda ${idx+1}</div>` : ''}
-      ${r.items.map(i => `<div class="linea"><span>${i.cantidad}× ${i.nombre}${i.categoria ? ' - ' + i.categoria : ''}</span><span>${formatPrecio(i.precio_unit*i.cantidad)}</span></div>`).join('')}
+      ${r.items.map(i => `<div class="linea"><span>${i.cantidad}× ${i.categoria ? i.categoria + ' - ' : ''}${i.nombre}</span><span>${formatPrecio(i.precio_unit*i.cantidad)}</span></div>`).join('')}
     `).join('')}
     <div class="linea total"><span>TOTAL</span><span>${formatPrecio(total)}</span></div>
     <div class="footer">¡Gracias por tu visita!</div>
