@@ -271,8 +271,36 @@
   ::-webkit-scrollbar-track{background:transparent}
   ::-webkit-scrollbar-thumb{background:var(--border-strong);border-radius:3px}
 
-  /* Comprobante de impresión — oculto en pantalla, solo visible al imprimir (no se toca, es la salida de la impresora) */
-  #comprobante{display:none}
+  /* Comprobante de impresión — oculto en pantalla (display:none), pero con todos sus estilos
+     "reales" siempre activos (no solo dentro de @media print). Esto permite que el JS lo mida
+     temporalmente fuera de pantalla ANTES de imprimir y calcule el achique exacto que necesita
+     (variable --escala), en vez de usar niveles fijos que no siempre calzan. */
+  #comprobante{
+    display:none;--escala:1;
+    width:92mm;                 /* ancho aprox. de un cuarto de A4, con margen para cortar */
+    padding:5mm 6mm;
+    color:#000;background:#fff;
+    font-family:Arial,Helvetica,sans-serif;font-weight:700;
+  }
+  #comprobante .ticket-logo{text-align:center;margin-bottom:calc(2mm*var(--escala))}
+  #comprobante .ticket-logo img{width:calc(26mm*var(--escala));height:calc(26mm*var(--escala));object-fit:contain}
+  #comprobante h1{
+    text-align:center;font-size:calc(15px*var(--escala));font-weight:800;letter-spacing:0.06em;text-transform:uppercase;
+    border-top:2px dashed #000;border-bottom:2px dashed #000;padding:calc(2.2mm*var(--escala)) 0;margin-bottom:calc(2.5mm*var(--escala));
+  }
+  #comprobante .nota{font-size:calc(12px*var(--escala));font-weight:700;text-align:center;color:#000;line-height:1.4}
+  #comprobante .sep{border-top:2px dashed #000;margin:calc(2.2mm*var(--escala)) 0}
+  #comprobante .linea{display:flex;justify-content:space-between;gap:6px;font-size:calc(14px*var(--escala));font-weight:800;padding:calc(1.6mm*var(--escala)) 0}
+  #comprobante .linea .cant{font-weight:800}
+  /* Líneas de cocina: no hay precio, así que van alineadas a la izquierda (no space-between) */
+  #comprobante .linea-cocina{display:flex;align-items:baseline;gap:7px;font-size:calc(14px*var(--escala));font-weight:800;padding:calc(1.6mm*var(--escala)) 0}
+  #comprobante .linea-cocina .cant{flex-shrink:0}
+  #comprobante .item-nota{font-size:calc(11px*var(--escala));font-weight:700;color:#333;padding-left:4mm;margin-bottom:calc(1mm*var(--escala))}
+  #comprobante .cat-label{font-size:calc(12px*var(--escala));font-weight:800;text-transform:uppercase;letter-spacing:0.04em;color:#c9531f;margin-top:calc(2mm*var(--escala))}
+  #comprobante .total{font-weight:800;font-size:calc(17px*var(--escala));margin-top:calc(2mm*var(--escala));padding-top:calc(2mm*var(--escala));border-top:2px dashed #000}
+  #comprobante .footer{text-align:center;font-size:calc(12px*var(--escala));font-weight:800;color:#c9531f;margin-top:calc(3mm*var(--escala))}
+  #comprobante .footer-sub{text-align:center;font-size:calc(10px*var(--escala));font-weight:700;color:#888;margin-top:1mm}
+
   @media print{
     @page{ size:A4; margin:0; }
     body *{visibility:hidden}
@@ -280,59 +308,30 @@
     /* El panel completo (min-height:100vh) sigue ocupando espacio aunque esté oculto por visibility,
        y eso genera una segunda hoja en blanco al imprimir. Lo sacamos del flujo del todo. */
     .wrap, #loginOverlay, .toast{ display:none !important; }
-    #comprobante{
-      display:block;position:absolute;top:6mm;left:6mm;
-      width:92mm;                 /* ancho aprox. de un cuarto de A4, con margen para cortar */
-      padding:5mm 6mm;
-      color:#000;background:#fff;
-      font-family:Arial,Helvetica,sans-serif;font-weight:700;
-    }
-    #comprobante .ticket-logo{text-align:center;margin-bottom:2mm}
-    #comprobante .ticket-logo img{width:26mm;height:26mm;object-fit:contain}
-    #comprobante .ticket-logo span{
-      display:block;font-size:16px;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#c9531f;
-    }
-    #comprobante .ticket-tag{text-align:center;font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:#666;margin-bottom:3mm}
-    #comprobante h1{
-      text-align:center;font-size:15px;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;
-      border-top:2px dashed #000;border-bottom:2px dashed #000;padding:2.5mm 0;margin-bottom:3mm;
-    }
-    #comprobante .nota{font-size:12px;font-weight:700;text-align:center;color:#000;line-height:1.5}
-    #comprobante .sep{border-top:2px dashed #000;margin:2.5mm 0}
-    #comprobante .linea{display:flex;justify-content:space-between;gap:6px;font-size:14px;font-weight:800;padding:2mm 0}
-    #comprobante .linea .cant{font-weight:800}
-    /* Líneas de cocina: no hay precio, así que van alineadas a la izquierda (no space-between) */
-    #comprobante .linea-cocina{display:flex;align-items:baseline;gap:7px;font-size:14px;font-weight:800;padding:2mm 0}
-    #comprobante .linea-cocina .cant{flex-shrink:0}
-    #comprobante .item-nota{font-size:11px;font-weight:700;color:#333;padding-left:4mm;margin-bottom:1.5mm}
-    #comprobante .cat-label{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:0.04em;color:#c9531f;margin-top:2.5mm}
-    #comprobante .total{font-weight:800;font-size:17px;margin-top:2.5mm;padding-top:2.5mm;border-top:2px dashed #000}
-    #comprobante .footer{text-align:center;font-size:12px;font-weight:800;color:#c9531f;margin-top:4mm}
-    #comprobante .footer-sub{text-align:center;font-size:10px;font-weight:700;color:#888;margin-top:1mm}
+    #comprobante{ display:block;position:absolute;top:6mm;left:6mm; }
+  }
 
-    /* Autoescalado: si el pedido tiene muchas líneas, se achica todo solo para que siga
-       entrando en el mismo cuarto de A4 que ya tenés cortado. Se activa según la cantidad
-       de líneas que calcula el JS antes de imprimir (ver aplicarEscalaTicket). */
-    #comprobante.compacto .ticket-logo img{width:20mm;height:20mm}
-    #comprobante.compacto h1{font-size:13px;padding:1.8mm 0;margin-bottom:2mm}
-    #comprobante.compacto .nota{font-size:10.5px}
-    #comprobante.compacto .sep{margin:1.8mm 0}
-    #comprobante.compacto .linea,#comprobante.compacto .linea-cocina{font-size:12px;padding:1.3mm 0}
-    #comprobante.compacto .item-nota{font-size:9.5px;margin-bottom:1mm}
-    #comprobante.compacto .cat-label{font-size:10.5px;margin-top:1.8mm}
-    #comprobante.compacto .total{font-size:14px;margin-top:1.8mm;padding-top:1.8mm}
-    #comprobante.compacto .footer{font-size:10.5px;margin-top:2.5mm}
+  /* ======================= VERSIÓN DE ESCRITORIO =======================
+     Mismo HTML y misma lógica: en pantallas angostas (celular) no cambia nada,
+     esto solo se activa a partir de 900px de ancho y reacomoda el layout. */
+  @media (min-width: 900px){
+    .wrap{max-width:1180px;padding:0 28px}
+    #app-local{padding:28px 0 100px;overflow:visible}
+    #app-local::before{display:none}
+    .local-top{padding:16px 22px}
+    .filters{margin-bottom:22px}
 
-    #comprobante.muy-compacto .ticket-logo img{width:15mm;height:15mm}
-    #comprobante.muy-compacto h1{font-size:11px;padding:1.3mm 0;margin-bottom:1.5mm}
-    #comprobante.muy-compacto .nota{font-size:9px}
-    #comprobante.muy-compacto .sep{margin:1.3mm 0}
-    #comprobante.muy-compacto .linea,#comprobante.muy-compacto .linea-cocina{font-size:10px;padding:0.8mm 0}
-    #comprobante.muy-compacto .item-nota{font-size:8.5px;margin-bottom:0.6mm}
-    #comprobante.muy-compacto .cat-label{font-size:9px;margin-top:1.3mm}
-    #comprobante.muy-compacto .total{font-size:12px;margin-top:1.3mm;padding-top:1.3mm}
-    #comprobante.muy-compacto .footer{font-size:9px;margin-top:1.8mm}
-    #comprobante.muy-compacto .footer-sub{font-size:8px}
+    /* Pedidos en grilla de varias columnas en vez de una lista vertical larga */
+    #ordersList{
+      display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));
+      gap:16px;align-items:start;
+    }
+    #ordersList .order-card{margin-bottom:0}
+    #ordersList .mesa-group{margin-bottom:0}
+
+    /* Módulo de productos: dos columnas de categorías en vez de una sola tira larga */
+    #listaProductos{display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:14px;align-items:start}
+    .cat-block{margin-bottom:0}
   }
 </style>
 </head>
@@ -744,42 +743,66 @@ function fechaHoraTicket(){
   return `${f} · ${horaTicket()}`;
 }
 
-// Cuenta cuántas "líneas" ocupa el ticket (ítems + notas + rondas) y le pone al comprobante
-// la clase compacto/muy-compacto correspondiente, para que el contenido siempre entre en
-// el mismo cuarto de A4 sin importar si el pedido es de 2 ítems o de 20.
-function aplicarEscalaTicket(el, lineas){
-  el.classList.remove('compacto', 'muy-compacto');
-  if(lineas > 18) el.classList.add('muy-compacto');
-  else if(lineas > 10) el.classList.add('compacto');
+// Mide de verdad cuánto ocupa el ticket ya renderizado (fuera de pantalla, con sus estilos
+// reales aplicados) y calcula el --escala exacto para que entre en el cuarto de A4, en vez
+// de adivinar con niveles fijos. Hace un par de pasadas por si el achique cambia la altura.
+const ALTO_MAX_TICKET_MM = 132; // alto útil del cuarto de A4 (148mm) con margen para el corte
+const PX_POR_MM = 96 / 25.4;
+
+function escalarYPrepararImpresion(el){
+  el.style.display = 'block';
+  el.style.position = 'fixed';
+  el.style.left = '-9999px';
+  el.style.top = '0';
+  el.style.setProperty('--escala', 1);
+
+  let escala = 1;
+  for(let intento = 0; intento < 4; intento++){
+    el.style.setProperty('--escala', escala);
+    const altoMM = el.offsetHeight / PX_POR_MM;
+    if(altoMM <= ALTO_MAX_TICKET_MM) break;
+    escala = Math.max(0.45, escala * (ALTO_MAX_TICKET_MM / altoMM) * 0.97); // 3% de margen extra
+  }
+
+  el.style.position = '';
+  el.style.left = '';
+  el.style.top = '';
+  el.style.display = ''; // vuelve a display:none en pantalla; @media print lo muestra igual
 }
 
 function imprimirComprobanteCocina(o){
   const el = document.getElementById('comprobante');
+  // La cocina no sirve bebidas — eso lo hace el mozo, así que no tiene sentido en la comanda
+  const itemsCocina = o.items.filter(i => !(i.categoria && i.categoria.toLowerCase().includes('bebida')));
+
+  if(itemsCocina.length === 0){
+    showToast('Pedido solo de bebidas — no hace falta comanda para cocina');
+    return;
+  }
+
   el.innerHTML = `
     <div class="ticket-logo"><img src="${LOGO_SRC}" alt="Logo"></div>
     <h1>Pedido para cocina</h1>
-    <div class="nota">${o.tipo === 'mesa' ? 'MESA ' + o.mesa : TIPO_LABEL[o.tipo].toUpperCase() + (o.nombre_cliente ? ' — ' + o.nombre_cliente : '')}</div>
-    <div class="nota">#${o.id_pedido.slice(-4)} · ${horaTicket()}</div>
+    <div class="nota">${o.tipo === 'mesa' ? 'MESA ' + o.mesa : TIPO_LABEL[o.tipo].toUpperCase() + (o.nombre_cliente ? ' — ' + o.nombre_cliente : '')} · #${o.id_pedido.slice(-4)} · ${horaTicket()}</div>
     <div class="sep"></div>
-    ${o.items.map(i => {
+    ${itemsCocina.map(i => {
       let bloque = `<div class="linea-cocina"><span class="cant">${i.cantidad}×</span><span>${i.categoria ? i.categoria + ' - ' : ''}${i.nombre}</span></div>`;
       if(i.nota) bloque += `<div class="item-nota">↳ ${i.nota}</div>`;
       return bloque;
     }).join('')}
   `;
-  const lineasCocina = o.items.reduce((n,i) => n + 1 + (i.nota?1:0), 0);
-  aplicarEscalaTicket(el, lineasCocina);
+  escalarYPrepararImpresion(el);
   window.print();
 }
 
 function imprimirComprobanteFinal(cabecera, rondas){
   const el = document.getElementById('comprobante');
   const total = rondas.reduce((s,r) => s + r.total, 0);
+  const identificador = cabecera.tipo === 'mesa' ? 'Mesa ' + cabecera.mesa : TIPO_LABEL[cabecera.tipo] + (cabecera.nombre_cliente ? ' — ' + cabecera.nombre_cliente : '');
   el.innerHTML = `
     <div class="ticket-logo"><img src="${LOGO_SRC}" alt="Logo"></div>
     <h1>Comprobante</h1>
-    <div class="nota">${cabecera.tipo === 'mesa' ? 'Mesa ' + cabecera.mesa : TIPO_LABEL[cabecera.tipo] + (cabecera.nombre_cliente ? ' — ' + cabecera.nombre_cliente : '')}</div>
-    <div class="nota">${fechaHoraTicket()}</div>
+    <div class="nota">${identificador} · ${fechaHoraTicket()}</div>
     <div class="sep"></div>
     ${rondas.map((r,idx) => `
       ${rondas.length>1 ? `<div class="cat-label">Ronda ${idx+1}</div>` : ''}
@@ -789,10 +812,11 @@ function imprimirComprobanteFinal(cabecera, rondas){
     <div class="footer">¡Gracias por tu visita!</div>
     <div class="footer-sub">Te esperamos pronto</div>
   `;
-  const lineasFinal = rondas.reduce((n,r) => n + (rondas.length>1?1:0) + r.items.length, 0);
-  aplicarEscalaTicket(el, lineasFinal);
+  escalarYPrepararImpresion(el);
   window.print();
 }
+
+
 
 /* ======================= TOAST ======================= */
 function showToast(msg){
