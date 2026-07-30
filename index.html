@@ -301,11 +301,38 @@
     #comprobante .sep{border-top:2px dashed #000;margin:2.5mm 0}
     #comprobante .linea{display:flex;justify-content:space-between;gap:6px;font-size:14px;font-weight:800;padding:2mm 0}
     #comprobante .linea .cant{font-weight:800}
+    /* Líneas de cocina: no hay precio, así que van alineadas a la izquierda (no space-between) */
+    #comprobante .linea-cocina{display:flex;align-items:baseline;gap:7px;font-size:14px;font-weight:800;padding:2mm 0}
+    #comprobante .linea-cocina .cant{flex-shrink:0}
     #comprobante .item-nota{font-size:11px;font-weight:700;color:#333;padding-left:4mm;margin-bottom:1.5mm}
     #comprobante .cat-label{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:0.04em;color:#c9531f;margin-top:2.5mm}
     #comprobante .total{font-weight:800;font-size:17px;margin-top:2.5mm;padding-top:2.5mm;border-top:2px dashed #000}
     #comprobante .footer{text-align:center;font-size:12px;font-weight:800;color:#c9531f;margin-top:4mm}
     #comprobante .footer-sub{text-align:center;font-size:10px;font-weight:700;color:#888;margin-top:1mm}
+
+    /* Autoescalado: si el pedido tiene muchas líneas, se achica todo solo para que siga
+       entrando en el mismo cuarto de A4 que ya tenés cortado. Se activa según la cantidad
+       de líneas que calcula el JS antes de imprimir (ver aplicarEscalaTicket). */
+    #comprobante.compacto .ticket-logo img{width:20mm;height:20mm}
+    #comprobante.compacto h1{font-size:13px;padding:1.8mm 0;margin-bottom:2mm}
+    #comprobante.compacto .nota{font-size:10.5px}
+    #comprobante.compacto .sep{margin:1.8mm 0}
+    #comprobante.compacto .linea,#comprobante.compacto .linea-cocina{font-size:12px;padding:1.3mm 0}
+    #comprobante.compacto .item-nota{font-size:9.5px;margin-bottom:1mm}
+    #comprobante.compacto .cat-label{font-size:10.5px;margin-top:1.8mm}
+    #comprobante.compacto .total{font-size:14px;margin-top:1.8mm;padding-top:1.8mm}
+    #comprobante.compacto .footer{font-size:10.5px;margin-top:2.5mm}
+
+    #comprobante.muy-compacto .ticket-logo img{width:15mm;height:15mm}
+    #comprobante.muy-compacto h1{font-size:11px;padding:1.3mm 0;margin-bottom:1.5mm}
+    #comprobante.muy-compacto .nota{font-size:9px}
+    #comprobante.muy-compacto .sep{margin:1.3mm 0}
+    #comprobante.muy-compacto .linea,#comprobante.muy-compacto .linea-cocina{font-size:10px;padding:0.8mm 0}
+    #comprobante.muy-compacto .item-nota{font-size:8.5px;margin-bottom:0.6mm}
+    #comprobante.muy-compacto .cat-label{font-size:9px;margin-top:1.3mm}
+    #comprobante.muy-compacto .total{font-size:12px;margin-top:1.3mm;padding-top:1.3mm}
+    #comprobante.muy-compacto .footer{font-size:9px;margin-top:1.8mm}
+    #comprobante.muy-compacto .footer-sub{font-size:8px}
   }
 </style>
 </head>
@@ -717,6 +744,15 @@ function fechaHoraTicket(){
   return `${f} · ${horaTicket()}`;
 }
 
+// Cuenta cuántas "líneas" ocupa el ticket (ítems + notas + rondas) y le pone al comprobante
+// la clase compacto/muy-compacto correspondiente, para que el contenido siempre entre en
+// el mismo cuarto de A4 sin importar si el pedido es de 2 ítems o de 20.
+function aplicarEscalaTicket(el, lineas){
+  el.classList.remove('compacto', 'muy-compacto');
+  if(lineas > 18) el.classList.add('muy-compacto');
+  else if(lineas > 10) el.classList.add('compacto');
+}
+
 function imprimirComprobanteCocina(o){
   const el = document.getElementById('comprobante');
   el.innerHTML = `
@@ -726,11 +762,13 @@ function imprimirComprobanteCocina(o){
     <div class="nota">#${o.id_pedido.slice(-4)} · ${horaTicket()}</div>
     <div class="sep"></div>
     ${o.items.map(i => {
-      let bloque = `<div class="linea"><span class="cant">${i.cantidad}×</span><span>${i.categoria ? i.categoria + ' - ' : ''}${i.nombre}</span></div>`;
+      let bloque = `<div class="linea-cocina"><span class="cant">${i.cantidad}×</span><span>${i.categoria ? i.categoria + ' - ' : ''}${i.nombre}</span></div>`;
       if(i.nota) bloque += `<div class="item-nota">↳ ${i.nota}</div>`;
       return bloque;
     }).join('')}
   `;
+  const lineasCocina = o.items.reduce((n,i) => n + 1 + (i.nota?1:0), 0);
+  aplicarEscalaTicket(el, lineasCocina);
   window.print();
 }
 
@@ -751,6 +789,8 @@ function imprimirComprobanteFinal(cabecera, rondas){
     <div class="footer">¡Gracias por tu visita!</div>
     <div class="footer-sub">Te esperamos pronto</div>
   `;
+  const lineasFinal = rondas.reduce((n,r) => n + (rondas.length>1?1:0) + r.items.length, 0);
+  aplicarEscalaTicket(el, lineasFinal);
   window.print();
 }
 
