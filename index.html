@@ -259,6 +259,29 @@
   .switch-mini{display:flex;align-items:center;gap:5px;font-size:10.5px;color:var(--ink-secondary);cursor:pointer;user-select:none;font-weight:500}
   .switch-mini input{accent-color:var(--accent);width:15px;height:15px;cursor:pointer}
 
+  /* Mapa de mesas */
+  .mesas-leyenda{display:flex;gap:16px;margin-bottom:14px;font-size:12px;color:var(--ink-secondary);font-weight:600}
+  .mesas-leyenda span{display:flex;align-items:center;gap:6px}
+  .mesas-leyenda .dot{width:10px;height:10px;border-radius:50%;display:inline-block}
+  .mesas-leyenda .dot.libre{background:var(--success)}
+  .mesas-leyenda .dot.ocupada{background:var(--tipo-mesa)}
+  .mapa-mesas{display:grid;grid-template-columns:repeat(auto-fill,minmax(76px,1fr));gap:10px}
+  .mesa-celda{
+    aspect-ratio:1;border-radius:var(--radius-md);display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:2px;cursor:pointer;transition:var(--transition);border:1.5px solid var(--border);background:var(--surface);
+    box-shadow:var(--shadow-sm);
+  }
+  .mesa-celda:hover{transform:translateY(-2px);box-shadow:var(--shadow-md)}
+  .mesa-celda .num{font-family:var(--display);font-size:18px;font-weight:800;color:var(--ink)}
+  .mesa-celda .rondas{font-size:9.5px;color:var(--ink-secondary);font-weight:600}
+  .mesa-celda.libre{background:var(--success-bg);border-color:var(--success-border)}
+  .mesa-celda.libre .num{color:var(--success)}
+  .mesa-celda.ocupada{background:var(--tipo-mesa-bg);border-color:var(--tipo-mesa-border)}
+  .mesa-celda.ocupada .num{color:var(--tipo-mesa-ink)}
+
+  /* Toast de aviso de pedido nuevo — un poco más llamativo que el toast normal */
+  .toast.alerta{background:var(--accent);border-color:var(--accent-light);font-weight:700}
+
   /* Bloqueo temporal de botones mientras se procesa una acción, para evitar doble clic */
   body.ui-locked .order-actions button,
   body.ui-locked .cerrar-mesa-btn,
@@ -353,13 +376,29 @@
   <div id="app-local">
     <div class="local-top">
       <div class="local-h">Nano Resto Bar</div>
-      <button class="editar-menu-btn" id="editarMenuBtn" onclick="abrirProductos()">✎ Editar menú</button>
+      <div style="display:flex;gap:8px;position:relative;z-index:1">
+        <button class="editar-menu-btn mesas-btn" id="mesasBtn" onclick="abrirMesas()">🍽️ Mesas</button>
+        <button class="editar-menu-btn" id="editarMenuBtn" onclick="abrirProductos()">✎ Editar menú</button>
+      </div>
     </div>
     <div id="vistaPedidos">
       <div class="local-title">Pedidos en curso</div>
       <div class="local-sub" id="countLine">Cargando pedidos…</div>
       <div class="filters" id="filters"></div>
       <div id="ordersList"></div>
+    </div>
+
+    <div id="vistaMesas" style="display:none">
+      <div class="local-top" style="margin-bottom:14px">
+        <div class="local-title" style="margin:0">Mapa de mesas</div>
+        <div class="local-h"><a href="#" onclick="cerrarMesasView();return false;">← Volver a pedidos</a></div>
+      </div>
+      <div class="local-sub" id="mesasSub"></div>
+      <div class="mesas-leyenda">
+        <span><i class="dot libre"></i> Libre</span>
+        <span><i class="dot ocupada"></i> Ocupada</span>
+      </div>
+      <div id="mapaMesas" class="mapa-mesas"></div>
     </div>
 
     <div id="vistaProductos" style="display:none">
@@ -445,6 +484,7 @@ function intentarLoginProductos(){
       productosData = res.productos;
       document.getElementById('loginOverlay').style.display = 'none';
       document.getElementById('vistaPedidos').style.display = 'none';
+      document.getElementById('vistaMesas').style.display = 'none';
       document.getElementById('vistaProductos').style.display = 'block';
       document.getElementById('editarMenuBtn').disabled = true;
       cambiosProductos = {};
@@ -556,15 +596,56 @@ function guardarCambiosProductos(){
   }).finally(unlockUI);
 }
 
+let idsConocidos = new Set();
+let primeraCarga = true;
+const TITULO_BASE = document.title;
+
 function cargarPedidos(){
   fetch(`${WEBAPP_URL}?action=listarPedidos`)
     .then(r => r.json())
     .then(res => {
       if(!res.ok) return;
+
+      // Detecta pedidos que no estaban en la carga anterior, para avisar (sonido + toast + título)
+      const idsNuevos = res.pedidos.map(p => p.id_pedido);
+      const pedidosNuevos = primeraCarga ? [] : res.pedidos.filter(p => !idsConocidos.has(p.id_pedido));
+      idsConocidos = new Set(idsNuevos);
+      primeraCarga = false;
+
       staffOrders = res.pedidos;
       renderStaffOrders();
+      if(document.getElementById('vistaMesas').style.display !== 'none') renderMesas();
+      actualizarTituloPestana();
+
+      pedidosNuevos.forEach(notificarPedidoNuevo);
     })
     .catch(() => showToast('No se pudo actualizar la lista de pedidos'));
+}
+
+function actualizarTituloPestana(){
+  const pendientes = staffOrders.filter(p => p.estado === 'nuevo').length;
+  document.title = pendientes > 0 ? `🔔 (${pendientes}) ${TITULO_BASE}` : TITULO_BASE;
+}
+
+function notificarPedidoNuevo(p){
+  reproducirBeep();
+  const desc = p.tipo === 'mesa' ? `Mesa ${p.mesa}` : `${TIPO_LABEL[p.tipo]}${p.nombre_cliente ? ' — ' + p.nombre_cliente : ''}`;
+  showToast(`🔔 Nuevo pedido — ${desc}`, true);
+}
+
+function reproducirBeep(){
+  try{
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.frequency.value = 880;
+    gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.35, ctx.currentTime + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.4);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.4);
+  }catch(e){ /* si el navegador todavía no habilitó audio (sin interacción previa), no rompe nada */ }
 }
 
 /* ======================= ICONOS DE TIPO ======================= */
@@ -618,7 +699,7 @@ function renderStaffOrders(){
     const rondas = mesas[mesaNum];
     const total = rondas.reduce((s,r) => s + r.total, 0);
     html += `
-      <div class="mesa-group">
+      <div class="mesa-group" id="mesa-grupo-${mesaNum}">
         <div class="mesa-group-head">
           <span class="titulo">${tipoChip('mesa')} Mesa ${mesaNum} · ${rondas.length} ronda${rondas.length===1?'':'s'}</span>
           <span class="total">${formatPrecio(total)}</span>
@@ -818,12 +899,61 @@ function imprimirComprobanteFinal(cabecera, rondas){
 
 
 
-/* ======================= TOAST ======================= */
-function showToast(msg){
+/* ======================= MAPA DE MESAS ======================= */
+let mesasData = [];
+
+function abrirMesas(){
+  document.getElementById('vistaPedidos').style.display = 'none';
+  document.getElementById('vistaProductos').style.display = 'none';
+  document.getElementById('vistaMesas').style.display = 'block';
+  if(mesasData.length){ renderMesas(); return; }
+  fetch(`${WEBAPP_URL}?action=listarMesas`)
+    .then(r => r.json())
+    .then(res => {
+      if(!res.ok){ showToast('No se pudo cargar el mapa de mesas'); return; }
+      mesasData = res.mesas;
+      renderMesas();
+    });
+}
+
+function cerrarMesasView(){
+  document.getElementById('vistaMesas').style.display = 'none';
+  document.getElementById('vistaPedidos').style.display = 'block';
+}
+
+function renderMesas(){
+  const activas = mesasData.filter(m => isSiJs(m.activa)).sort((a,b) => Number(a.mesa) - Number(b.mesa));
+  const ocupadasCount = activas.filter(m => staffOrders.some(o => o.tipo === 'mesa' && String(o.mesa) === String(m.mesa))).length;
+  document.getElementById('mesasSub').textContent =
+    `${ocupadasCount} ocupada${ocupadasCount===1?'':'s'} de ${activas.length} mesa${activas.length===1?'':'s'}`;
+
+  document.getElementById('mapaMesas').innerHTML = activas.map(m => {
+    const rondas = staffOrders.filter(o => o.tipo === 'mesa' && String(o.mesa) === String(m.mesa));
+    const ocupada = rondas.length > 0;
+    return `
+      <div class="mesa-celda ${ocupada ? 'ocupada' : 'libre'}" onclick="${ocupada ? `verMesaEnPedidos('${m.mesa}')` : ''}">
+        <span class="num">${m.mesa}</span>
+        <span class="rondas">${ocupada ? rondas.length + ' ronda' + (rondas.length===1?'':'s') : 'Libre'}</span>
+      </div>`;
+  }).join('');
+}
+
+function verMesaEnPedidos(mesa){
+  cerrarMesasView();
+  filter = 'todos';
+  renderStaffOrders();
+  setTimeout(() => {
+    const el = document.getElementById('mesa-grupo-' + mesa);
+    if(el) el.scrollIntoView({ behavior:'smooth', block:'center' });
+  }, 50);
+}
+function showToast(msg, alerta){
   const t = document.getElementById('toast');
-  t.textContent = msg; t.classList.add('show');
+  t.textContent = msg;
+  t.classList.toggle('alerta', !!alerta);
+  t.classList.add('show');
   clearTimeout(window._toastTimer);
-  window._toastTimer = setTimeout(()=> t.classList.remove('show'), 2600);
+  window._toastTimer = setTimeout(()=> t.classList.remove('show'), alerta ? 4500 : 2600);
 }
 </script>
 </body>
