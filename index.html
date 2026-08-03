@@ -473,24 +473,24 @@ function intentarLoginProductos(){
   const val = document.getElementById('claveInput').value.trim();
   if(!val){ document.getElementById('loginErr').textContent = 'Ingresá la clave'; return; }
   CLAVE = val;
-  fetch(`${WEBAPP_URL}?action=listarProductos&clave=${encodeURIComponent(CLAVE)}`)
-    .then(r => r.json())
-    .then(res => {
-      if(!res.ok){
-        document.getElementById('loginErr').textContent = 'Clave incorrecta';
-        CLAVE = '';
-        return;
-      }
-      productosData = res.productos;
-      document.getElementById('loginOverlay').style.display = 'none';
-      document.getElementById('vistaPedidos').style.display = 'none';
-      document.getElementById('vistaMesas').style.display = 'none';
-      document.getElementById('vistaProductos').style.display = 'block';
-      document.getElementById('editarMenuBtn').disabled = true;
-      cambiosProductos = {};
-      cargarCategoriasYRenderProductos();
-    })
-    .catch(() => { document.getElementById('loginErr').textContent = 'Sin conexión, probá de nuevo'; });
+  // La clave va en el body de un POST (no en la URL) para que no quede expuesta
+  // en el historial del navegador ni en logs de acceso.
+  postActionConClave('listarProductos', {}).then(res => {
+    if(!res.ok){
+      document.getElementById('loginErr').textContent =
+        res.error === 'sin_conexion' ? 'Sin conexión, probá de nuevo' : 'Clave incorrecta';
+      CLAVE = '';
+      return;
+    }
+    productosData = res.productos;
+    document.getElementById('loginOverlay').style.display = 'none';
+    document.getElementById('vistaPedidos').style.display = 'none';
+    document.getElementById('vistaMesas').style.display = 'none';
+    document.getElementById('vistaProductos').style.display = 'block';
+    document.getElementById('editarMenuBtn').disabled = true;
+    cambiosProductos = {};
+    cargarCategoriasYRenderProductos();
+  });
 }
 
 function cargarCategoriasYRenderProductos(){
