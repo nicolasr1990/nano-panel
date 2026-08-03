@@ -33,6 +33,8 @@
     --shadow-sm:0 2px 10px rgba(24,43,45,0.06); --shadow-md:0 14px 34px rgba(24,43,45,0.14);
     --display:'Outfit',sans-serif; --body:'Inter',-apple-system,sans-serif;
     --transition:all 0.25s cubic-bezier(0.4,0,0.2,1);
+    /* Curvas y duraciones para el pulido de interacción de escritorio (ver @media 900px) */
+    --ease-out:cubic-bezier(0.23,1,0.32,1); --dur-fast:140ms; --dur-base:200ms;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0}
   html,body{margin:0;background:var(--bg);font-family:var(--body);color:var(--ink);overflow-x:hidden;-webkit-font-smoothing:antialiased}
@@ -137,7 +139,7 @@
     border-radius:var(--radius-lg);padding:16px 18px;margin-bottom:14px;
     border-top:4px solid var(--border);transition:var(--transition);
     box-shadow:var(--shadow-sm);
-    animation:slideUp 0.35s ease backwards;
+    animation:slideUp 0.3s var(--ease-out) backwards;
   }
   /* La franja superior y un lavado suave de fondo se tiñen según el tipo de pedido */
   .order-card.tipo-mesa{background:linear-gradient(165deg,var(--tipo-mesa-bg) 0%,var(--surface) 55%);border-color:var(--tipo-mesa-border);border-top-color:var(--tipo-mesa)}
@@ -294,6 +296,14 @@
   ::-webkit-scrollbar-track{background:transparent}
   ::-webkit-scrollbar-thumb{background:var(--border-strong);border-radius:3px}
 
+  /* Foco visible al navegar con teclado (Tab) — antes no había ninguna señal */
+  :focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+
+  /* Reduce movimiento si el sistema operativo lo pide, sin sacar animaciones por completo */
+  @media (prefers-reduced-motion: reduce){
+    *{animation-duration:0.01ms !important;animation-iteration-count:1 !important;transition-duration:0.01ms !important}
+  }
+
   /* Comprobante de impresión — oculto en pantalla (display:none), pero con todos sus estilos
      "reales" siempre activos (no solo dentro de @media print). Esto permite que el JS lo mida
      temporalmente fuera de pantalla ANTES de imprimir y calcule el achique exacto que necesita
@@ -355,6 +365,54 @@
     /* Módulo de productos: dos columnas de categorías en vez de una sola tira larga */
     #listaProductos{display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:14px;align-items:start}
     .cat-block{margin-bottom:0}
+
+    /* ============ Pulido de interacción para mouse/teclado ============
+       Todo lo de acá abajo es exclusivo de escritorio: en mobile no cambia nada. */
+
+    /* Transiciones puntuales (no "all"): solo lo que realmente se anima, para que el
+       navegador no vigile propiedades de más con varias cards visibles a la vez. */
+    #ordersList .order-card,
+    .mesa-celda,
+    .filters button,
+    .order-actions button,
+    .editar-menu-btn,
+    .cerrar-mesa-btn,
+    .cat-block summary{
+      transition:transform var(--dur-fast) var(--ease-out),
+                 box-shadow var(--dur-base) var(--ease-out),
+                 border-color var(--dur-base) var(--ease-out),
+                 background var(--dur-base) var(--ease-out);
+    }
+
+    /* Hover real de mouse únicamente — así una tablet táctil en horizontal
+       (cruza los 900px) no se queda con el hover "pegado" tras un tap. */
+    @media (hover:hover) and (pointer:fine){
+      #ordersList .order-card:hover{transform:translateY(-3px);box-shadow:var(--shadow-md)}
+      .filters button:hover{transform:translateY(-1px)}
+      .mesa-celda:hover{transform:translateY(-3px) scale(1.02)}
+      .cat-block summary:hover{background:var(--surface-tint)}
+    }
+
+    /* Feedback de "presionado": confirma que la interfaz escuchó el click */
+    .filters button:active,
+    .order-actions button:active,
+    .mesa-celda:active,
+    .editar-menu-btn:active,
+    .cerrar-mesa-btn:active{
+      transform:scale(0.97);
+    }
+
+    /* Las cards de #ordersList entran en cascada en vez de todas a la vez: en la
+       grilla de escritorio quedan 6-8 a la vista de entrada, así que el efecto
+       se nota mucho más que en mobile (una card por scroll). */
+    #ordersList > *{ animation:slideUp 0.3s var(--ease-out) backwards; }
+    #ordersList > *:nth-child(1){animation-delay:0ms}
+    #ordersList > *:nth-child(2){animation-delay:40ms}
+    #ordersList > *:nth-child(3){animation-delay:80ms}
+    #ordersList > *:nth-child(4){animation-delay:120ms}
+    #ordersList > *:nth-child(5){animation-delay:160ms}
+    #ordersList > *:nth-child(6){animation-delay:200ms}
+    #ordersList > *:nth-child(n+7){animation-delay:220ms}
   }
 </style>
 </head>
