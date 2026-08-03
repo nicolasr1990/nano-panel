@@ -8,29 +8,30 @@
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
-    /* ---- Paleta: navy profundo, teal, gris, amarillo y naranja ---- */
-    --bg:#F3F6F6; --bg-soft:#F8FAFA; --bg-deep:#E5EBEB;
-    --ink:#182B2D; --ink-secondary:#474747; --ink-muted:#94A0A0;
-    --surface:#FFFFFF; --surface-alt:#F6F9F9; --surface-tint:#EBF1F1;
-    --border:#DEE7E7; --border-soft:#E9EFEF; --border-strong:#C7D4D4;
+    /* ---- Paleta bold / alto contraste: navy casi negro, naranja vibrante,
+       tipos de pedido en colores saturados para leerse de un vistazo desde lejos ---- */
+    --bg:#EAF0EF; --bg-soft:#F4F8F7; --bg-deep:#D5E2E1;
+    --ink:#0B1716; --ink-secondary:#33453F; --ink-muted:#7A8B86;
+    --surface:#FFFFFF; --surface-alt:#F1F6F5; --surface-tint:#E1EDEB;
+    --border:#C6D8D5; --border-soft:#DAE7E5; --border-strong:#9CB6B0;
 
-    --navy:#182B2D; --navy-soft:#26403F; /* barra superior */
+    --navy:#0B1716; --navy-soft:#1B342F; /* barra superior */
 
-    --accent:#FF8505; --accent-light:#FFA23D; --accent-soft:#FFE9D2;
-    --coral:#FF8505; --coral-light:#FFA23D; --coral-soft:#FFE9D2;
-    --shadow-tint:rgba(255,133,5,0.24);
+    --accent:#FF5E00; --accent-light:#FF8433; --accent-soft:#FFDCC2;
+    --coral:#FF5E00; --coral-light:#FF8433; --coral-soft:#FFDCC2;
+    --shadow-tint:rgba(255,94,0,0.34);
 
-    /* Colores por tipo de pedido — para que se distingan de un vistazo */
-    --tipo-mesa:#E0AC1E; --tipo-mesa-bg:#FFF6DA; --tipo-mesa-border:#F5DE94; --tipo-mesa-ink:#8A6510;
-    --tipo-retiro:#3E9D9E; --tipo-retiro-bg:#E3F4F4; --tipo-retiro-border:#A9DBDC; --tipo-retiro-ink:#1F6C6D;
-    --tipo-envio:#182B2D; --tipo-envio-bg:#E7ECEC; --tipo-envio-border:#B9C7C7; --tipo-envio-ink:#182B2D;
+    /* Colores por tipo de pedido — fill sólido y más saturado para distinguirse de un vistazo */
+    --tipo-mesa:#C98A00; --tipo-mesa-bg:#FFF1D1; --tipo-mesa-border:#EFC358; --tipo-mesa-ink:#5C3E00;
+    --tipo-retiro:#0B8C8C; --tipo-retiro-bg:#D8F3F2; --tipo-retiro-border:#7FD1CE; --tipo-retiro-ink:#053F3F;
+    --tipo-envio:#4B3AC9; --tipo-envio-bg:#E6E1FA; --tipo-envio-border:#B3A3F0; --tipo-envio-ink:#241A6B;
 
-    --success:#2E9E5B; --success-bg:#E4F7EC; --success-border:#A9E4C0;
-    --warning:#A8790A; --warning-bg:#FFF2C4; --warning-border:#F6DD86;
-    --danger:#E4483C; --danger-bg:#FDE6E3; --danger-border:#F7B8B0;
+    --success:#178A46; --success-bg:#D6F4E2; --success-border:#7FDBA6;
+    --warning:#B4740A; --warning-bg:#FFEBB0; --warning-border:#F0C55C;
+    --danger:#D42F22; --danger-bg:#FCE0DC; --danger-border:#F2A398;
 
     --radius-sm:10px; --radius-md:16px; --radius-lg:22px; --radius-xl:30px;
-    --shadow-sm:0 2px 10px rgba(24,43,45,0.06); --shadow-md:0 14px 34px rgba(24,43,45,0.14);
+    --shadow-sm:0 3px 12px rgba(11,23,22,0.10); --shadow-md:0 18px 40px rgba(11,23,22,0.22);
     --display:'Outfit',sans-serif; --body:'Inter',-apple-system,sans-serif;
     --transition:all 0.25s cubic-bezier(0.4,0,0.2,1);
     /* Curvas y duraciones para el pulido de interacción de escritorio (ver @media 900px) */
@@ -42,12 +43,12 @@
   #app-local{
     min-height:100vh;position:relative;overflow:hidden;padding:18px 16px 100px;
     background:
-      radial-gradient(420px 300px at 110% -8%,rgba(62,157,158,0.14),transparent 60%),
-      radial-gradient(360px 280px at -10% 18%,rgba(255,133,5,0.08),transparent 55%),
+      radial-gradient(420px 300px at 110% -8%,rgba(11,140,140,0.16),transparent 60%),
+      radial-gradient(360px 280px at -10% 18%,rgba(255,94,0,0.10),transparent 55%),
       linear-gradient(180deg,var(--bg) 0%,var(--bg-deep) 100%);
   }
   #app-local::before{content:'';position:fixed;width:280px;height:280px;border-radius:50%;
-    background:radial-gradient(circle,rgba(224,172,30,0.14),transparent 70%);top:-70px;right:-80px;filter:blur(40px);pointer-events:none}
+    background:radial-gradient(circle,rgba(201,138,0,0.16),transparent 70%);top:-70px;right:-80px;filter:blur(40px);pointer-events:none}
 
   /* Top — barra navy tipo header de app, ancla visual del panel */
   .local-top{
@@ -57,7 +58,7 @@
     position:relative;overflow:hidden;
   }
   .local-top::after{content:'';position:absolute;width:120px;height:120px;border-radius:50%;
-    background:radial-gradient(circle,rgba(117,191,192,0.35),transparent 70%);top:-40px;right:-30px;pointer-events:none}
+    background:radial-gradient(circle,rgba(11,140,140,0.4),transparent 70%);top:-40px;right:-30px;pointer-events:none}
   .local-h{font-family:var(--display);font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#9CD4D3;font-weight:600;position:relative;z-index:1}
   .local-h a{color:#9CD4D3;text-decoration:none;font-size:11px;letter-spacing:0.06em;text-transform:none;font-family:var(--body);transition:var(--transition);font-weight:600}
   .local-h a:hover{color:#fff}
@@ -70,7 +71,7 @@
     background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);
   }
   .local-top .local-h a:hover{background:rgba(255,255,255,0.2)}
-  .local-title{font-family:var(--display);font-size:23px;font-weight:700;color:var(--ink);margin:2px 0 4px;letter-spacing:-0.02em}
+  .local-title{font-family:var(--display);font-size:26px;font-weight:800;color:var(--ink);margin:2px 0 4px;letter-spacing:-0.02em}
   .local-sub{font-family:var(--body);font-size:12.5px;color:var(--ink-secondary);margin-bottom:18px}
 
   .editar-menu-btn{
@@ -78,9 +79,9 @@
     border-radius:var(--radius-xl);border:none;
     background:linear-gradient(135deg,var(--accent-light),var(--accent));
     color:#fff;cursor:pointer;transition:var(--transition);white-space:nowrap;
-    box-shadow:0 8px 18px rgba(255,133,5,0.4);position:relative;z-index:1;
+    box-shadow:0 8px 18px rgba(255,94,0,0.45);position:relative;z-index:1;
   }
-  .editar-menu-btn:hover{transform:translateY(-1px);box-shadow:0 10px 22px rgba(255,133,5,0.5)}
+  .editar-menu-btn:hover{transform:translateY(-1px);box-shadow:0 10px 24px rgba(255,94,0,0.55)}
   /* Deshabilitado cuando ya se está dentro del módulo de edición */
   .editar-menu-btn:disabled{
     opacity:0.35;cursor:not-allowed;box-shadow:none;transform:none;
@@ -91,8 +92,8 @@
   .filters{display:flex;gap:8px;margin-bottom:18px;overflow-x:auto;padding:2px 0 6px;scrollbar-width:none}
   .filters::-webkit-scrollbar{display:none}
   .filters button{
-    flex:0 0 auto;font-family:var(--body);font-size:12px;font-weight:600;letter-spacing:0.01em;padding:9px 15px;border-radius:var(--radius-xl);
-    border:1px solid var(--border);background:var(--surface);
+    flex:0 0 auto;font-family:var(--body);font-size:12.5px;font-weight:700;letter-spacing:0.01em;padding:9px 16px;border-radius:var(--radius-xl);
+    border:1.5px solid var(--border);background:var(--surface);
     color:var(--ink-secondary);cursor:pointer;transition:var(--transition);white-space:nowrap;
     box-shadow:var(--shadow-sm);
   }
@@ -105,39 +106,40 @@
 
   /* Chip de tipo de pedido — el color que "sobresale" sobre el fondo claro */
   .tipo-chip{
-    display:inline-flex;align-items:center;gap:5px;font-family:var(--body);font-size:10.5px;font-weight:700;
-    letter-spacing:0.05em;text-transform:uppercase;padding:5px 10px 5px 7px;border-radius:var(--radius-xl);
+    display:inline-flex;align-items:center;gap:5px;font-family:var(--body);font-size:11px;font-weight:800;
+    letter-spacing:0.06em;text-transform:uppercase;padding:5px 11px 5px 7px;border-radius:var(--radius-xl);
+    border-width:1.5px;border-style:solid;
   }
   .tipo-chip svg{width:13px;height:13px;padding:2px;border-radius:6px;box-sizing:content-box}
-  .tipo-chip.mesa{background:var(--tipo-mesa-bg);color:var(--tipo-mesa-ink);border:1px solid var(--tipo-mesa-border)}
+  .tipo-chip.mesa{background:var(--tipo-mesa-bg);color:var(--tipo-mesa-ink);border-color:var(--tipo-mesa-border)}
   .tipo-chip.mesa svg{background:var(--tipo-mesa);color:#fff}
-  .tipo-chip.retiro{background:var(--tipo-retiro-bg);color:var(--tipo-retiro-ink);border:1px solid var(--tipo-retiro-border)}
+  .tipo-chip.retiro{background:var(--tipo-retiro-bg);color:var(--tipo-retiro-ink);border-color:var(--tipo-retiro-border)}
   .tipo-chip.retiro svg{background:var(--tipo-retiro);color:#fff}
-  .tipo-chip.envio{background:var(--tipo-envio-bg);color:var(--tipo-envio-ink);border:1px solid var(--tipo-envio-border)}
+  .tipo-chip.envio{background:var(--tipo-envio-bg);color:var(--tipo-envio-ink);border-color:var(--tipo-envio-border)}
   .tipo-chip.envio svg{background:var(--tipo-envio);color:#fff}
 
   /* Grupo de mesa (contiene varias rondas) */
   .mesa-group{
     border-radius:var(--radius-lg);margin-bottom:16px;padding:14px 14px 16px;
     background:linear-gradient(180deg,var(--tipo-mesa-bg) 0%,var(--surface) 34%);
-    border:1.5px solid var(--tipo-mesa-border);box-shadow:var(--shadow-sm);
+    border:2px solid var(--tipo-mesa-border);box-shadow:var(--shadow-sm);
   }
   .mesa-group-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;padding:0 2px;flex-wrap:wrap;gap:6px}
-  .mesa-group-head .titulo{display:flex;align-items:center;gap:8px;font-family:var(--display);font-weight:700;font-size:14.5px;color:var(--ink)}
-  .mesa-group-head .total{font-family:var(--display);font-size:15px;color:var(--tipo-mesa-ink);font-weight:700}
+  .mesa-group-head .titulo{display:flex;align-items:center;gap:8px;font-family:var(--display);font-weight:800;font-size:15.5px;color:var(--ink)}
+  .mesa-group-head .total{font-family:var(--display);font-size:17px;color:var(--tipo-mesa-ink);font-weight:800}
   .cerrar-mesa-btn{
     width:100%;margin-top:10px;padding:12px;border-radius:var(--radius-md);border:none;
-    background:linear-gradient(135deg,var(--tipo-mesa),#B8830E);color:#fff;font-family:var(--body);font-weight:700;
+    background:linear-gradient(135deg,var(--tipo-mesa),#7A5600);color:#fff;font-family:var(--body);font-weight:700;
     font-size:12.5px;letter-spacing:0.02em;cursor:pointer;transition:var(--transition);
-    box-shadow:0 10px 22px rgba(224,172,30,0.35);
+    box-shadow:0 10px 22px rgba(201,138,0,0.4);
   }
-  .cerrar-mesa-btn:hover{transform:translateY(-1px);box-shadow:0 12px 26px rgba(224,172,30,0.45)}
+  .cerrar-mesa-btn:hover{transform:translateY(-1px);box-shadow:0 12px 26px rgba(201,138,0,0.5)}
 
   /* Order Cards */
   .order-card{
-    background:var(--surface);border:1.5px solid var(--border);
+    background:var(--surface);border:2px solid var(--border);
     border-radius:var(--radius-lg);padding:16px 18px;margin-bottom:14px;
-    border-top:4px solid var(--border);transition:var(--transition);
+    border-top:6px solid var(--border);transition:var(--transition);
     box-shadow:var(--shadow-sm);
     animation:slideUp 0.3s var(--ease-out) backwards;
   }
@@ -150,26 +152,28 @@
   .order-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-md)}
 
   .order-card .head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:8px}
-  .order-card .head .src{font-family:var(--display);font-size:13px;font-weight:600;color:var(--ink);letter-spacing:-0.01em;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .order-card .head .src{font-family:var(--display);font-size:14.5px;font-weight:700;color:var(--ink);letter-spacing:-0.01em;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
   .status-pill{
-    font-family:var(--body);font-size:10.5px;padding:5px 11px;border-radius:var(--radius-xl);font-weight:700;letter-spacing:0.04em;
+    font-family:var(--body);font-size:11px;padding:5px 12px;border-radius:var(--radius-xl);font-weight:800;letter-spacing:0.06em;
     text-transform:uppercase;flex-shrink:0;
   }
-  .status-pill.nuevo{background:var(--danger-bg);color:var(--danger);border:1px solid var(--danger-border)}
-  .status-pill.prep{background:var(--warning-bg);color:var(--warning);border:1px solid var(--warning-border)}
-  .status-pill.listo{background:var(--success-bg);color:var(--success);border:1px solid var(--success-border)}
+  /* Fill sólido en vez de tinte pastel: es el dato más importante de la card,
+     tiene que leerse de un vistazo aunque la pantalla esté lejos (cocina). */
+  .status-pill.nuevo{background:var(--danger);color:#fff;border:1px solid var(--danger);box-shadow:0 3px 10px rgba(212,47,34,0.35)}
+  .status-pill.prep{background:var(--warning);color:#fff;border:1px solid var(--warning);box-shadow:0 3px 10px rgba(180,116,10,0.35)}
+  .status-pill.listo{background:var(--success);color:#fff;border:1px solid var(--success);box-shadow:0 3px 10px rgba(23,138,70,0.35)}
 
   .order-card ul{list-style:none;padding:0;margin:0 0 14px}
   .order-card li{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border-soft)}
   .order-card li:last-child{border-bottom:none}
-  .order-card li .line{flex:1;min-width:0;font-size:13.5px;color:var(--ink);font-weight:500}
+  .order-card li .line{flex:1;min-width:0;font-size:14.5px;color:var(--ink);font-weight:600}
   .order-card li .note{display:block;font-size:11.5px;color:var(--accent);margin-top:2px;font-weight:600;opacity:0.9}
 
   .order-actions{display:flex;gap:8px;flex-wrap:wrap}
   .order-actions button{
-    flex:1;min-width:100px;padding:11px;border-radius:var(--radius-md);border:1px solid var(--border);
+    flex:1;min-width:100px;padding:11px;border-radius:var(--radius-md);border:1.5px solid var(--border);
     background:var(--surface-alt);color:var(--ink-secondary);font-family:var(--body);font-size:12.5px;
-    font-weight:600;cursor:pointer;transition:var(--transition);letter-spacing:0.01em;
+    font-weight:700;cursor:pointer;transition:var(--transition);letter-spacing:0.01em;
   }
   .order-actions button:hover{background:var(--surface-tint);color:var(--ink);border-color:var(--border-strong)}
   .order-actions button.primary{
@@ -270,11 +274,11 @@
   .mapa-mesas{display:grid;grid-template-columns:repeat(auto-fill,minmax(76px,1fr));gap:10px}
   .mesa-celda{
     aspect-ratio:1;border-radius:var(--radius-md);display:flex;flex-direction:column;align-items:center;justify-content:center;
-    gap:2px;cursor:pointer;transition:var(--transition);border:1.5px solid var(--border);background:var(--surface);
+    gap:2px;cursor:pointer;transition:var(--transition);border:2px solid var(--border);background:var(--surface);
     box-shadow:var(--shadow-sm);
   }
   .mesa-celda:hover{transform:translateY(-2px);box-shadow:var(--shadow-md)}
-  .mesa-celda .num{font-family:var(--display);font-size:18px;font-weight:800;color:var(--ink)}
+  .mesa-celda .num{font-family:var(--display);font-size:22px;font-weight:900;color:var(--ink)}
   .mesa-celda .rondas{font-size:9.5px;color:var(--ink-secondary);font-weight:600}
   .mesa-celda.libre{background:var(--success-bg);border-color:var(--success-border)}
   .mesa-celda.libre .num{color:var(--success)}
@@ -387,9 +391,9 @@
     /* Hover real de mouse únicamente — así una tablet táctil en horizontal
        (cruza los 900px) no se queda con el hover "pegado" tras un tap. */
     @media (hover:hover) and (pointer:fine){
-      #ordersList .order-card:hover{transform:translateY(-3px);box-shadow:var(--shadow-md)}
-      .filters button:hover{transform:translateY(-1px)}
-      .mesa-celda:hover{transform:translateY(-3px) scale(1.02)}
+      #ordersList .order-card:hover{transform:translateY(-4px);box-shadow:var(--shadow-md);border-color:var(--border-strong)}
+      .filters button:hover{transform:translateY(-2px)}
+      .mesa-celda:hover{transform:translateY(-4px) scale(1.04);box-shadow:var(--shadow-md)}
       .cat-block summary:hover{background:var(--surface-tint)}
     }
 
@@ -399,7 +403,7 @@
     .mesa-celda:active,
     .editar-menu-btn:active,
     .cerrar-mesa-btn:active{
-      transform:scale(0.97);
+      transform:scale(0.96);
     }
 
     /* Las cards de #ordersList entran en cascada en vez de todas a la vez: en la
