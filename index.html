@@ -285,6 +285,137 @@
   .mesa-celda.ocupada{background:var(--tipo-mesa-bg);border-color:var(--tipo-mesa-border)}
   .mesa-celda.ocupada .num{color:var(--tipo-mesa-ink)}
 
+  /* ======================= Nuevo pedido (kiosko de la tablet) ======================= */
+  .np-tipo-opciones{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px}
+  .np-tipo-opt{
+    flex:1;min-width:140px;padding:30px 16px;border-radius:var(--radius-lg);border:1.5px solid var(--border);
+    background:var(--surface);cursor:pointer;transition:var(--transition);box-shadow:var(--shadow-sm);
+    display:flex;flex-direction:column;align-items:center;gap:10px;font-size:34px;
+  }
+  .np-tipo-opt span{font-family:var(--display);font-size:14px;font-weight:700;color:var(--ink)}
+  .np-tipo-opt:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:var(--shadow-md)}
+  .np-tipo-opt:active{transform:scale(0.97)}
+
+  .np-input{
+    display:block;width:100%;margin-bottom:10px;padding:13px 14px;border-radius:var(--radius-md);
+    border:1.5px solid var(--border);background:var(--surface);color:var(--ink);font-family:var(--body);font-size:14px;outline:none;
+  }
+  .np-input:focus{border-color:var(--accent)}
+  .np-pago-opciones-inline{flex-direction:row;padding:0;margin-bottom:18px}
+  .np-pago-opciones-inline .np-pago-opt{flex:1;text-align:center}
+  .np-pago-opt.active{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
+
+  .np-mesa-actual{
+    display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px;padding:10px 14px;
+    background:var(--tipo-mesa-bg);border:1.5px solid var(--tipo-mesa-border);border-radius:var(--radius-md);
+    font-size:13px;color:var(--tipo-mesa-ink);font-weight:600;
+  }
+  .np-mesa-actual b{font-family:var(--display);font-size:15px}
+  .np-mesa-actual a{margin-left:auto;color:var(--accent);font-weight:700;text-decoration:none;font-size:12px}
+  .np-mesa-actual a:hover{text-decoration:underline}
+
+  .np-cats{display:flex;gap:8px;overflow-x:auto;padding:2px 0 10px;scrollbar-width:none;position:sticky;top:0;background:var(--bg);z-index:5}
+  .np-cats::-webkit-scrollbar{display:none}
+  .np-cats button{
+    flex:0 0 auto;font-family:var(--body);font-size:12.5px;font-weight:700;padding:9px 16px;border-radius:var(--radius-xl);
+    border:1.5px solid var(--border);background:var(--surface);color:var(--ink-secondary);cursor:pointer;
+    transition:var(--transition);white-space:nowrap;box-shadow:var(--shadow-sm);
+  }
+  .np-cats button.active{background:linear-gradient(135deg,var(--accent-light),var(--accent));border-color:transparent;color:#fff;box-shadow:0 8px 20px var(--shadow-tint)}
+
+  .np-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;padding-bottom:90px}
+  .np-card{
+    background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius-md);padding:14px;
+    display:flex;flex-direction:column;gap:8px;box-shadow:var(--shadow-sm);transition:var(--transition);
+  }
+  .np-card.tiene-qty{border-color:var(--accent);box-shadow:0 8px 20px var(--shadow-tint)}
+  .np-card .np-card-nombre{font-family:var(--display);font-weight:700;font-size:13.5px;color:var(--ink);line-height:1.25}
+  .np-card .np-card-precio{font-family:var(--display);font-weight:800;font-size:14.5px;color:var(--accent)}
+  .np-card-footer{display:flex;align-items:center;justify-content:flex-end;margin-top:auto}
+  .np-add-btn{
+    width:34px;height:34px;border-radius:50%;border:none;cursor:pointer;background:linear-gradient(135deg,var(--accent-light),var(--accent));
+    color:#fff;font-size:18px;font-weight:800;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 16px var(--shadow-tint);
+  }
+  .np-stepper{display:flex;align-items:center;gap:8px;background:var(--surface-alt);border:1.5px solid var(--border);border-radius:var(--radius-xl);padding:4px}
+  .np-stepper button{
+    width:28px;height:28px;border-radius:50%;border:none;background:var(--surface);color:var(--ink);font-weight:800;font-size:14px;
+    cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-sm);
+  }
+  .np-stepper .qty{font-family:var(--display);font-weight:800;font-size:13.5px;min-width:18px;text-align:center}
+
+  /* Tarjetas de "armá tu pedido": mitad y mitad (pizzas) / docena-media docena (empanadas, miga) */
+  .np-combo-card{
+    grid-column:1/-1;border-radius:var(--radius-lg);padding:16px;background:linear-gradient(160deg,var(--tipo-mesa-bg),var(--surface) 60%);
+    border:1.5px dashed var(--tipo-mesa-border);
+  }
+  .np-combo-card h4{font-family:var(--display);font-size:13.5px;margin-bottom:3px;color:var(--ink)}
+  .np-combo-card p{font-size:11.5px;color:var(--ink-secondary);margin-bottom:12px}
+  .np-combo-row{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+  .np-combo-row select{
+    flex:1;min-width:140px;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius-sm);
+    padding:10px;font-size:13px;font-family:var(--body);color:var(--ink);cursor:pointer;
+  }
+  .np-combo-toggle{display:flex;gap:8px;margin-bottom:10px}
+  .np-combo-toggle button{
+    flex:1;padding:9px;border-radius:var(--radius-md);border:1.5px solid var(--border);background:var(--surface);
+    color:var(--ink-secondary);font-size:12px;font-weight:700;cursor:pointer;
+  }
+  .np-combo-toggle button.active{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
+  .np-combo-foot{display:flex;align-items:center;justify-content:space-between}
+  .np-combo-foot b{font-family:var(--display);color:var(--accent);font-size:15px}
+
+  /* Barra flotante del carrito */
+  .np-cartbar{
+    position:fixed;left:0;right:0;bottom:0;background:var(--navy);color:#fff;padding:14px 18px;
+    display:flex;align-items:center;justify-content:space-between;z-index:60;box-shadow:0 -10px 30px rgba(0,0,0,0.25);
+  }
+  .np-cartbar-info{display:flex;flex-direction:column;font-size:11.5px;color:rgba(255,255,255,0.7);font-weight:600}
+  .np-cartbar-info b{font-family:var(--display);font-size:19px;color:#fff}
+  .np-cartbar-btn{
+    background:linear-gradient(135deg,var(--accent-light),var(--accent));border:none;color:#fff;font-family:var(--body);
+    font-weight:800;font-size:13.5px;padding:13px 22px;border-radius:var(--radius-md);cursor:pointer;box-shadow:0 8px 20px var(--shadow-tint);
+  }
+
+  /* Overlay genérico (revisión de pedido / método de pago) */
+  .np-overlay{position:fixed;inset:0;background:rgba(11,23,22,0.55);display:flex;align-items:center;justify-content:center;z-index:90;padding:20px}
+  .np-review-box{width:100%;max-width:420px;max-height:82vh;background:var(--surface);border-radius:var(--radius-lg);box-shadow:var(--shadow-md);display:flex;flex-direction:column;overflow:hidden}
+  .np-review-head{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--border-soft);font-family:var(--display);font-weight:700;font-size:15px;color:var(--ink)}
+  .np-review-lista{overflow-y:auto;padding:6px 18px}
+  .np-review-item{display:flex;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid var(--border-soft);font-size:13px;color:var(--ink)}
+  .np-review-item .nom{font-weight:600}
+  .np-review-item .nota{display:block;font-size:11px;color:var(--accent);font-weight:600;margin-top:1px}
+  .np-review-item .del{background:none;border:none;color:var(--ink-muted);cursor:pointer;font-size:16px;line-height:1;padding:0 4px}
+  .np-review-total{display:flex;justify-content:space-between;padding:14px 18px;font-family:var(--display);font-weight:800;font-size:16px;color:var(--ink);border-top:1px solid var(--border-soft)}
+  .np-review-box .cerrar-mesa-btn{margin:0 18px 18px;width:auto}
+
+  .np-pago-box{max-width:340px}
+  .np-pago-opciones{display:flex;flex-direction:column;gap:10px;padding:18px}
+  .np-pago-opt{
+    padding:16px;border-radius:var(--radius-md);border:1.5px solid var(--border);background:var(--surface-alt);
+    color:var(--ink);font-size:14px;font-weight:700;cursor:pointer;text-align:left;transition:var(--transition);
+  }
+  .np-pago-opt:hover{border-color:var(--accent);background:var(--accent-soft)}
+
+  /* ======================= Cierre de caja ======================= */
+  .caja-filtros{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-bottom:18px}
+  .caja-filtros label{display:flex;flex-direction:column;gap:4px;font-size:11px;color:var(--ink-secondary);font-weight:700;text-transform:uppercase;letter-spacing:0.03em}
+  .caja-filtros input{padding:9px 10px;border-radius:var(--radius-sm);border:1.5px solid var(--border);font-family:var(--body);font-size:13px;color:var(--ink);background:var(--surface)}
+  .caja-total-card{
+    background:linear-gradient(135deg,var(--navy),var(--navy-soft));color:#fff;border-radius:var(--radius-lg);
+    padding:22px;margin-bottom:16px;box-shadow:var(--shadow-md);
+  }
+  .caja-total-card .label{font-size:12px;letter-spacing:0.06em;text-transform:uppercase;color:#9CD4D3;font-weight:700}
+  .caja-total-card .monto{font-family:var(--display);font-size:34px;font-weight:800;margin-top:4px}
+  .caja-total-card .sub{font-size:12px;color:rgba(255,255,255,0.65);margin-top:6px}
+  .caja-metodos{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:16px}
+  .caja-metodo-card{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius-md);padding:14px;box-shadow:var(--shadow-sm)}
+  .caja-metodo-card .nombre{font-size:11.5px;font-weight:700;color:var(--ink-secondary);text-transform:uppercase;letter-spacing:0.03em}
+  .caja-metodo-card .monto{font-family:var(--display);font-size:19px;font-weight:800;color:var(--ink);margin-top:4px}
+  .caja-metodo-card .cant{font-size:11px;color:var(--ink-muted);margin-top:2px}
+  .caja-canales{display:flex;flex-direction:column;gap:8px}
+  .caja-canal-row{display:flex;align-items:center;justify-content:space-between;background:var(--surface);border:1px solid var(--border-soft);border-radius:var(--radius-md);padding:10px 14px}
+  .caja-canal-row .monto{font-family:var(--display);font-weight:700;color:var(--ink)}
+
   /* Toast de aviso de pedido nuevo — un poco más llamativo que el toast normal */
   .toast.alerta{background:var(--accent);border-color:var(--accent-light);font-weight:700}
 
@@ -344,7 +475,7 @@
     #comprobante, #comprobante *{visibility:visible}
     /* El panel completo (min-height:100vh) sigue ocupando espacio aunque esté oculto por visibility,
        y eso genera una segunda hoja en blanco al imprimir. Lo sacamos del flujo del todo. */
-    .wrap, #loginOverlay, .toast{ display:none !important; }
+    .wrap, #loginOverlay, .toast, #npCartbar, #npRevisionOverlay, #pagoOverlay{ display:none !important; }
     #comprobante{ display:block;position:absolute;top:6mm;left:6mm; }
   }
 
@@ -438,8 +569,10 @@
   <div id="app-local">
     <div class="local-top">
       <div class="local-h">Nano Resto Bar</div>
-      <div style="display:flex;gap:8px;position:relative;z-index:1">
+      <div style="display:flex;gap:8px;position:relative;z-index:1;flex-wrap:wrap;justify-content:flex-end">
+        <button class="editar-menu-btn nuevo-pedido-btn" id="nuevoPedidoBtn" onclick="abrirNuevoPedido()">+ Nuevo pedido</button>
         <button class="editar-menu-btn mesas-btn" id="mesasBtn" onclick="abrirMesas()">🍽️ Mesas</button>
+        <button class="editar-menu-btn caja-btn" id="cajaBtn" onclick="abrirCaja()">💰 Caja</button>
         <button class="editar-menu-btn" id="editarMenuBtn" onclick="abrirProductos()">✎ Editar menú</button>
       </div>
     </div>
@@ -472,10 +605,104 @@
       <div id="listaProductos"></div>
       <button class="cerrar-mesa-btn" style="margin-top:6px" onclick="guardarCambiosProductos()">Guardar cambios</button>
     </div>
+
+    <div id="vistaNuevoPedido" style="display:none">
+      <div class="local-top" style="margin-bottom:14px">
+        <div class="local-title" style="margin:0" id="npTitulo">Nuevo pedido</div>
+        <div class="local-h"><a href="#" onclick="cerrarNuevoPedido();return false;">← Volver a pedidos</a></div>
+      </div>
+
+      <div id="npPasoTipo">
+        <div class="local-sub">¿Este pedido es para...?</div>
+        <div class="np-tipo-opciones">
+          <button class="np-tipo-opt" onclick="elegirTipoNuevoPedido('mesa')">🍽️<span>Mesa</span></button>
+          <button class="np-tipo-opt" onclick="elegirTipoNuevoPedido('retiro')">🏠<span>Retiro</span></button>
+          <button class="np-tipo-opt" onclick="elegirTipoNuevoPedido('envio')">🛵<span>Envío</span></button>
+        </div>
+      </div>
+
+      <div id="npPasoMesa" style="display:none">
+        <div class="local-sub">Tocá la mesa para la que es este pedido</div>
+        <div id="npMapaMesas" class="mapa-mesas"></div>
+      </div>
+
+      <div id="npPasoCliente" style="display:none">
+        <div class="local-sub" id="npClienteSub">Datos del cliente</div>
+        <input class="np-input" id="npNombreInput" placeholder="Nombre y apellido">
+        <input class="np-input" id="npTelefonoInput" type="tel" placeholder="Teléfono">
+        <input class="np-input" id="npDireccionInput" placeholder="Dirección de entrega" style="display:none">
+        <div class="local-sub" style="margin-top:4px">Cómo va a pagar</div>
+        <div class="np-pago-opciones np-pago-opciones-inline">
+          <button class="np-pago-opt" id="npPagoBtn-efectivo" onclick="elegirMetodoPagoNP('efectivo')">💵 Efectivo</button>
+          <button class="np-pago-opt" id="npPagoBtn-tarjeta" onclick="elegirMetodoPagoNP('tarjeta')">💳 Tarjeta</button>
+          <button class="np-pago-opt" id="npPagoBtn-transferencia" onclick="elegirMetodoPagoNP('transferencia')">📲 Transferencia</button>
+        </div>
+        <button class="cerrar-mesa-btn" onclick="continuarNuevoPedidoCliente()">Continuar →</button>
+      </div>
+
+      <div id="npPasoProductos" style="display:none">
+        <div class="np-mesa-actual">
+          Pedido para <b id="npMesaLabel">—</b>
+          <a href="#" onclick="volverAPasoAnterior();return false;">cambiar</a>
+        </div>
+        <div class="np-cats" id="npCats"></div>
+        <div class="np-grid" id="npGrid"></div>
+      </div>
+    </div>
+
+    <div id="vistaCaja" style="display:none">
+      <div class="local-top" style="margin-bottom:14px">
+        <div class="local-title" style="margin:0">Cierre de caja</div>
+        <div class="local-h"><a href="#" onclick="cerrarCaja();return false;">← Volver a pedidos</a></div>
+      </div>
+      <div class="caja-filtros">
+        <label>Desde<input type="date" id="cajaDesde"></label>
+        <label>Hasta<input type="date" id="cajaHasta"></label>
+        <button class="editar-menu-btn" onclick="cargarCaja()">Actualizar</button>
+      </div>
+      <div id="cajaContenido"><div class="empty-orders">Cargando…</div></div>
+    </div>
   </div>
 </div>
 
 <div class="toast" id="toast"></div>
+
+<!-- Barra flotante del carrito de "Nuevo pedido" -->
+<div class="np-cartbar" id="npCartbar" style="display:none">
+  <div class="np-cartbar-info">
+    <span id="npCartCount">0 ítems</span>
+    <b id="npCartTotal">$0</b>
+  </div>
+  <button class="np-cartbar-btn" onclick="abrirRevisionPedido()">Revisar pedido →</button>
+</div>
+
+<!-- Revisión final antes de mandar el pedido a cocina -->
+<div id="npRevisionOverlay" class="np-overlay" style="display:none">
+  <div class="np-review-box">
+    <div class="np-review-head">
+      <span id="npRevisionTitulo">Mesa —</span>
+      <button class="video-close" onclick="cerrarRevisionPedido()">✕</button>
+    </div>
+    <div id="npRevisionLista" class="np-review-lista"></div>
+    <div class="np-review-total"><span>Total</span><b id="npRevisionTotal">$0</b></div>
+    <button class="cerrar-mesa-btn" id="npConfirmarBtn" onclick="confirmarNuevoPedido()">Confirmar y mandar a cocina</button>
+  </div>
+</div>
+
+<!-- Elegir método de pago al cerrar una mesa -->
+<div id="pagoOverlay" class="np-overlay" style="display:none">
+  <div class="np-review-box np-pago-box">
+    <div class="np-review-head">
+      <span id="pagoTitulo">¿Cómo pagó la mesa?</span>
+      <button class="video-close" onclick="cerrarPagoOverlay()">✕</button>
+    </div>
+    <div class="np-pago-opciones">
+      <button class="np-pago-opt" onclick="confirmarCierreMesa('efectivo')">💵 Efectivo</button>
+      <button class="np-pago-opt" onclick="confirmarCierreMesa('tarjeta')">💳 Tarjeta</button>
+      <button class="np-pago-opt" onclick="confirmarCierreMesa('transferencia')">📲 Transferencia</button>
+    </div>
+  </div>
+</div>
 
 <!-- Se completa dinámicamente antes de cada window.print() -->
 <div id="comprobante"></div>
@@ -517,6 +744,7 @@ let categoriasData = [];
 let cambiosProductos = {}; // { id: {precio, activo, disponible_mesa, disponible_retiro, disponible_envio} }
 
 function abrirProductos(){
+  if(!avisoSiHayPedidoSinConfirmar()) return;
   document.getElementById('loginOverlay').style.display = 'flex';
   document.getElementById('claveInput').value = '';
   document.getElementById('loginErr').textContent = '';
@@ -548,6 +776,7 @@ function intentarLoginProductos(){
     document.getElementById('loginOverlay').style.display = 'none';
     document.getElementById('vistaPedidos').style.display = 'none';
     document.getElementById('vistaMesas').style.display = 'none';
+    document.getElementById('vistaCaja').style.display = 'none';
     document.getElementById('vistaProductos').style.display = 'block';
     document.getElementById('editarMenuBtn').disabled = true;
     cambiosProductos = {};
@@ -858,17 +1087,36 @@ function deshacer(id){
   }).finally(unlockUI);
 }
 
+const METODO_LABEL = { efectivo:'Efectivo', tarjeta:'Tarjeta', transferencia:'Transferencia', sin_especificar:'Sin especificar' };
+const METODO_ICON = { efectivo:'💵', tarjeta:'💳', transferencia:'📲', sin_especificar:'❔' };
+
+let cierreMesaPendiente = null;
+
 function cerrarMesa(mesa, cantRondas){
   if(uiBloqueada) return;
   if(!confirm(`¿Cerrar Mesa ${mesa}? Se van a cerrar sus ${cantRondas} ronda(s) y no se van a poder editar más.`)) return;
+  // Antes de cerrar de verdad, preguntamos cómo pagó — ese dato alimenta el cierre de caja.
+  cierreMesaPendiente = { mesa, rondas: staffOrders.filter(o => o.tipo === 'mesa' && String(o.mesa) === String(mesa)) };
+  document.getElementById('pagoTitulo').textContent = `¿Cómo pagó la Mesa ${mesa}?`;
+  document.getElementById('pagoOverlay').style.display = 'flex';
+}
+
+function cerrarPagoOverlay(){
+  document.getElementById('pagoOverlay').style.display = 'none';
+  cierreMesaPendiente = null;
+}
+
+function confirmarCierreMesa(metodo){
+  if(uiBloqueada || !cierreMesaPendiente) return;
+  const { mesa, rondas } = cierreMesaPendiente;
+  document.getElementById('pagoOverlay').style.display = 'none';
   lockUI();
-  const rondas = staffOrders.filter(o => o.tipo === 'mesa' && String(o.mesa) === String(mesa));
-  postAction('cerrarMesa', { mesa }).then(res => {
+  postAction('cerrarMesa', { mesa, metodo_pago: metodo }).then(res => {
     if(!res.ok) return showToast('No se pudo cerrar la mesa: ' + (res.error||''));
     imprimirComprobanteFinal({ tipo:'mesa', mesa }, rondas);
-    showToast(`Mesa ${mesa} cerrada`);
+    showToast(`Mesa ${mesa} cerrada · ${METODO_LABEL[metodo]}`);
     cargarPedidos();
-  }).finally(unlockUI);
+  }).finally(() => { unlockUI(); cierreMesaPendiente = null; });
 }
 
 /* ======================= IMPRESIÓN ======================= */
@@ -965,8 +1213,10 @@ function imprimirComprobanteFinal(cabecera, rondas){
 let mesasData = [];
 
 function abrirMesas(){
+  if(!avisoSiHayPedidoSinConfirmar()) return;
   document.getElementById('vistaPedidos').style.display = 'none';
   document.getElementById('vistaProductos').style.display = 'none';
+  document.getElementById('vistaCaja').style.display = 'none';
   document.getElementById('vistaMesas').style.display = 'block';
   if(mesasData.length){ renderMesas(); return; }
   fetch(`${WEBAPP_URL}?action=listarMesas`)
@@ -981,6 +1231,493 @@ function abrirMesas(){
 function cerrarMesasView(){
   document.getElementById('vistaMesas').style.display = 'none';
   document.getElementById('vistaPedidos').style.display = 'block';
+}
+
+/* ======================= NUEVO PEDIDO (tablet de la barra) =======================
+   La moza toma el pedido a mano y lo carga acá: elegir mesa -> armar el carrito
+   (mismo mecanismo de mitad-y-mitad / docena que tenía el viejo nanorestobar, pero
+   pensado para pantalla grande) -> confirmar manda el pedido a cocina al instante,
+   sin pasar por el paso extra de "Tomar pedido" (la moza ya lo tomó ella misma). */
+// tipo: "mesa" | "retiro" | "envio" — retiro/envío existen acá porque la moza también
+// atiende pedidos por teléfono, no solo los que llegan solos por la web.
+let nuevoPedido = { tipo: null, mesa: null, nombreCliente: '', telefono: '', direccion: '', metodoPago: null, cart: {}, comboCart: [], catActiva: null };
+let menuNuevoPedidoData = { categorias: [], productos: [] };
+let npDocenaState = {};
+const COSTO_ENVIO_NP = 1000; // mismo valor fijo que CONFIG.COSTO_ENVIO en nanorestobar
+
+function hayPedidoSinConfirmar(){
+  return Object.keys(nuevoPedido.cart).length > 0 || nuevoPedido.comboCart.length > 0;
+}
+
+// Se usa desde los otros botones de la barra superior (Mesas/Caja/Editar menú) para no
+// perder en silencio un pedido que la moza todavía no confirmó.
+function avisoSiHayPedidoSinConfirmar(){
+  if(document.getElementById('vistaNuevoPedido').style.display === 'none') return true;
+  if(hayPedidoSinConfirmar() && !confirm('Tenés un pedido sin confirmar, ¿salir igual y perderlo?')) return false;
+  cerrarNuevoPedido();
+  return true;
+}
+
+function abrirNuevoPedido(){
+  document.getElementById('vistaPedidos').style.display = 'none';
+  document.getElementById('vistaMesas').style.display = 'none';
+  document.getElementById('vistaProductos').style.display = 'none';
+  document.getElementById('vistaCaja').style.display = 'none';
+  document.getElementById('vistaNuevoPedido').style.display = 'block';
+  document.getElementById('npTitulo').textContent = 'Nuevo pedido';
+  mostrarPasoNuevoPedido('npPasoTipo');
+}
+
+function mostrarPasoNuevoPedido(pasoId){
+  ['npPasoTipo','npPasoMesa','npPasoCliente','npPasoProductos'].forEach(id => {
+    document.getElementById(id).style.display = id === pasoId ? 'block' : 'none';
+  });
+}
+
+function cerrarNuevoPedido(){
+  nuevoPedido = { tipo: null, mesa: null, nombreCliente: '', telefono: '', direccion: '', metodoPago: null, cart: {}, comboCart: [], catActiva: null };
+  document.getElementById('npCartbar').style.display = 'none';
+  document.getElementById('vistaNuevoPedido').style.display = 'none';
+  document.getElementById('vistaPedidos').style.display = 'block';
+}
+
+// Cómo mostrar este pedido en título/carrito/comanda, según el canal elegido.
+function npPedidoLabel(){
+  if(nuevoPedido.tipo === 'mesa') return 'Mesa ' + nuevoPedido.mesa;
+  return TIPO_LABEL[nuevoPedido.tipo] + (nuevoPedido.nombreCliente ? ' — ' + nuevoPedido.nombreCliente : '');
+}
+
+function elegirTipoNuevoPedido(tipo){
+  nuevoPedido.tipo = tipo;
+  if(tipo === 'mesa'){
+    mostrarPasoNuevoPedido('npPasoMesa');
+    if(mesasData.length) renderNpMapaMesas();
+    else fetch(`${WEBAPP_URL}?action=listarMesas`).then(r => r.json()).then(res => {
+      if(!res.ok){ showToast('No se pudo cargar el mapa de mesas'); return; }
+      mesasData = res.mesas;
+      renderNpMapaMesas();
+    });
+    return;
+  }
+  document.getElementById('npClienteSub').textContent = tipo === 'envio' ? 'Datos del cliente y dirección de entrega' : 'Datos del cliente';
+  document.getElementById('npNombreInput').value = '';
+  document.getElementById('npTelefonoInput').value = '';
+  document.getElementById('npDireccionInput').value = '';
+  document.getElementById('npDireccionInput').style.display = tipo === 'envio' ? 'block' : 'none';
+  nuevoPedido.metodoPago = null;
+  ['efectivo','tarjeta','transferencia'].forEach(m => document.getElementById('npPagoBtn-'+m).classList.remove('active'));
+  mostrarPasoNuevoPedido('npPasoCliente');
+}
+
+function elegirMetodoPagoNP(metodo){
+  nuevoPedido.metodoPago = metodo;
+  ['efectivo','tarjeta','transferencia'].forEach(m => document.getElementById('npPagoBtn-'+m).classList.toggle('active', m===metodo));
+}
+
+function continuarNuevoPedidoCliente(){
+  const nombre = document.getElementById('npNombreInput').value.trim();
+  const telefono = document.getElementById('npTelefonoInput').value.trim();
+  const direccion = document.getElementById('npDireccionInput').value.trim();
+  if(!nombre || !telefono){ showToast('Falta nombre o teléfono'); return; }
+  if(nuevoPedido.tipo === 'envio' && !direccion){ showToast('Falta la dirección de entrega'); return; }
+  if(!nuevoPedido.metodoPago){ showToast('Elegí cómo va a pagar'); return; }
+  nuevoPedido.nombreCliente = nombre;
+  nuevoPedido.telefono = telefono;
+  nuevoPedido.direccion = direccion;
+  irAPasoProductosNP();
+}
+
+function renderNpMapaMesas(){
+  const activas = mesasData.filter(m => isSiJs(m.activa)).sort((a,b) => Number(a.mesa) - Number(b.mesa));
+  document.getElementById('npMapaMesas').innerHTML = activas.map(m => {
+    const rondas = staffOrders.filter(o => o.tipo === 'mesa' && String(o.mesa) === String(m.mesa));
+    const ocupada = rondas.length > 0;
+    return `
+      <div class="mesa-celda ${ocupada ? 'ocupada' : 'libre'}" onclick="seleccionarMesaNuevoPedido('${m.mesa}')">
+        <span class="num">${m.mesa}</span>
+        <span class="rondas">${ocupada ? rondas.length + ' ronda' + (rondas.length===1?'':'s') : 'Libre'}</span>
+      </div>`;
+  }).join('');
+}
+
+function seleccionarMesaNuevoPedido(mesa){
+  nuevoPedido.mesa = mesa;
+  irAPasoProductosNP();
+}
+
+function irAPasoProductosNP(){
+  document.getElementById('npMesaLabel').textContent = npPedidoLabel();
+  document.getElementById('npTitulo').textContent = 'Nuevo pedido — ' + npPedidoLabel();
+  mostrarPasoNuevoPedido('npPasoProductos');
+  cargarMenuNuevoPedido();
+}
+
+function volverAPasoAnterior(){
+  document.getElementById('npTitulo').textContent = 'Nuevo pedido';
+  if(nuevoPedido.tipo === 'mesa'){
+    mostrarPasoNuevoPedido('npPasoMesa');
+    renderNpMapaMesas();
+  } else {
+    mostrarPasoNuevoPedido('npPasoCliente');
+  }
+}
+
+function cargarMenuNuevoPedido(){
+  if(menuNuevoPedidoData.categorias.length){ renderNpCats(); renderNpGrid(); return; }
+  fetch(`${WEBAPP_URL}?action=menu&canal=mesa`)
+    .then(r => r.json())
+    .then(res => {
+      menuNuevoPedidoData.categorias = res.categorias || [];
+      menuNuevoPedidoData.productos = res.productos || [];
+      nuevoPedido.catActiva = menuNuevoPedidoData.categorias[0] ? menuNuevoPedidoData.categorias[0].id : null;
+      renderNpCats();
+      renderNpGrid();
+    })
+    .catch(() => showToast('No se pudo cargar el menú'));
+}
+
+function npFindProducto(id){ return menuNuevoPedidoData.productos.find(p => p.id === id); }
+function npItemsOf(catId){ return menuNuevoPedidoData.productos.filter(p => p.categoria_id === catId); }
+
+function renderNpCats(){
+  document.getElementById('npCats').innerHTML = menuNuevoPedidoData.categorias.map(c =>
+    `<button class="${c.id===nuevoPedido.catActiva?'active':''}" onclick="npSetCat('${c.id}')">${c.nombre}</button>`
+  ).join('');
+}
+
+function npSetCat(id){
+  nuevoPedido.catActiva = id;
+  renderNpCats();
+  renderNpGrid();
+}
+
+function renderNpGrid(){
+  const cat = menuNuevoPedidoData.categorias.find(c => c.id === nuevoPedido.catActiva);
+  const el = document.getElementById('npGrid');
+  if(!cat){ el.innerHTML = ''; return; }
+  const items = npItemsOf(cat.id);
+  el.innerHTML = items.map(npProductCardHtml).join('') + npRenderComboCard(cat);
+  items.forEach(p => renderNpStepper(p.id, (nuevoPedido.cart[p.id] || {qty:0}).qty));
+}
+
+function npProductCardHtml(p){
+  return `<div class="np-card" id="np-card-${p.id}">
+    <div class="np-card-nombre">${p.nombre}</div>
+    <div class="np-card-precio">${formatPrecio(p.precio)}</div>
+    <div class="np-card-footer" id="np-stepper-${p.id}"></div>
+  </div>`;
+}
+
+function renderNpStepper(id, qty){
+  const holder = document.getElementById('np-stepper-' + id); if(!holder) return;
+  holder.innerHTML = qty === 0
+    ? `<button class="np-add-btn" onclick="npChangeQty('${id}',1)">+</button>`
+    : `<div class="np-stepper"><button onclick="npChangeQty('${id}',-1)">−</button><span class="qty">${qty}</span><button onclick="npChangeQty('${id}',1)">+</button></div>`;
+  const card = document.getElementById('np-card-' + id);
+  if(card) card.classList.toggle('tiene-qty', qty > 0);
+}
+
+function npChangeQty(id, delta){
+  const cur = nuevoPedido.cart[id] || { qty: 0, note: '' };
+  const next = Math.max(0, cur.qty + delta);
+  if(next === 0) delete nuevoPedido.cart[id]; else nuevoPedido.cart[id] = { ...cur, qty: next };
+  renderNpStepper(id, next);
+  updateNpCartbar();
+}
+
+// ---------- Mitad y mitad / docena, igual que el viejo nanorestobar pero para la tablet ----------
+function npRenderComboCard(cat){
+  if(cat.permite_mitad) return npRenderHalfCard(cat);
+  if(cat.vendido_por_docena) return npRenderDocenaCard(cat);
+  return '';
+}
+
+function npRenderHalfCard(cat){
+  const opts = npItemsOf(cat.id);
+  if(opts.length < 2) return '';
+  return `<div class="np-combo-card">
+    <h4>🍕 Mitad y mitad</h4>
+    <p>Elegí dos sabores para combinar. El precio es el promedio.</p>
+    <div class="np-combo-row">
+      <select id="npHalfA-${cat.id}" onchange="npUpdateHalfPrice('${cat.id}')">${opts.map(o=>`<option value="${o.id}">${o.nombre}</option>`).join('')}</select>
+      <select id="npHalfB-${cat.id}" onchange="npUpdateHalfPrice('${cat.id}')">${opts.map((o,i)=>`<option value="${o.id}" ${i===1?'selected':''}>${o.nombre}</option>`).join('')}</select>
+    </div>
+    <div class="np-combo-foot">
+      <b id="npHalfPrice-${cat.id}">${formatPrecio((Number(opts[0].precio)+Number(opts[1].precio))/2)}</b>
+      <button class="np-add-btn" style="width:auto;padding:0 18px;border-radius:var(--radius-md);height:38px" onclick="npAddHalf('${cat.id}')">Agregar</button>
+    </div>
+  </div>`;
+}
+
+function npUpdateHalfPrice(catId){
+  const a = npFindProducto(document.getElementById('npHalfA-'+catId).value);
+  const b = npFindProducto(document.getElementById('npHalfB-'+catId).value);
+  document.getElementById('npHalfPrice-'+catId).textContent = formatPrecio((Number(a.precio)+Number(b.precio))/2);
+}
+
+function npAddHalf(catId){
+  const a = npFindProducto(document.getElementById('npHalfA-'+catId).value);
+  const b = npFindProducto(document.getElementById('npHalfB-'+catId).value);
+  if(a.id === b.id){ showToast('Elegí dos sabores distintos'); return; }
+  const price = (Number(a.precio) + Number(b.precio)) / 2;
+  const cat = menuNuevoPedidoData.categorias.find(c => c.id === catId);
+  const key = 'combo-' + a.id + '-' + b.id;
+  const existing = nuevoPedido.comboCart.find(c => c.key === key);
+  if(existing) existing.qty += 1;
+  else nuevoPedido.comboCart.push({ key, aId:a.id, bId:b.id, name:`Mitad ${a.nombre} / mitad ${b.nombre}`, price, qty:1, catName: cat?cat.nombre:'' });
+  updateNpCartbar();
+  showToast('Agregado al pedido');
+}
+
+function npRenderDocenaCard(cat){
+  const opts = npItemsOf(cat.id);
+  if(!opts.length) return '';
+  npDocenaState[cat.id] = { tamano:'docena', mitad:false };
+  return `<div class="np-combo-card">
+    <h4>🥟 Armá tu pedido</h4>
+    <p>Los precios de la lista son por docena. Elegí el tamaño y, si querés, combiná dos sabores.</p>
+    <div class="np-combo-toggle">
+      <button class="active" id="npDocSize-docena-${cat.id}" onclick="npSetDocenaSize('${cat.id}','docena')">Docena</button>
+      <button id="npDocSize-media-${cat.id}" onclick="npSetDocenaSize('${cat.id}','media')">Media docena</button>
+    </div>
+    <div class="np-combo-row">
+      <select id="npDocA-${cat.id}" onchange="npUpdateDocenaPrice('${cat.id}')">${opts.map(o=>`<option value="${o.id}">${o.nombre}</option>`).join('')}</select>
+    </div>
+    <div class="np-combo-toggle">
+      <button class="active" id="npDocMitad-off-${cat.id}" onclick="npSetDocenaMitad('${cat.id}',false)">Un solo sabor</button>
+      <button id="npDocMitad-on-${cat.id}" onclick="npSetDocenaMitad('${cat.id}',true)">Mitad y mitad</button>
+    </div>
+    <div class="np-combo-row" id="npDocBWrap-${cat.id}" style="display:none;">
+      <select id="npDocB-${cat.id}" onchange="npUpdateDocenaPrice('${cat.id}')">${opts.map((o,i)=>`<option value="${o.id}" ${i===1?'selected':''}>${o.nombre}</option>`).join('')}</select>
+    </div>
+    <div class="np-combo-foot">
+      <b id="npDocPrice-${cat.id}">${formatPrecio(opts[0].precio)}</b>
+      <button class="np-add-btn" style="width:auto;padding:0 18px;border-radius:var(--radius-md);height:38px" onclick="npAddDocena('${cat.id}')">Agregar</button>
+    </div>
+  </div>`;
+}
+
+function npSetActiveBtn(activeId, allIds){ allIds.forEach(id => { const el = document.getElementById(id); if(el) el.classList.toggle('active', id===activeId); }); }
+
+function npSetDocenaSize(catId, tamano){
+  npDocenaState[catId].tamano = tamano;
+  npSetActiveBtn('npDocSize-'+tamano+'-'+catId, ['npDocSize-docena-'+catId,'npDocSize-media-'+catId]);
+  npUpdateDocenaPrice(catId);
+}
+
+function npSetDocenaMitad(catId, on){
+  npDocenaState[catId].mitad = on;
+  npSetActiveBtn('npDocMitad-'+(on?'on':'off')+'-'+catId, ['npDocMitad-off-'+catId,'npDocMitad-on-'+catId]);
+  document.getElementById('npDocBWrap-'+catId).style.display = on ? 'flex' : 'none';
+  npUpdateDocenaPrice(catId);
+}
+
+function npUpdateDocenaPrice(catId){
+  const st = npDocenaState[catId];
+  const a = npFindProducto(document.getElementById('npDocA-'+catId).value);
+  let base = Number(a.precio);
+  if(st.mitad){
+    const b = npFindProducto(document.getElementById('npDocB-'+catId).value);
+    base = (Number(a.precio) + Number(b.precio)) / 2;
+  }
+  const price = st.tamano === 'media' ? base / 2 : base;
+  document.getElementById('npDocPrice-'+catId).textContent = formatPrecio(price);
+}
+
+function npAddDocena(catId){
+  const st = npDocenaState[catId];
+  const cat = menuNuevoPedidoData.categorias.find(c => c.id === catId);
+  const a = npFindProducto(document.getElementById('npDocA-'+catId).value);
+  let base = Number(a.precio), nombre = a.nombre;
+  if(st.mitad){
+    const b = npFindProducto(document.getElementById('npDocB-'+catId).value);
+    if(a.id === b.id){ showToast('Elegí dos sabores distintos'); return; }
+    base = (Number(a.precio) + Number(b.precio)) / 2;
+    nombre = `Mitad ${a.nombre} / mitad ${b.nombre}`;
+  }
+  const esMedia = st.tamano === 'media';
+  const price = esMedia ? base / 2 : base;
+  const label = (esMedia ? 'Media docena de ' : 'Docena de ') + nombre;
+  const bId = st.mitad ? document.getElementById('npDocB-'+catId).value : '';
+  const key = 'docena-' + catId + '-' + a.id + '-' + bId + '-' + st.tamano;
+  const existing = nuevoPedido.comboCart.find(c => c.key === key);
+  if(existing) existing.qty += 1;
+  else nuevoPedido.comboCart.push({ key, aId:a.id, bId, esMediaDocena:esMedia, name:label, price, qty:1, catName: cat?cat.nombre:'' });
+  updateNpCartbar();
+  showToast('Agregado al pedido');
+}
+
+// ---------- Carrito flotante / revisión / confirmación ----------
+function npAllCartLines(){
+  const regular = Object.entries(nuevoPedido.cart).map(([id, entry]) => {
+    const item = npFindProducto(id);
+    const cat = menuNuevoPedidoData.categorias.find(c => c.id === item.categoria_id);
+    return { key:id, name:item.nombre, desc:entry.note||'', price:Number(item.precio), qty:entry.qty, catName: cat?cat.nombre:'' };
+  });
+  return [...regular, ...nuevoPedido.comboCart];
+}
+
+function npCartTotal(lines){ return lines.reduce((s,l) => s + l.price*l.qty, 0); }
+function npCostoEnvio(){ return nuevoPedido.tipo === 'envio' ? COSTO_ENVIO_NP : 0; }
+function npTotalConEnvio(lines){ return npCartTotal(lines) + npCostoEnvio(); }
+
+function updateNpCartbar(){
+  const lines = npAllCartLines();
+  const count = lines.reduce((s,l) => s + l.qty, 0);
+  const bar = document.getElementById('npCartbar');
+  if(count === 0){ bar.style.display = 'none'; return; }
+  bar.style.display = 'flex';
+  document.getElementById('npCartCount').textContent = `${count} ítem${count>1?'s':''}`;
+  document.getElementById('npCartTotal').textContent = formatPrecio(npTotalConEnvio(lines));
+}
+
+function abrirRevisionPedido(){
+  const lines = npAllCartLines();
+  document.getElementById('npRevisionTitulo').textContent = npPedidoLabel();
+  const el = document.getElementById('npRevisionLista');
+  let html = lines.length === 0
+    ? '<div class="empty-orders">Todavía no agregaste nada</div>'
+    : lines.map(l => `<div class="np-review-item">
+        <span class="nom">${l.qty}× ${l.name}${l.desc?`<span class="nota">📝 ${l.desc}</span>`:''}</span>
+        <span style="display:flex;align-items:center;gap:8px">${formatPrecio(l.price*l.qty)}<button class="del" onclick="npRemoveLine('${l.key}')">✕</button></span>
+      </div>`).join('');
+  if(lines.length > 0 && nuevoPedido.tipo === 'envio'){
+    html += `<div class="np-review-item"><span class="nom">Costo de envío</span><span>${formatPrecio(npCostoEnvio())}</span></div>`;
+  }
+  el.innerHTML = html;
+  document.getElementById('npRevisionTotal').textContent = formatPrecio(npTotalConEnvio(lines));
+  document.getElementById('npConfirmarBtn').style.display = lines.length === 0 ? 'none' : 'block';
+  document.getElementById('npRevisionOverlay').style.display = 'flex';
+}
+
+function cerrarRevisionPedido(){
+  document.getElementById('npRevisionOverlay').style.display = 'none';
+}
+
+function npRemoveLine(key){
+  if(nuevoPedido.cart[key]) delete nuevoPedido.cart[key];
+  else { const idx = nuevoPedido.comboCart.findIndex(c => c.key === key); if(idx > -1) nuevoPedido.comboCart.splice(idx, 1); }
+  renderNpStepper(key, 0); // no-op si no era un producto simple visible en la grilla
+  updateNpCartbar();
+  abrirRevisionPedido();
+}
+
+function npBuildItemsForApi(lines){
+  return lines.map(l => {
+    if(l.aId){
+      return { producto_id:l.aId, cantidad:l.qty, nota:'', es_mitad_y_mitad:!!l.bId, combinado_con:l.bId||'', es_media_docena:!!l.esMediaDocena };
+    }
+    return { producto_id:l.key, cantidad:l.qty, nota:l.desc||'', es_mitad_y_mitad:false, combinado_con:'', es_media_docena:false };
+  });
+}
+
+function confirmarNuevoPedido(){
+  if(uiBloqueada) return;
+  const lines = npAllCartLines();
+  if(lines.length === 0) return;
+  lockUI();
+  const btn = document.getElementById('npConfirmarBtn');
+  btn.textContent = 'Enviando...';
+
+  const payload = { tipo: nuevoPedido.tipo, items: npBuildItemsForApi(lines) };
+  if(nuevoPedido.tipo === 'mesa'){
+    payload.mesa = nuevoPedido.mesa;
+  } else {
+    payload.nombre_cliente = nuevoPedido.nombreCliente;
+    payload.telefono = nuevoPedido.telefono;
+    payload.metodo_pago = nuevoPedido.metodoPago;
+    if(nuevoPedido.tipo === 'envio'){
+      payload.direccion = nuevoPedido.direccion;
+      payload.costo_envio = npCostoEnvio();
+    }
+  }
+
+  postAction('crearPedidoPanel', payload).then(res => {
+    if(!res.ok){ showToast('No se pudo crear el pedido: ' + (res.error||'')); return; }
+    // Lo mandamos a cocina en el mismo momento: la moza ya lo tomó, no hace falta el
+    // paso extra de "Tomar pedido" que sí necesitan los pedidos que llegan solos.
+    const pedidoParaImprimir = {
+      id_pedido: res.id_pedido, tipo: nuevoPedido.tipo, mesa: nuevoPedido.mesa, nombre_cliente: nuevoPedido.nombreCliente,
+      items: lines.map(l => ({ categoria:l.catName, cantidad:l.qty, nombre:l.name, nota:l.desc||'' })),
+    };
+    const etiqueta = npPedidoLabel();
+    return postAction('actualizarEstado', { id_pedido: res.id_pedido, estado:'prep' }).then(() => {
+      imprimirComprobanteCocina(pedidoParaImprimir);
+      showToast(`Pedido enviado a cocina — ${etiqueta}`);
+      cerrarRevisionPedido();
+      cerrarNuevoPedido();
+      cargarPedidos();
+    });
+  }).finally(() => { unlockUI(); btn.textContent = 'Confirmar y mandar a cocina'; });
+}
+
+/* ======================= CIERRE DE CAJA ======================= */
+function abrirCaja(){
+  if(!avisoSiHayPedidoSinConfirmar()) return;
+  document.getElementById('vistaPedidos').style.display = 'none';
+  document.getElementById('vistaMesas').style.display = 'none';
+  document.getElementById('vistaProductos').style.display = 'none';
+  document.getElementById('vistaCaja').style.display = 'block';
+  const hoy = new Date();
+  const hoyStr = hoy.getFullYear() + '-' + String(hoy.getMonth()+1).padStart(2,'0') + '-' + String(hoy.getDate()).padStart(2,'0');
+  const desdeInput = document.getElementById('cajaDesde');
+  const hastaInput = document.getElementById('cajaHasta');
+  if(!desdeInput.value) desdeInput.value = hoyStr;
+  if(!hastaInput.value) hastaInput.value = hoyStr;
+  cargarCaja();
+}
+
+function cerrarCaja(){
+  document.getElementById('vistaCaja').style.display = 'none';
+  document.getElementById('vistaPedidos').style.display = 'block';
+}
+
+function cargarCaja(){
+  const desde = document.getElementById('cajaDesde').value;
+  const hasta = document.getElementById('cajaHasta').value;
+  if(!desde || !hasta) return;
+  document.getElementById('cajaContenido').innerHTML = '<div class="empty-orders">Cargando…</div>';
+  fetch(`${WEBAPP_URL}?action=resumenDashboard&desde=${desde}&hasta=${hasta}`)
+    .then(r => r.json())
+    .then(res => {
+      if(!res.ok){ document.getElementById('cajaContenido').innerHTML = '<div class="empty-orders">No se pudo cargar el cierre de caja</div>'; return; }
+      renderCaja(res);
+    })
+    .catch(() => { document.getElementById('cajaContenido').innerHTML = '<div class="empty-orders">Sin conexión</div>'; });
+}
+
+function renderCaja(res){
+  const metodos = Object.keys(res.porMetodoPago || {});
+  // Si no vino "porMetodoPago" en la respuesta (backend viejo, todavía sin desplegar la
+  // versión nueva de Code.gs) pero sí hay pedidos, el problema no es que "no hay nada" —
+  // es que falta actualizar el backend. Distinguimos los dos casos para no confundir.
+  const metodosHtml = metodos.length
+    ? metodos.map(m => `
+      <div class="caja-metodo-card">
+        <div class="nombre">${METODO_ICON[m]||'💰'} ${METODO_LABEL[m] || m}</div>
+        <div class="monto">${formatPrecio(res.porMetodoPago[m].monto)}</div>
+        <div class="cant">${res.porMetodoPago[m].cantidad} pedido${res.porMetodoPago[m].cantidad===1?'':'s'}</div>
+      </div>`).join('')
+    : (res.cantidadPedidos > 0
+        ? '<div class="empty-orders">Este backend todavía no manda el desglose por método de pago — pegá el Code.gs actualizado en Apps Script y desplegá una nueva versión.</div>'
+        : '<div class="empty-orders">Todavía no hay pedidos cerrados en este rango</div>');
+
+  const canales = Object.keys(res.porCanal || {}).filter(c => res.porCanal[c].cantidad > 0);
+  const canalesHtml = canales.map(c => `
+    <div class="caja-canal-row">
+      <span>${tipoChip(c)}</span>
+      <span class="monto">${formatPrecio(res.porCanal[c].monto)} · ${res.porCanal[c].cantidad} pedido${res.porCanal[c].cantidad===1?'':'s'}</span>
+    </div>`).join('');
+
+  document.getElementById('cajaContenido').innerHTML = `
+    <div class="caja-total-card">
+      <div class="label">Total recaudado</div>
+      <div class="monto">${formatPrecio(res.recaudacionTotal)}</div>
+      <div class="sub">${res.cantidadPedidos} pedido${res.cantidadPedidos===1?'':'s'} cerrado${res.cantidadPedidos===1?'':'s'} · ticket promedio ${formatPrecio(res.ticketPromedio)}</div>
+    </div>
+    <div class="caja-metodos">${metodosHtml}</div>
+    <div class="caja-canales">${canalesHtml}</div>
+  `;
 }
 
 function renderMesas(){
