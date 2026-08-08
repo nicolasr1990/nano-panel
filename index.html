@@ -8,20 +8,21 @@
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
-    /* ---- Paleta bold / alto contraste: navy casi negro, naranja vibrante,
-       tipos de pedido en colores saturados para leerse de un vistazo desde lejos ---- */
-    --bg:#EAF0EF; --bg-soft:#F4F8F7; --bg-deep:#D5E2E1;
-    --ink:#0B1716; --ink-secondary:#33453F; --ink-muted:#7A8B86;
-    --surface:#FFFFFF; --surface-alt:#F1F6F5; --surface-tint:#E1EDEB;
-    --border:#C6D8D5; --border-soft:#DAE7E5; --border-strong:#9CB6B0;
+    /* ---- Paleta negro + dorado, sacada del logo de Nano (fondo negro, aro dorado,
+       llama ámbar) y de paneles de administración prolijos: sidebar bien oscura,
+       tarjetas claras color hueso, acento dorado en vez del naranja anterior. ---- */
+    --bg:#F2EEE3; --bg-soft:#FAF7EF; --bg-deep:#E7DFC9;
+    --ink:#1D1911; --ink-secondary:#6B6252; --ink-muted:#9C9382;
+    --surface:#FFFFFF; --surface-alt:#F7F2E6; --surface-tint:#EFE6D2;
+    --border:#E3DABF; --border-soft:#ECE4D1; --border-strong:#C7BB9B;
 
-    --navy:#0B1716; --navy-soft:#1B342F; /* barra superior */
+    --navy:#161209; --navy-soft:#252017; /* negro cálido del logo — sidebar */
 
-    --accent:#FF5E00; --accent-light:#FF8433; --accent-soft:#FFDCC2;
-    --coral:#FF5E00; --coral-light:#FF8433; --coral-soft:#FFDCC2;
-    --shadow-tint:rgba(255,94,0,0.34);
+    --accent:#D6A02E; --accent-light:#E8BE5C; --accent-soft:#F5E3B4;
+    --coral:#D6A02E; --coral-light:#E8BE5C; --coral-soft:#F5E3B4;
+    --shadow-tint:rgba(214,160,46,0.28);
 
-    /* Colores por tipo de pedido — fill sólido y más saturado para distinguirse de un vistazo */
+    /* Colores por tipo de pedido — se mantienen saturados para distinguirse de un vistazo */
     --tipo-mesa:#C98A00; --tipo-mesa-bg:#FFF1D1; --tipo-mesa-border:#EFC358; --tipo-mesa-ink:#5C3E00;
     --tipo-retiro:#0B8C8C; --tipo-retiro-bg:#D8F3F2; --tipo-retiro-border:#7FD1CE; --tipo-retiro-ink:#053F3F;
     --tipo-envio:#4B3AC9; --tipo-envio-bg:#E6E1FA; --tipo-envio-border:#B3A3F0; --tipo-envio-ink:#241A6B;
@@ -31,36 +32,50 @@
     --danger:#D42F22; --danger-bg:#FCE0DC; --danger-border:#F2A398;
 
     --radius-sm:10px; --radius-md:16px; --radius-lg:22px; --radius-xl:30px;
-    --shadow-sm:0 3px 12px rgba(11,23,22,0.10); --shadow-md:0 18px 40px rgba(11,23,22,0.22);
+    /* Sombras bien suaves — solo para separar tarjetas del fondo, no para los botones */
+    --shadow-sm:0 1px 3px rgba(29,25,17,0.06); --shadow-md:0 10px 26px rgba(29,25,17,0.12);
     --display:'Outfit',sans-serif; --body:'Inter',-apple-system,sans-serif;
-    --transition:all 0.25s cubic-bezier(0.4,0,0.2,1);
+    --transition:all 0.2s cubic-bezier(0.4,0,0.2,1);
     /* Curvas y duraciones para el pulido de interacción de escritorio (ver @media 900px) */
     --ease-out:cubic-bezier(0.23,1,0.32,1); --dur-fast:140ms; --dur-base:200ms;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0}
   html,body{margin:0;background:var(--bg);font-family:var(--body);color:var(--ink);overflow-x:hidden;-webkit-font-smoothing:antialiased}
-  .wrap{max-width:430px;margin:0 auto;position:relative;min-height:100vh}
-  #app-local{
-    min-height:100vh;position:relative;overflow:hidden;padding:18px 16px 100px;
-    background:
-      radial-gradient(420px 300px at 110% -8%,rgba(11,140,140,0.16),transparent 60%),
-      radial-gradient(360px 280px at -10% 18%,rgba(255,94,0,0.10),transparent 55%),
-      linear-gradient(180deg,var(--bg) 0%,var(--bg-deep) 100%);
-  }
-  #app-local::before{content:'';position:fixed;width:280px;height:280px;border-radius:50%;
-    background:radial-gradient(circle,rgba(201,138,0,0.16),transparent 70%);top:-70px;right:-80px;filter:blur(40px);pointer-events:none}
+  /* Shell general: sidebar angosta fija a la izquierda + contenido a la derecha —
+     nada de fondos con manchas de color, un plano liso y prolijo. */
+  .wrap{max-width:100%;margin:0;position:relative;min-height:100vh;display:flex}
 
-  /* Top — barra navy tipo header de app, ancla visual del panel */
+  .side-nav{
+    flex:0 0 76px;width:76px;min-height:100vh;position:sticky;top:0;align-self:flex-start;
+    background:var(--navy);display:flex;flex-direction:column;align-items:center;
+    padding:20px 0;gap:4px;z-index:10;
+  }
+  .side-nav-logo{width:42px;height:42px;border-radius:50%;overflow:hidden;margin-bottom:18px;flex-shrink:0;border:2px solid var(--accent)}
+  .side-nav-logo img{width:100%;height:100%;object-fit:cover;display:block}
+  .side-nav-item{
+    width:52px;height:52px;border-radius:var(--radius-md);border:none;background:transparent;
+    color:rgba(255,255,255,0.5);cursor:pointer;display:flex;align-items:center;justify-content:center;
+    font-size:21px;transition:var(--transition);flex-shrink:0;
+  }
+  .side-nav-item:hover{background:rgba(255,255,255,0.08);color:#fff}
+  .side-nav-item.active{background:var(--accent);color:#1D1911}
+  .side-nav-item:active{transform:scale(0.92)}
+  .side-nav-item:disabled{opacity:0.3;pointer-events:none}
+
+  #app-local{
+    flex:1;min-width:0;min-height:100vh;position:relative;padding:20px 20px 100px;
+    background:var(--bg);
+  }
+
+  /* Encabezado de cada sub-pantalla (Mesas, Caja, Editar menú, Nuevo pedido): franja
+     oscura lisa con el título y el link de volver — sin manchas ni sombra pesada. */
   .local-top{
     display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;
-    background:linear-gradient(135deg,var(--navy),var(--navy-soft));
-    border-radius:var(--radius-lg);padding:14px 16px;box-shadow:0 12px 28px rgba(24,43,45,0.3);
-    position:relative;overflow:hidden;
+    background:var(--navy);
+    border-radius:var(--radius-lg);padding:14px 18px;
   }
-  .local-top::after{content:'';position:absolute;width:120px;height:120px;border-radius:50%;
-    background:radial-gradient(circle,rgba(11,140,140,0.4),transparent 70%);top:-40px;right:-30px;pointer-events:none}
-  .local-h{font-family:var(--display);font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#9CD4D3;font-weight:600;position:relative;z-index:1}
-  .local-h a{color:#9CD4D3;text-decoration:none;font-size:11px;letter-spacing:0.06em;text-transform:none;font-family:var(--body);transition:var(--transition);font-weight:600}
+  .local-h{font-family:var(--display);font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent-light);font-weight:600;position:relative;z-index:1}
+  .local-h a{color:var(--accent-light);text-decoration:none;font-size:11px;letter-spacing:0.06em;text-transform:none;font-family:var(--body);transition:var(--transition);font-weight:600}
   .local-h a:hover{color:#fff}
   /* Cuando el título "Menú y precios" cae dentro de la barra navy, necesita texto claro (antes quedaba negro sobre negro) */
   .local-top .local-title{color:#fff;position:relative;z-index:1}
@@ -75,17 +90,17 @@
   .local-sub{font-family:var(--body);font-size:12.5px;color:var(--ink-secondary);margin-bottom:18px}
 
   .editar-menu-btn{
-    font-family:var(--body);font-size:11.5px;font-weight:700;letter-spacing:0.02em;padding:8px 15px;
-    border-radius:var(--radius-xl);border:none;
-    background:linear-gradient(135deg,var(--accent-light),var(--accent));
-    color:#fff;cursor:pointer;transition:var(--transition);white-space:nowrap;
-    box-shadow:0 8px 18px rgba(255,94,0,0.45);position:relative;z-index:1;
+    font-family:var(--body);font-size:11.5px;font-weight:700;letter-spacing:0.02em;padding:9px 16px;
+    border-radius:var(--radius-xl);border:1.5px solid var(--accent);
+    background:var(--accent);
+    color:#1D1911;cursor:pointer;transition:var(--transition);white-space:nowrap;position:relative;
   }
-  .editar-menu-btn:hover{transform:translateY(-1px);box-shadow:0 10px 24px rgba(255,94,0,0.55)}
+  .editar-menu-btn:hover{background:var(--accent-light);border-color:var(--accent-light)}
+  .editar-menu-btn:active{transform:scale(0.96)}
   /* Deshabilitado cuando ya se está dentro del módulo de edición */
   .editar-menu-btn:disabled{
-    opacity:0.35;cursor:not-allowed;box-shadow:none;transform:none;
-    background:rgba(255,255,255,0.14);color:rgba(255,255,255,0.6);
+    opacity:0.35;cursor:not-allowed;transform:none;
+    background:transparent;color:var(--ink-muted);border-color:var(--border);
   }
 
   /* Filters */
@@ -99,9 +114,8 @@
   }
   .filters button:hover{border-color:var(--border-strong);color:var(--ink)}
   .filters button.active{
-    background:linear-gradient(135deg,var(--accent-light),var(--accent));
-    border-color:transparent;color:#fff;
-    box-shadow:0 8px 20px var(--shadow-tint);
+    background:var(--accent);
+    border-color:var(--accent);color:#1D1911;
   }
 
   /* Chip de tipo de pedido — el color que "sobresale" sobre el fondo claro */
@@ -128,12 +142,12 @@
   .mesa-group-head .titulo{display:flex;align-items:center;gap:8px;font-family:var(--display);font-weight:800;font-size:15.5px;color:var(--ink)}
   .mesa-group-head .total{font-family:var(--display);font-size:17px;color:var(--tipo-mesa-ink);font-weight:800}
   .cerrar-mesa-btn{
-    width:100%;margin-top:10px;padding:12px;border-radius:var(--radius-md);border:none;
-    background:linear-gradient(135deg,var(--tipo-mesa),#7A5600);color:#fff;font-family:var(--body);font-weight:700;
+    width:100%;margin-top:10px;padding:12px;border-radius:var(--radius-md);border:1.5px solid var(--tipo-mesa);
+    background:var(--tipo-mesa);color:#fff;font-family:var(--body);font-weight:700;
     font-size:12.5px;letter-spacing:0.02em;cursor:pointer;transition:var(--transition);
-    box-shadow:0 10px 22px rgba(201,138,0,0.4);
   }
-  .cerrar-mesa-btn:hover{transform:translateY(-1px);box-shadow:0 12px 26px rgba(201,138,0,0.5)}
+  .cerrar-mesa-btn:hover{background:#B37D00;border-color:#B37D00}
+  .cerrar-mesa-btn:active{transform:scale(0.97)}
 
   /* Order Cards */
   .order-card{
@@ -177,10 +191,9 @@
   }
   .order-actions button:hover{background:var(--surface-tint);color:var(--ink);border-color:var(--border-strong)}
   .order-actions button.primary{
-    background:linear-gradient(135deg,var(--accent-light),var(--accent));color:#fff;border-color:transparent;
-    box-shadow:0 10px 22px var(--shadow-tint);flex:2;
+    background:var(--accent);color:#1D1911;border-color:var(--accent);font-weight:800;flex:2;
   }
-  .order-actions button.primary:hover{transform:translateY(-1px);box-shadow:0 12px 26px var(--shadow-tint)}
+  .order-actions button.primary:hover{background:var(--accent-light);border-color:var(--accent-light)}
   .order-actions button.primary:active{transform:scale(0.97)}
   .order-actions button.deshacer{opacity:0.8;flex:1;font-size:11.5px;background:transparent;border-color:var(--border-soft)}
   .order-actions button.deshacer:hover{color:var(--danger);border-color:var(--danger-border);background:var(--danger-bg)}
@@ -215,10 +228,12 @@
   }
   #loginOverlay input:focus{border-color:var(--accent)}
   #loginOverlay button{
-    width:100%;padding:12px;border-radius:var(--radius-md);border:none;
-    background:linear-gradient(135deg,var(--accent-light),var(--accent));color:#fff;font-family:var(--body);
-    font-weight:700;font-size:13px;cursor:pointer;box-shadow:0 10px 22px var(--shadow-tint);margin-bottom:8px;
+    width:100%;padding:12px;border-radius:var(--radius-md);border:1.5px solid var(--accent);
+    background:var(--accent);color:#1D1911;font-family:var(--body);
+    font-weight:700;font-size:13px;cursor:pointer;margin-bottom:8px;transition:var(--transition);
   }
+  #loginOverlay button:hover{background:var(--accent-light);border-color:var(--accent-light)}
+  #loginOverlay button:active{transform:scale(0.97)}
   /* Botón "Volver" del login: acción secundaria, sin fondo llamativo, para poder salir sin ingresar clave */
   #loginOverlay button.volver{
     background:var(--surface-alt);color:var(--ink-secondary);box-shadow:none;
@@ -266,20 +281,14 @@
   .switch-mini input{accent-color:var(--accent);width:15px;height:15px;cursor:pointer}
 
   /* Mapa de mesas */
-  .mesas-leyenda{display:flex;gap:16px;margin-bottom:14px;font-size:12px;color:var(--ink-secondary);font-weight:600}
-  .mesas-leyenda span{display:flex;align-items:center;gap:6px}
-  .mesas-leyenda .dot{width:10px;height:10px;border-radius:50%;display:inline-block}
-  .mesas-leyenda .dot.libre{background:var(--success)}
-  .mesas-leyenda .dot.ocupada{background:var(--tipo-mesa)}
-  .mapa-mesas{display:grid;grid-template-columns:repeat(auto-fill,minmax(76px,1fr));gap:10px}
+  .mapa-mesas{display:grid;grid-template-columns:repeat(auto-fit,minmax(76px,1fr));gap:10px}
   .mesa-celda{
-    aspect-ratio:1;border-radius:var(--radius-md);display:flex;flex-direction:column;align-items:center;justify-content:center;
-    gap:2px;cursor:pointer;transition:var(--transition);border:2px solid var(--border);background:var(--surface);
+    aspect-ratio:1;border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;
+    cursor:pointer;transition:var(--transition);border:2px solid var(--border);background:var(--surface);
     box-shadow:var(--shadow-sm);
   }
-  .mesa-celda:hover{transform:translateY(-2px);box-shadow:var(--shadow-md)}
-  .mesa-celda .num{font-family:var(--display);font-size:22px;font-weight:900;color:var(--ink)}
-  .mesa-celda .rondas{font-size:9.5px;color:var(--ink-secondary);font-weight:600}
+  .mesa-celda:hover{transform:translateY(-2px)}
+  .mesa-celda .num{font-family:var(--display);font-size:24px;font-weight:900;color:var(--ink)}
   .mesa-celda.libre{background:var(--success-bg);border-color:var(--success-border)}
   .mesa-celda.libre .num{color:var(--success)}
   .mesa-celda.ocupada{background:var(--tipo-mesa-bg);border-color:var(--tipo-mesa-border)}
@@ -326,15 +335,23 @@
     transition:var(--transition);white-space:nowrap;box-shadow:var(--shadow-sm);
   }
   .np-cats .np-cat-ico{font-size:15px;line-height:1}
-  .np-cats button.active{background:linear-gradient(135deg,var(--accent-light),var(--accent));border-color:transparent;color:#fff;box-shadow:0 8px 20px var(--shadow-tint)}
+  .np-cats button.active{background:var(--accent);border-color:var(--accent);color:#1D1911}
 
-  .np-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:14px;padding-bottom:90px}
+  /* auto-fit (no auto-fill): las columnas que sobran cuando hay pocos productos se
+     colapsan y las que sí tienen tarjetas se estiran para ocupar el ancho — así una
+     categoría con 3 productos no deja una columna fantasma vacía a la derecha. */
+  /* flexbox y no grid a propósito: con grid, una fila incompleta al final (ej. 7
+     productos en columnas de a 3) deja un hueco fijo porque los tracks se comparten
+     entre todas las filas. Con flex-wrap, cada fila reparte su propio espacio sobrante
+     entre las tarjetas que tiene, así que la última fila también se estira y rellena. */
+  .np-grid{display:flex;flex-wrap:wrap;gap:14px;padding-bottom:90px}
   .np-card{
+    flex:1 1 168px;
     background:var(--surface);border:1px solid var(--border-soft);border-radius:var(--radius-lg);padding:16px;
     display:flex;flex-direction:column;gap:10px;box-shadow:var(--shadow-sm);transition:var(--transition);
     animation:slideUp 0.25s ease backwards;
   }
-  .np-card.tiene-qty{border-color:var(--accent);box-shadow:0 10px 26px var(--shadow-tint)}
+  .np-card.tiene-qty{border-color:var(--accent);border-width:2px}
   .np-card .np-card-nombre{font-family:var(--display);font-weight:700;font-size:14px;color:var(--ink);line-height:1.3}
   .np-card .np-card-precio{font-family:var(--display);font-weight:800;font-size:15.5px;color:var(--accent)}
   .np-nota-link{background:none;border:none;color:var(--accent);font-size:11px;font-weight:700;text-decoration:underline;cursor:pointer;padding:0}
@@ -343,10 +360,12 @@
   .np-nota-input:focus{border-color:var(--accent)}
   .np-card-footer{margin-top:auto}
   .np-add-btn{
-    width:100%;padding:11px;border-radius:var(--radius-md);border:none;cursor:pointer;
-    background:linear-gradient(135deg,var(--accent-light),var(--accent));color:#fff;font-family:var(--body);
-    font-size:13px;font-weight:800;letter-spacing:0.01em;box-shadow:0 8px 18px var(--shadow-tint);transition:var(--transition);
+    width:100%;padding:11px;border-radius:var(--radius-md);border:1.5px solid var(--accent);cursor:pointer;
+    background:var(--accent);color:#1D1911;font-family:var(--body);
+    font-size:13px;font-weight:800;letter-spacing:0.01em;transition:var(--transition);
   }
+  .np-add-btn:hover{background:var(--accent-light);border-color:var(--accent-light)}
+  .np-add-btn:active{transform:scale(0.96)}
   .np-stepper{display:flex;align-items:center;justify-content:space-between;gap:6px;background:var(--surface-alt);border:1.5px solid var(--border);border-radius:var(--radius-md);padding:6px}
   .np-stepper button{
     width:32px;height:32px;flex-shrink:0;border-radius:var(--radius-sm);border:none;background:var(--surface);color:var(--ink);font-weight:800;font-size:16px;
@@ -356,7 +375,7 @@
 
   /* Tarjetas de "armá tu pedido": mitad y mitad (pizzas) / docena-media docena (empanadas, miga) */
   .np-combo-card{
-    grid-column:1/-1;border-radius:var(--radius-lg);padding:16px;background:linear-gradient(160deg,var(--tipo-mesa-bg),var(--surface) 60%);
+    flex:1 1 100%;border-radius:var(--radius-lg);padding:16px;background:linear-gradient(160deg,var(--tipo-mesa-bg),var(--surface) 60%);
     border:1.5px dashed var(--tipo-mesa-border);
   }
   .np-combo-card h4{font-family:var(--display);font-size:13.5px;margin-bottom:3px;color:var(--ink)}
@@ -383,9 +402,11 @@
   .np-cartbar-info{display:flex;flex-direction:column;font-size:11.5px;color:rgba(255,255,255,0.7);font-weight:600}
   .np-cartbar-info b{font-family:var(--display);font-size:19px;color:#fff}
   .np-cartbar-btn{
-    background:linear-gradient(135deg,var(--accent-light),var(--accent));border:none;color:#fff;font-family:var(--body);
-    font-weight:800;font-size:13.5px;padding:13px 22px;border-radius:var(--radius-md);cursor:pointer;box-shadow:0 8px 20px var(--shadow-tint);
+    background:var(--accent);border:1.5px solid var(--accent);color:#1D1911;font-family:var(--body);
+    font-weight:800;font-size:13.5px;padding:13px 22px;border-radius:var(--radius-md);cursor:pointer;transition:var(--transition);
   }
+  .np-cartbar-btn:hover{background:var(--accent-light);border-color:var(--accent-light)}
+  .np-cartbar-btn:active{transform:scale(0.96)}
 
   /* Overlay genérico (revisión de pedido / método de pago) */
   .np-overlay{position:fixed;inset:0;background:rgba(11,23,22,0.55);display:flex;align-items:center;justify-content:center;z-index:90;padding:20px}
@@ -407,15 +428,35 @@
   }
   .np-pago-opt:hover{border-color:var(--accent);background:var(--accent-soft)}
 
-  /* ======================= Cierre de caja ======================= */
+  /* ======================= Caja: apertura / gastos / cierre ======================= */
+  .caja-apertura-box{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius-lg);padding:26px;text-align:center;box-shadow:var(--shadow-sm)}
+  .caja-apertura-box h3{font-family:var(--display);font-size:16px;margin-bottom:6px;color:var(--ink)}
+  .caja-apertura-box p{font-size:12.5px;color:var(--ink-secondary);margin-bottom:16px}
+  .caja-monto-input{
+    width:100%;max-width:220px;margin:0 auto 14px;display:block;padding:14px;border-radius:var(--radius-md);
+    border:1.5px solid var(--border);font-family:var(--display);font-size:22px;text-align:center;color:var(--ink);outline:none;
+  }
+  .caja-monto-input:focus{border-color:var(--accent)}
+  .caja-turno-header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px}
+  .caja-turno-header .desde{font-size:12px;color:var(--ink-secondary);font-weight:600}
+  .caja-gastos-lista{display:flex;flex-direction:column;gap:8px;margin:14px 0}
+  .caja-gasto-row{display:flex;justify-content:space-between;align-items:center;background:var(--surface);border:1px solid var(--border-soft);border-radius:var(--radius-md);padding:11px 15px;font-size:13px}
+  .caja-gasto-row .desc{color:var(--ink);font-weight:600}
+  .caja-gasto-row .hora{display:block;font-size:10.5px;color:var(--ink-muted);font-weight:500;margin-top:1px}
+  .caja-gasto-row .monto{font-family:var(--display);font-weight:800;color:var(--danger)}
+  .caja-acciones{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px}
+  .caja-acciones button{flex:1;min-width:170px;margin-top:0}
+  .caja-form-gasto{margin-top:14px;text-align:left}
+  .caja-form-gasto .caja-acciones button{min-width:120px}
+
   .caja-filtros{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-bottom:18px}
   .caja-filtros label{display:flex;flex-direction:column;gap:4px;font-size:11px;color:var(--ink-secondary);font-weight:700;text-transform:uppercase;letter-spacing:0.03em}
   .caja-filtros input{padding:9px 10px;border-radius:var(--radius-sm);border:1.5px solid var(--border);font-family:var(--body);font-size:13px;color:var(--ink);background:var(--surface)}
   .caja-total-card{
-    background:linear-gradient(135deg,var(--navy),var(--navy-soft));color:#fff;border-radius:var(--radius-lg);
-    padding:22px;margin-bottom:16px;box-shadow:var(--shadow-md);
+    background:var(--navy);color:#fff;border-radius:var(--radius-lg);
+    padding:22px;margin-bottom:16px;
   }
-  .caja-total-card .label{font-size:12px;letter-spacing:0.06em;text-transform:uppercase;color:#9CD4D3;font-weight:700}
+  .caja-total-card .label{font-size:12px;letter-spacing:0.06em;text-transform:uppercase;color:var(--accent-light);font-weight:700}
   .caja-total-card .monto{font-family:var(--display);font-size:34px;font-weight:800;margin-top:4px}
   .caja-total-card .sub{font-size:12px;color:rgba(255,255,255,0.65);margin-top:6px}
   .caja-metodos{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:16px}
@@ -494,22 +535,20 @@
      Mismo HTML y misma lógica: en pantallas angostas (celular) no cambia nada,
      esto solo se activa a partir de 900px de ancho y reacomoda el layout. */
   @media (min-width: 900px){
-    .wrap{max-width:1180px;padding:0 28px}
-    #app-local{padding:28px 0 100px;overflow:visible}
-    #app-local::before{display:none}
+    #app-local{padding:28px 32px 100px;max-width:1280px}
     .local-top{padding:16px 22px}
     .filters{margin-bottom:22px}
 
     /* Pedidos en grilla de varias columnas en vez de una lista vertical larga */
     #ordersList{
-      display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));
+      display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));
       gap:16px;align-items:start;
     }
     #ordersList .order-card{margin-bottom:0}
     #ordersList .mesa-group{margin-bottom:0}
 
     /* Módulo de productos: dos columnas de categorías en vez de una sola tira larga */
-    #listaProductos{display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:14px;align-items:start}
+    #listaProductos{display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));gap:14px;align-items:start}
     .cat-block{margin-bottom:0}
 
     /* Nuevo pedido: categorías como barra lateral fija en vez de tira horizontal —
@@ -519,10 +558,11 @@
       flex:0 0 210px;flex-direction:column;position:sticky;top:16px;background:transparent;
       padding:2px;overflow-x:visible;align-self:flex-start;
     }
+    .np-main{flex:1;min-width:0}
     .np-cats button{width:100%;padding:13px 16px;font-size:13.5px}
     .np-cats .np-cat-ico{font-size:18px}
-    .np-grid{grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:16px}
-    .np-card{padding:18px}
+    .np-grid{gap:16px}
+    .np-card{flex-basis:190px;padding:18px}
 
     /* ============ Pulido de interacción para mouse/teclado ============
        Todo lo de acá abajo es exclusivo de escritorio: en mobile no cambia nada. */
@@ -603,16 +643,15 @@
 </div>
 
 <div class="wrap">
+  <nav class="side-nav">
+    <div class="side-nav-logo"><img src="logo.png" alt="Nano Resto Bar"></div>
+    <button class="side-nav-item active" id="navPedidosBtn" onclick="irAVistaPedidos()" title="Pedidos">🧾</button>
+    <button class="side-nav-item" id="nuevoPedidoBtn" onclick="abrirNuevoPedido()" title="Nuevo pedido">➕</button>
+    <button class="side-nav-item" id="mesasBtn" onclick="abrirMesas()" title="Mesas">🍽️</button>
+    <button class="side-nav-item" id="cajaBtn" onclick="abrirCaja()" title="Caja">💰</button>
+    <button class="side-nav-item" id="editarMenuBtn" onclick="abrirProductos()" title="Editar menú">✎</button>
+  </nav>
   <div id="app-local">
-    <div class="local-top">
-      <div class="local-h">Nano Resto Bar</div>
-      <div style="display:flex;gap:8px;position:relative;z-index:1;flex-wrap:wrap;justify-content:flex-end">
-        <button class="editar-menu-btn nuevo-pedido-btn" id="nuevoPedidoBtn" onclick="abrirNuevoPedido()">+ Nuevo pedido</button>
-        <button class="editar-menu-btn mesas-btn" id="mesasBtn" onclick="abrirMesas()">🍽️ Mesas</button>
-        <button class="editar-menu-btn caja-btn" id="cajaBtn" onclick="abrirCaja()">💰 Caja</button>
-        <button class="editar-menu-btn" id="editarMenuBtn" onclick="abrirProductos()">✎ Editar menú</button>
-      </div>
-    </div>
     <div id="vistaPedidos">
       <div class="local-title">Pedidos en curso</div>
       <div class="local-sub" id="countLine">Cargando pedidos…</div>
@@ -626,10 +665,6 @@
         <div class="local-h"><a href="#" onclick="cerrarMesasView();return false;">← Volver a pedidos</a></div>
       </div>
       <div class="local-sub" id="mesasSub"></div>
-      <div class="mesas-leyenda">
-        <span><i class="dot libre"></i> Libre</span>
-        <span><i class="dot ocupada"></i> Ocupada</span>
-      </div>
       <div id="mapaMesas" class="mapa-mesas"></div>
     </div>
 
@@ -694,9 +729,14 @@
 
     <div id="vistaCaja" style="display:none">
       <div class="local-top" style="margin-bottom:14px">
-        <div class="local-title" style="margin:0">Cierre de caja</div>
+        <div class="local-title" style="margin:0">Caja</div>
         <div class="local-h"><a href="#" onclick="cerrarCaja();return false;">← Volver a pedidos</a></div>
       </div>
+
+      <div id="cajaTurno"><div class="empty-orders">Cargando…</div></div>
+
+      <div class="local-title" style="font-size:17px;margin:30px 0 2px">Resumen general</div>
+      <div class="local-sub">Recaudación por rango de fechas — para consultas históricas, no reemplaza la apertura/cierre de arriba</div>
       <div class="caja-filtros">
         <label>Desde<input type="date" id="cajaDesde"></label>
         <label>Hasta<input type="date" id="cajaHasta"></label>
@@ -785,6 +825,23 @@ let productosData = [];
 let categoriasData = [];
 let cambiosProductos = {}; // { id: {precio, activo, disponible_mesa, disponible_retiro, disponible_envio} }
 
+// Resalta en la barra lateral en qué pantalla está parado, para que siempre quede
+// claro dónde está sin tener que leer un título.
+function marcarNavActivo(id){
+  document.querySelectorAll('.side-nav-item').forEach(b => b.classList.remove('active'));
+  const el = document.getElementById(id);
+  if(el) el.classList.add('active');
+}
+
+function irAVistaPedidos(){
+  if(!avisoSiHayPedidoSinConfirmar()) return;
+  document.getElementById('vistaMesas').style.display = 'none';
+  document.getElementById('vistaCaja').style.display = 'none';
+  document.getElementById('vistaProductos').style.display = 'none';
+  document.getElementById('vistaPedidos').style.display = 'block';
+  marcarNavActivo('navPedidosBtn');
+}
+
 function abrirProductos(){
   if(!avisoSiHayPedidoSinConfirmar()) return;
   document.getElementById('loginOverlay').style.display = 'flex';
@@ -820,6 +877,7 @@ function intentarLoginProductos(){
     document.getElementById('vistaMesas').style.display = 'none';
     document.getElementById('vistaCaja').style.display = 'none';
     document.getElementById('vistaProductos').style.display = 'block';
+    marcarNavActivo('editarMenuBtn');
     document.getElementById('editarMenuBtn').disabled = true;
     cambiosProductos = {};
     cargarCategoriasYRenderProductos();
@@ -838,6 +896,7 @@ function cerrarProductos(){
   document.getElementById('vistaProductos').style.display = 'none';
   document.getElementById('vistaPedidos').style.display = 'block';
   document.getElementById('editarMenuBtn').disabled = false;
+  marcarNavActivo('navPedidosBtn');
 }
 
 function nombreCategoria(id){
@@ -1260,6 +1319,7 @@ function abrirMesas(){
   document.getElementById('vistaProductos').style.display = 'none';
   document.getElementById('vistaCaja').style.display = 'none';
   document.getElementById('vistaMesas').style.display = 'block';
+  marcarNavActivo('mesasBtn');
   if(mesasData.length){ renderMesas(); return; }
   fetch(`${WEBAPP_URL}?action=listarMesas`)
     .then(r => r.json())
@@ -1273,6 +1333,7 @@ function abrirMesas(){
 function cerrarMesasView(){
   document.getElementById('vistaMesas').style.display = 'none';
   document.getElementById('vistaPedidos').style.display = 'block';
+  marcarNavActivo('navPedidosBtn');
 }
 
 /* ======================= NUEVO PEDIDO (tablet de la barra) =======================
@@ -1307,6 +1368,7 @@ function abrirNuevoPedido(){
   document.getElementById('vistaCaja').style.display = 'none';
   document.getElementById('vistaNuevoPedido').style.display = 'block';
   document.getElementById('npTitulo').textContent = 'Nuevo pedido';
+  marcarNavActivo('nuevoPedidoBtn');
   mostrarPasoNuevoPedido('npPasoTipo');
 }
 
@@ -1321,6 +1383,7 @@ function cerrarNuevoPedido(){
   document.getElementById('npCartbar').style.display = 'none';
   document.getElementById('vistaNuevoPedido').style.display = 'none';
   document.getElementById('vistaPedidos').style.display = 'block';
+  marcarNavActivo('navPedidosBtn');
 }
 
 // Cómo mostrar este pedido en título/carrito/comanda, según el canal elegido.
@@ -1377,7 +1440,6 @@ function renderNpMapaMesas(){
     return `
       <div class="mesa-celda ${ocupada ? 'ocupada' : 'libre'}" onclick="seleccionarMesaNuevoPedido('${m.mesa}')">
         <span class="num">${m.mesa}</span>
-        <span class="rondas">${ocupada ? rondas.length + ' ronda' + (rondas.length===1?'':'s') : 'Libre'}</span>
       </div>`;
   }).join('');
 }
@@ -1740,18 +1802,122 @@ function abrirCaja(){
   document.getElementById('vistaMesas').style.display = 'none';
   document.getElementById('vistaProductos').style.display = 'none';
   document.getElementById('vistaCaja').style.display = 'block';
+  marcarNavActivo('cajaBtn');
   const hoy = new Date();
   const hoyStr = hoy.getFullYear() + '-' + String(hoy.getMonth()+1).padStart(2,'0') + '-' + String(hoy.getDate()).padStart(2,'0');
   const desdeInput = document.getElementById('cajaDesde');
   const hastaInput = document.getElementById('cajaHasta');
   if(!desdeInput.value) desdeInput.value = hoyStr;
   if(!hastaInput.value) hastaInput.value = hoyStr;
+  cargarCajaActual();
   cargarCaja();
 }
 
 function cerrarCaja(){
   document.getElementById('vistaCaja').style.display = 'none';
   document.getElementById('vistaPedidos').style.display = 'block';
+  marcarNavActivo('navPedidosBtn');
+}
+
+/* ---------- Turno de caja: apertura, gastos y cierre ---------- */
+let cajaActualData = null;
+
+function cargarCajaActual(){
+  const el = document.getElementById('cajaTurno');
+  el.innerHTML = '<div class="empty-orders">Cargando…</div>';
+  fetch(`${WEBAPP_URL}?action=cajaActual`)
+    .then(r => r.json())
+    .then(res => {
+      if(!res.ok){ el.innerHTML = '<div class="empty-orders">No se pudo cargar la caja</div>'; return; }
+      cajaActualData = res;
+      renderCajaTurno();
+    })
+    .catch(() => { el.innerHTML = '<div class="empty-orders">Sin conexión</div>'; });
+}
+
+function renderCajaTurno(){
+  const el = document.getElementById('cajaTurno');
+  if(!cajaActualData || !cajaActualData.abierta){
+    el.innerHTML = `
+      <div class="caja-apertura-box">
+        <h3>La caja está cerrada</h3>
+        <p>Ingresá cuánto efectivo hay para arrancar y abrí la caja.</p>
+        <input type="number" id="cajaMontoInicial" class="caja-monto-input" placeholder="$0" min="0" step="100">
+        <button class="cerrar-mesa-btn" style="max-width:220px;margin:0 auto" onclick="handleAbrirCaja()">Abrir caja</button>
+      </div>`;
+    return;
+  }
+
+  const t = cajaActualData;
+  const horaApertura = new Date(t.fecha_apertura).toLocaleString('es-AR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
+  el.innerHTML = `
+    <div class="caja-turno-header">
+      <span class="desde">Abierta desde el ${horaApertura} hs · inicial ${formatPrecio(t.monto_inicial)}</span>
+      <button class="editar-menu-btn" onclick="cargarCajaActual()">↻ Actualizar</button>
+    </div>
+    <div class="caja-total-card">
+      <div class="label">Efectivo esperado en caja</div>
+      <div class="monto">${formatPrecio(t.efectivo_esperado)}</div>
+      <div class="sub">${formatPrecio(t.monto_inicial)} inicial + ${formatPrecio(t.total_efectivo_ventas)} en ventas (${t.cantidad_pedidos_efectivo}) − ${formatPrecio(t.total_gastos)} en gastos</div>
+    </div>
+    <div class="caja-gastos-lista">
+      ${t.gastos.length === 0 ? '<div class="empty-orders">Todavía no se cargó ningún gasto</div>' : t.gastos.map(g => `
+        <div class="caja-gasto-row">
+          <span class="desc">${g.descripcion}<span class="hora">${new Date(g.fecha_hora).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'})} hs</span></span>
+          <span class="monto">− ${formatPrecio(g.monto)}</span>
+        </div>`).join('')}
+    </div>
+    <div class="caja-acciones">
+      <button class="editar-menu-btn" onclick="abrirFormGasto()">+ Agregar gasto</button>
+      <button class="cerrar-mesa-btn" onclick="handleCerrarCaja()">Cerrar caja</button>
+    </div>
+    <div id="cajaFormGasto"></div>
+  `;
+}
+
+function abrirFormGasto(){
+  document.getElementById('cajaFormGasto').innerHTML = `
+    <div class="caja-apertura-box caja-form-gasto">
+      <div class="local-sub" style="margin-bottom:8px">Nuevo gasto</div>
+      <input type="text" id="gastoDescripcion" class="np-input" placeholder="¿En qué se gastó? (ej. hielo, delivery)">
+      <input type="number" id="gastoMonto" class="np-input" placeholder="Monto" min="0" step="50">
+      <div class="caja-acciones">
+        <button class="editar-menu-btn" onclick="document.getElementById('cajaFormGasto').innerHTML=''">Cancelar</button>
+        <button class="cerrar-mesa-btn" onclick="handleRegistrarGasto()">Guardar gasto</button>
+      </div>
+    </div>`;
+}
+
+function handleAbrirCaja(){
+  const input = document.getElementById('cajaMontoInicial');
+  const monto = Number(input.value);
+  if(isNaN(monto) || monto < 0){ showToast('Ingresá un monto inicial válido'); return; }
+  postAction('abrirCaja', { monto_inicial: monto }).then(res => {
+    if(!res.ok){ showToast('No se pudo abrir la caja: ' + (res.error||'')); return; }
+    showToast('Caja abierta');
+    cargarCajaActual();
+  });
+}
+
+function handleRegistrarGasto(){
+  const descripcion = document.getElementById('gastoDescripcion').value.trim();
+  const monto = Number(document.getElementById('gastoMonto').value);
+  if(!descripcion){ showToast('Falta la descripción del gasto'); return; }
+  if(isNaN(monto) || monto <= 0){ showToast('Ingresá un monto válido'); return; }
+  postAction('registrarGastoCaja', { monto, descripcion }).then(res => {
+    if(!res.ok){ showToast('No se pudo cargar el gasto: ' + (res.error||'')); return; }
+    showToast('Gasto cargado');
+    cargarCajaActual();
+  });
+}
+
+function handleCerrarCaja(){
+  if(!confirm('¿Cerrar la caja? Después hace falta abrir una nueva para seguir registrando efectivo.')) return;
+  postAction('cerrarCajaTurno', {}).then(res => {
+    if(!res.ok){ showToast('No se pudo cerrar la caja: ' + (res.error||'')); return; }
+    showToast(`Caja cerrada · Efectivo esperado ${formatPrecio(res.efectivo_esperado)}`);
+    cargarCajaActual();
+  });
 }
 
 function cargarCaja(){
@@ -1814,7 +1980,6 @@ function renderMesas(){
     return `
       <div class="mesa-celda ${ocupada ? 'ocupada' : 'libre'}" onclick="${ocupada ? `verMesaEnPedidos('${m.mesa}')` : ''}">
         <span class="num">${m.mesa}</span>
-        <span class="rondas">${ocupada ? rondas.length + ' ronda' + (rondas.length===1?'':'s') : 'Libre'}</span>
       </div>`;
   }).join('');
 }
