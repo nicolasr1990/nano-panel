@@ -314,38 +314,45 @@
   .np-mesa-actual a{margin-left:auto;color:var(--accent);font-weight:700;text-decoration:none;font-size:12px}
   .np-mesa-actual a:hover{text-decoration:underline}
 
+  .np-shell{display:flex;flex-direction:column;gap:0}
+  .np-main{min-width:0}
+  .np-cat-heading{font-family:var(--display);font-weight:800;font-size:19px;color:var(--ink);letter-spacing:-0.01em;margin:2px 0 12px}
+
   .np-cats{display:flex;gap:8px;overflow-x:auto;padding:2px 0 10px;scrollbar-width:none;position:sticky;top:0;background:var(--bg);z-index:5}
   .np-cats::-webkit-scrollbar{display:none}
   .np-cats button{
-    flex:0 0 auto;font-family:var(--body);font-size:12.5px;font-weight:700;padding:9px 16px;border-radius:var(--radius-xl);
+    flex:0 0 auto;display:flex;align-items:center;gap:7px;font-family:var(--body);font-size:12.5px;font-weight:700;padding:9px 16px;border-radius:var(--radius-xl);
     border:1.5px solid var(--border);background:var(--surface);color:var(--ink-secondary);cursor:pointer;
     transition:var(--transition);white-space:nowrap;box-shadow:var(--shadow-sm);
   }
+  .np-cats .np-cat-ico{font-size:15px;line-height:1}
   .np-cats button.active{background:linear-gradient(135deg,var(--accent-light),var(--accent));border-color:transparent;color:#fff;box-shadow:0 8px 20px var(--shadow-tint)}
 
-  .np-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;padding-bottom:90px}
+  .np-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:14px;padding-bottom:90px}
   .np-card{
-    background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius-md);padding:14px;
-    display:flex;flex-direction:column;gap:8px;box-shadow:var(--shadow-sm);transition:var(--transition);
+    background:var(--surface);border:1px solid var(--border-soft);border-radius:var(--radius-lg);padding:16px;
+    display:flex;flex-direction:column;gap:10px;box-shadow:var(--shadow-sm);transition:var(--transition);
+    animation:slideUp 0.25s ease backwards;
   }
-  .np-card.tiene-qty{border-color:var(--accent);box-shadow:0 8px 20px var(--shadow-tint)}
-  .np-card .np-card-nombre{font-family:var(--display);font-weight:700;font-size:13.5px;color:var(--ink);line-height:1.25}
-  .np-card .np-card-precio{font-family:var(--display);font-weight:800;font-size:14.5px;color:var(--accent)}
+  .np-card.tiene-qty{border-color:var(--accent);box-shadow:0 10px 26px var(--shadow-tint)}
+  .np-card .np-card-nombre{font-family:var(--display);font-weight:700;font-size:14px;color:var(--ink);line-height:1.3}
+  .np-card .np-card-precio{font-family:var(--display);font-weight:800;font-size:15.5px;color:var(--accent)}
   .np-nota-link{background:none;border:none;color:var(--accent);font-size:11px;font-weight:700;text-decoration:underline;cursor:pointer;padding:0}
   .np-nota-chip{display:inline-flex;font-size:10.5px;color:var(--tipo-mesa-ink);background:var(--tipo-mesa-bg);border:1px solid var(--tipo-mesa-border);padding:2px 7px;border-radius:var(--radius-sm);font-weight:700}
   .np-nota-input{width:100%;background:var(--surface-alt);border:1px solid var(--border);border-radius:var(--radius-sm);padding:7px 9px;color:var(--ink);font-size:11.5px;font-family:var(--body);outline:none}
   .np-nota-input:focus{border-color:var(--accent)}
-  .np-card-footer{display:flex;align-items:center;justify-content:flex-end;margin-top:auto}
+  .np-card-footer{margin-top:auto}
   .np-add-btn{
-    width:34px;height:34px;border-radius:50%;border:none;cursor:pointer;background:linear-gradient(135deg,var(--accent-light),var(--accent));
-    color:#fff;font-size:18px;font-weight:800;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 16px var(--shadow-tint);
+    width:100%;padding:11px;border-radius:var(--radius-md);border:none;cursor:pointer;
+    background:linear-gradient(135deg,var(--accent-light),var(--accent));color:#fff;font-family:var(--body);
+    font-size:13px;font-weight:800;letter-spacing:0.01em;box-shadow:0 8px 18px var(--shadow-tint);transition:var(--transition);
   }
-  .np-stepper{display:flex;align-items:center;gap:8px;background:var(--surface-alt);border:1.5px solid var(--border);border-radius:var(--radius-xl);padding:4px}
+  .np-stepper{display:flex;align-items:center;justify-content:space-between;gap:6px;background:var(--surface-alt);border:1.5px solid var(--border);border-radius:var(--radius-md);padding:6px}
   .np-stepper button{
-    width:28px;height:28px;border-radius:50%;border:none;background:var(--surface);color:var(--ink);font-weight:800;font-size:14px;
-    cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-sm);
+    width:32px;height:32px;flex-shrink:0;border-radius:var(--radius-sm);border:none;background:var(--surface);color:var(--ink);font-weight:800;font-size:16px;
+    cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-sm);transition:var(--transition);
   }
-  .np-stepper .qty{font-family:var(--display);font-weight:800;font-size:13.5px;min-width:18px;text-align:center}
+  .np-stepper .qty{font-family:var(--display);font-weight:800;font-size:15px;min-width:20px;text-align:center}
 
   /* Tarjetas de "armá tu pedido": mitad y mitad (pizzas) / docena-media docena (empanadas, miga) */
   .np-combo-card{
@@ -505,6 +512,18 @@
     #listaProductos{display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:14px;align-items:start}
     .cat-block{margin-bottom:0}
 
+    /* Nuevo pedido: categorías como barra lateral fija en vez de tira horizontal —
+       mismo patrón que un kiosko de autoservicio, pensado para dedos en tablet. */
+    .np-shell{flex-direction:row;align-items:flex-start;gap:24px}
+    .np-cats{
+      flex:0 0 210px;flex-direction:column;position:sticky;top:16px;background:transparent;
+      padding:2px;overflow-x:visible;align-self:flex-start;
+    }
+    .np-cats button{width:100%;padding:13px 16px;font-size:13.5px}
+    .np-cats .np-cat-ico{font-size:18px}
+    .np-grid{grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:16px}
+    .np-card{padding:18px}
+
     /* ============ Pulido de interacción para mouse/teclado ============
        Todo lo de acá abajo es exclusivo de escritorio: en mobile no cambia nada. */
 
@@ -530,6 +549,8 @@
       .filters button:hover{transform:translateY(-2px)}
       .mesa-celda:hover{transform:translateY(-4px) scale(1.04);box-shadow:var(--shadow-md)}
       .cat-block summary:hover{background:var(--surface-tint)}
+      .np-card:hover{transform:translateY(-3px);box-shadow:var(--shadow-md)}
+      .np-cats button:not(.active):hover{border-color:var(--border-strong);color:var(--ink)}
     }
 
     /* Feedback de "presionado": confirma que la interfaz escuchó el click */
@@ -537,9 +558,21 @@
     .order-actions button:active,
     .mesa-celda:active,
     .editar-menu-btn:active,
-    .cerrar-mesa-btn:active{
+    .cerrar-mesa-btn:active,
+    .np-cats button:active,
+    .np-add-btn:active,
+    .np-stepper button:active{
       transform:scale(0.96);
     }
+
+    /* Tarjetas del menú entran en cascada, misma idea que #ordersList */
+    .np-grid > .np-card{ animation:slideUp 0.3s var(--ease-out) backwards; }
+    .np-grid > .np-card:nth-child(1){animation-delay:0ms}
+    .np-grid > .np-card:nth-child(2){animation-delay:30ms}
+    .np-grid > .np-card:nth-child(3){animation-delay:60ms}
+    .np-grid > .np-card:nth-child(4){animation-delay:90ms}
+    .np-grid > .np-card:nth-child(5){animation-delay:120ms}
+    .np-grid > .np-card:nth-child(n+6){animation-delay:140ms}
 
     /* Las cards de #ordersList entran en cascada en vez de todas a la vez: en la
        grilla de escritorio quedan 6-8 a la vista de entrada, así que el efecto
@@ -649,8 +682,13 @@
           Pedido para <b id="npMesaLabel">—</b>
           <a href="#" onclick="volverAPasoAnterior();return false;">cambiar</a>
         </div>
-        <div class="np-cats" id="npCats"></div>
-        <div class="np-grid" id="npGrid"></div>
+        <div class="np-shell">
+          <div class="np-cats" id="npCats"></div>
+          <div class="np-main">
+            <div class="np-cat-heading" id="npCatHeading"></div>
+            <div class="np-grid" id="npGrid"></div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -1383,10 +1421,22 @@ function cargarMenuNuevoPedido(){
 function npFindProducto(id){ return menuNuevoPedidoData.productos.find(p => p.id === id); }
 function npItemsOf(catId){ return menuNuevoPedidoData.productos.filter(p => p.categoria_id === catId); }
 
+// Emoji por categoría, solo para que la barra lateral se lea de un vistazo — el backend
+// no manda ícono, así que es un mapeo local por id (con una carita de plato de respaldo).
+const NP_CAT_EMOJI = {
+  pizzas:'🍕', empanadas:'🥟', entradas:'🧀', ensaladas:'🥗', guarniciones:'🍟',
+  milanesas:'🍗', hamburguesas:'🍔', lomitos:'🥪', miga:'🥪', pastas:'🍝',
+  elaborados:'🍽️', postres:'🍰', bebidas:'🥤',
+};
+function npCatEmoji(id){ return NP_CAT_EMOJI[id] || '🍽️'; }
+
 function renderNpCats(){
   document.getElementById('npCats').innerHTML = menuNuevoPedidoData.categorias.map(c =>
-    `<button class="${c.id===nuevoPedido.catActiva?'active':''}" onclick="npSetCat('${c.id}')">${c.nombre}</button>`
+    `<button class="${c.id===nuevoPedido.catActiva?'active':''}" onclick="npSetCat('${c.id}')"><span class="np-cat-ico">${npCatEmoji(c.id)}</span><span>${c.nombre}</span></button>`
   ).join('');
+  const activa = menuNuevoPedidoData.categorias.find(c => c.id === nuevoPedido.catActiva);
+  const heading = document.getElementById('npCatHeading');
+  if(heading) heading.textContent = activa ? activa.nombre : '';
 }
 
 function npSetCat(id){
@@ -1420,7 +1470,7 @@ function npProductCardHtml(p){
 function renderNpStepper(id, qty){
   const holder = document.getElementById('np-stepper-' + id); if(!holder) return;
   holder.innerHTML = qty === 0
-    ? `<button class="np-add-btn" onclick="npChangeQty('${id}',1)">+</button>`
+    ? `<button class="np-add-btn" onclick="npChangeQty('${id}',1)">Agregar</button>`
     : `<div class="np-stepper"><button onclick="npChangeQty('${id}',-1)">−</button><span class="qty">${qty}</span><button onclick="npChangeQty('${id}',1)">+</button></div>`;
   const card = document.getElementById('np-card-' + id);
   if(card) card.classList.toggle('tiene-qty', qty > 0);
