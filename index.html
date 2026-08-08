@@ -331,6 +331,10 @@
   .np-card.tiene-qty{border-color:var(--accent);box-shadow:0 8px 20px var(--shadow-tint)}
   .np-card .np-card-nombre{font-family:var(--display);font-weight:700;font-size:13.5px;color:var(--ink);line-height:1.25}
   .np-card .np-card-precio{font-family:var(--display);font-weight:800;font-size:14.5px;color:var(--accent)}
+  .np-nota-link{background:none;border:none;color:var(--accent);font-size:11px;font-weight:700;text-decoration:underline;cursor:pointer;padding:0}
+  .np-nota-chip{display:inline-flex;font-size:10.5px;color:var(--tipo-mesa-ink);background:var(--tipo-mesa-bg);border:1px solid var(--tipo-mesa-border);padding:2px 7px;border-radius:var(--radius-sm);font-weight:700}
+  .np-nota-input{width:100%;background:var(--surface-alt);border:1px solid var(--border);border-radius:var(--radius-sm);padding:7px 9px;color:var(--ink);font-size:11.5px;font-family:var(--body);outline:none}
+  .np-nota-input:focus{border-color:var(--accent)}
   .np-card-footer{display:flex;align-items:center;justify-content:flex-end;margin-top:auto}
   .np-add-btn{
     width:34px;height:34px;border-radius:50%;border:none;cursor:pointer;background:linear-gradient(135deg,var(--accent-light),var(--accent));
@@ -1397,13 +1401,18 @@ function renderNpGrid(){
   if(!cat){ el.innerHTML = ''; return; }
   const items = npItemsOf(cat.id);
   el.innerHTML = items.map(npProductCardHtml).join('') + npRenderComboCard(cat);
-  items.forEach(p => renderNpStepper(p.id, (nuevoPedido.cart[p.id] || {qty:0}).qty));
+  items.forEach(p => {
+    const entry = nuevoPedido.cart[p.id] || { qty: 0 };
+    renderNpStepper(p.id, entry.qty);
+    renderNpNota(p.id, entry);
+  });
 }
 
 function npProductCardHtml(p){
   return `<div class="np-card" id="np-card-${p.id}">
     <div class="np-card-nombre">${p.nombre}</div>
     <div class="np-card-precio">${formatPrecio(p.precio)}</div>
+    <div id="np-nota-${p.id}"></div>
     <div class="np-card-footer" id="np-stepper-${p.id}"></div>
   </div>`;
 }
@@ -1417,11 +1426,34 @@ function renderNpStepper(id, qty){
   if(card) card.classList.toggle('tiene-qty', qty > 0);
 }
 
+// "Aclaración" por producto (ej. "sin verduras"), para que la vea la cocina en la comanda —
+// mismo mecanismo que tenía el viejo nanorestobar, adaptado a la tablet.
+function renderNpNota(id, entry){
+  const holder = document.getElementById('np-nota-' + id); if(!holder) return;
+  if(!entry || entry.qty === 0){ holder.innerHTML = ''; return; }
+  if(entry.showInput){
+    holder.innerHTML = `<input class="np-nota-input" placeholder="Ej: sin cebolla, bien cocido..." value="${entry.note||''}" onblur="npGuardarNota('${id}',this.value)">`;
+    setTimeout(() => { const inp = holder.querySelector('input'); if(inp) inp.focus(); }, 0);
+  } else if(entry.note){
+    holder.innerHTML = `<span class="np-nota-chip">📝 ${entry.note}</span> <button class="np-nota-link" onclick="npToggleNota('${id}')">editar</button>`;
+  } else {
+    holder.innerHTML = `<button class="np-nota-link" onclick="npToggleNota('${id}')">＋ agregar aclaración</button>`;
+  }
+}
+function npToggleNota(id){ nuevoPedido.cart[id].showInput = true; renderNpNota(id, nuevoPedido.cart[id]); }
+function npGuardarNota(id, val){
+  if(!nuevoPedido.cart[id]) return;
+  nuevoPedido.cart[id].note = val.trim();
+  nuevoPedido.cart[id].showInput = false;
+  renderNpNota(id, nuevoPedido.cart[id]);
+}
+
 function npChangeQty(id, delta){
   const cur = nuevoPedido.cart[id] || { qty: 0, note: '' };
   const next = Math.max(0, cur.qty + delta);
   if(next === 0) delete nuevoPedido.cart[id]; else nuevoPedido.cart[id] = { ...cur, qty: next };
   renderNpStepper(id, next);
+  renderNpNota(id, nuevoPedido.cart[id] || { qty: 0 });
   updateNpCartbar();
 }
 
