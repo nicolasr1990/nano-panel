@@ -61,27 +61,22 @@
   }
   .side-nav-logo{width:42px;height:42px;border-radius:50%;overflow:hidden;margin-bottom:18px;flex-shrink:0;border:2px solid var(--accent)}
   .side-nav-logo img{width:100%;height:100%;object-fit:cover;display:block}
+  /* Selección tipo "pill": el ítem activo pasa a un fondo dorado bien redondeado,
+     como una placa que resalta contra el negro (igual a la referencia). Nada de
+     tooltips al pasar el mouse — en una tablet se usa con el dedo, no tiene sentido
+     depender de hover. */
   .side-nav-item{
-    position:relative;width:52px;height:52px;border-radius:var(--radius-md);border:none;background:transparent;
-    color:rgba(255,255,255,0.5);cursor:pointer;display:flex;align-items:center;justify-content:center;
-    font-size:21px;transition:var(--transition);flex-shrink:0;
+    width:56px;height:56px;border-radius:18px;border:none;background:transparent;
+    color:rgba(255,255,255,0.55);cursor:pointer;display:flex;align-items:center;justify-content:center;
+    font-size:22px;transition:background-color 0.25s ease,color 0.25s ease,transform 0.15s ease;flex-shrink:0;
   }
   .side-nav-item .side-nav-ico{display:block;line-height:1;pointer-events:none}
-  /* Reseña del ícono: oculta por defecto, aparece con un fundido + deslizamiento
-     suave — nunca de golpe — al pasar el mouse, y queda siempre visible en la
-     opción activa para que no haya dudas de en qué pantalla estás. */
-  .side-nav-item .side-nav-label{
-    position:absolute;left:calc(100% + 10px);top:50%;
-    transform:translateY(-50%) translateX(-6px);
-    background:var(--surface);color:var(--ink);font-family:var(--body);font-size:12.5px;font-weight:700;
-    padding:7px 14px;border-radius:var(--radius-md);white-space:nowrap;box-shadow:var(--shadow-md);
-    opacity:0;pointer-events:none;transition:opacity 0.22s ease,transform 0.22s ease;z-index:40;
-  }
-  .side-nav-item:hover .side-nav-label,
-  .side-nav-item.active .side-nav-label{opacity:1;transform:translateY(-50%) translateX(0)}
-  .side-nav-item.active .side-nav-label{background:var(--accent);color:#1D1911}
   .side-nav-item:hover{background:rgba(255,255,255,0.08);color:#fff}
-  .side-nav-item.active{background:var(--accent);color:#1D1911}
+  .side-nav-item.active{
+    background:var(--accent);color:#1D1911;
+    animation:navPillIn 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  @keyframes navPillIn{0%{transform:scale(0.8)}60%{transform:scale(1.08)}100%{transform:scale(1)}}
   .side-nav-item:active{transform:scale(0.92)}
   .side-nav-item:disabled{opacity:0.3;pointer-events:none}
 
@@ -721,19 +716,19 @@
     <div class="side-nav-sticky">
       <div class="side-nav-logo"><img src="logo.png" alt="Nano Resto Bar"></div>
       <button class="side-nav-item active" id="navPedidosBtn" onclick="irAVistaPedidos()" aria-label="Pedidos">
-        <span class="side-nav-ico">🧾</span><span class="side-nav-label">Pedidos</span>
+        <span class="side-nav-ico">🧾</span>
       </button>
       <button class="side-nav-item" id="nuevoPedidoBtn" onclick="abrirNuevoPedido()" aria-label="Nuevo pedido">
-        <span class="side-nav-ico">➕</span><span class="side-nav-label">Nuevo pedido</span>
+        <span class="side-nav-ico">➕</span>
       </button>
       <button class="side-nav-item" id="mesasBtn" onclick="abrirMesas()" aria-label="Mesas">
-        <span class="side-nav-ico">🍽️</span><span class="side-nav-label">Mesas</span>
+        <span class="side-nav-ico">🍽️</span>
       </button>
       <button class="side-nav-item" id="cajaBtn" onclick="abrirCaja()" aria-label="Caja">
-        <span class="side-nav-ico">💰</span><span class="side-nav-label">Caja</span>
+        <span class="side-nav-ico">💰</span>
       </button>
       <button class="side-nav-item" id="editarMenuBtn" onclick="abrirProductos()" aria-label="Editar menú">
-        <span class="side-nav-ico">✎</span><span class="side-nav-label">Editar menú</span>
+        <span class="side-nav-ico">✎</span>
       </button>
     </div>
   </nav>
@@ -2006,11 +2001,19 @@ function cargarCajaActual(){
   fetch(`${WEBAPP_URL}?action=cajaActual`)
     .then(r => r.json())
     .then(res => {
-      if(!res.ok){ el.innerHTML = '<div class="empty-orders">No se pudo cargar la caja</div>'; return; }
+      if(!res.ok){
+        // "faltan_hojas_de_caja" no es un problema de conexión: es que todavía no se
+        // corrió crearHojasCaja() una vez desde el editor de Apps Script.
+        const msg = res.error === 'faltan_hojas_de_caja'
+          ? 'Falta correr crearHojasCaja() una vez desde el editor de Apps Script (creá las pestañas "Caja" y "Caja_Gastos").'
+          : 'No se pudo cargar la caja: ' + (res.error || '');
+        el.innerHTML = `<div class="empty-orders">${msg}</div>`;
+        return;
+      }
       cajaActualData = res;
       renderCajaTurno();
     })
-    .catch(() => { el.innerHTML = '<div class="empty-orders">Sin conexión</div>'; });
+    .catch(() => { el.innerHTML = '<div class="empty-orders">No se pudo conectar con el backend — revisá que el Code.gs esté desplegado.</div>'; });
 }
 
 function renderCajaTurno(){
