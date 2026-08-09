@@ -2030,7 +2030,7 @@ function renderCajaTurno(){
   }
 
   const t = cajaActualData;
-  const horaApertura = new Date(t.fecha_apertura).toLocaleString('es-AR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
+  const horaApertura = new Date(t.fecha_apertura).toLocaleString('es-AR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit', hour12:false });
   el.innerHTML = `
     <div class="caja-turno-header">
       <span class="desde">Abierta desde el ${horaApertura} hs · inicial ${formatPrecio(t.monto_inicial)}</span>
@@ -2044,7 +2044,7 @@ function renderCajaTurno(){
     <div class="caja-gastos-lista">
       ${t.gastos.length === 0 ? '<div class="empty-orders">Todavía no se cargó ningún gasto</div>' : t.gastos.map(g => `
         <div class="caja-gasto-row">
-          <span class="desc">${g.descripcion}<span class="hora">${new Date(g.fecha_hora).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'})} hs</span></span>
+          <span class="desc">${g.descripcion}<span class="hora">${new Date(g.fecha_hora).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit',hour12:false})} hs</span></span>
           <span class="monto">− ${formatPrecio(g.monto)}</span>
         </div>`).join('')}
     </div>
