@@ -40,23 +40,46 @@
     --ease-out:cubic-bezier(0.23,1,0.32,1); --dur-fast:140ms; --dur-base:200ms;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0}
-  html,body{margin:0;background:var(--bg);font-family:var(--body);color:var(--ink);overflow-x:hidden;-webkit-font-smoothing:antialiased}
+  /* El overflow-x:hidden NO va acá: por spec, si un eje no es "visible" el navegador
+     fuerza el otro eje a "auto" aunque se lo pida "visible" explícito — eso convierte
+     a body en su propio contenedor de scroll y rompe el position:sticky del sidebar
+     (.side-nav es ancestro de ese sticky). Por eso el corte horizontal se controla
+     más abajo, en #app-local, que es hermano del sidebar y no un ancestro. */
+  html,body{margin:0;background:var(--bg);font-family:var(--body);color:var(--ink);-webkit-font-smoothing:antialiased}
   /* Shell general: sidebar angosta fija a la izquierda + contenido a la derecha —
      nada de fondos con manchas de color, un plano liso y prolijo. */
   .wrap{max-width:100%;margin:0;position:relative;min-height:100vh;display:flex}
 
-  .side-nav{
-    flex:0 0 76px;width:76px;min-height:100vh;position:sticky;top:0;align-self:flex-start;
-    background:var(--navy);display:flex;flex-direction:column;align-items:center;
-    padding:20px 0;gap:4px;z-index:10;
+  /* El fondo negro (.side-nav) NO lleva position:sticky ni una altura fija: como
+     hijo flex con el stretch por defecto, siempre mide lo mismo que #app-local, así
+     que nunca se corta por más larga que se haga la lista de pedidos. Lo único que
+     se queda pegado arriba al scrollear es el contenido de adentro (.side-nav-sticky). */
+  .side-nav{flex:0 0 76px;width:76px;background:var(--navy);z-index:10}
+  .side-nav-sticky{
+    position:sticky;top:0;display:flex;flex-direction:column;align-items:center;
+    padding:20px 0;gap:4px;
   }
   .side-nav-logo{width:42px;height:42px;border-radius:50%;overflow:hidden;margin-bottom:18px;flex-shrink:0;border:2px solid var(--accent)}
   .side-nav-logo img{width:100%;height:100%;object-fit:cover;display:block}
   .side-nav-item{
-    width:52px;height:52px;border-radius:var(--radius-md);border:none;background:transparent;
+    position:relative;width:52px;height:52px;border-radius:var(--radius-md);border:none;background:transparent;
     color:rgba(255,255,255,0.5);cursor:pointer;display:flex;align-items:center;justify-content:center;
     font-size:21px;transition:var(--transition);flex-shrink:0;
   }
+  .side-nav-item .side-nav-ico{display:block;line-height:1;pointer-events:none}
+  /* Reseña del ícono: oculta por defecto, aparece con un fundido + deslizamiento
+     suave — nunca de golpe — al pasar el mouse, y queda siempre visible en la
+     opción activa para que no haya dudas de en qué pantalla estás. */
+  .side-nav-item .side-nav-label{
+    position:absolute;left:calc(100% + 10px);top:50%;
+    transform:translateY(-50%) translateX(-6px);
+    background:var(--surface);color:var(--ink);font-family:var(--body);font-size:12.5px;font-weight:700;
+    padding:7px 14px;border-radius:var(--radius-md);white-space:nowrap;box-shadow:var(--shadow-md);
+    opacity:0;pointer-events:none;transition:opacity 0.22s ease,transform 0.22s ease;z-index:40;
+  }
+  .side-nav-item:hover .side-nav-label,
+  .side-nav-item.active .side-nav-label{opacity:1;transform:translateY(-50%) translateX(0)}
+  .side-nav-item.active .side-nav-label{background:var(--accent);color:#1D1911}
   .side-nav-item:hover{background:rgba(255,255,255,0.08);color:#fff}
   .side-nav-item.active{background:var(--accent);color:#1D1911}
   .side-nav-item:active{transform:scale(0.92)}
@@ -64,7 +87,7 @@
 
   #app-local{
     flex:1;min-width:0;min-height:100vh;position:relative;padding:20px 20px 100px;
-    background:var(--bg);
+    background:var(--bg);overflow-x:hidden;
   }
 
   /* Encabezado de cada sub-pantalla (Mesas, Caja, Editar menú, Nuevo pedido): franja
@@ -107,12 +130,17 @@
   .filters{display:flex;gap:8px;margin-bottom:18px;overflow-x:auto;padding:2px 0 6px;scrollbar-width:none}
   .filters::-webkit-scrollbar{display:none}
   .filters button{
-    flex:0 0 auto;font-family:var(--body);font-size:12.5px;font-weight:700;letter-spacing:0.01em;padding:9px 16px;border-radius:var(--radius-xl);
+    position:relative;flex:0 0 auto;font-family:var(--body);font-size:12.5px;font-weight:700;letter-spacing:0.01em;padding:9px 16px;border-radius:var(--radius-xl);
     border:1.5px solid var(--border);background:var(--surface);
     color:var(--ink-secondary);cursor:pointer;transition:var(--transition);white-space:nowrap;
     box-shadow:var(--shadow-sm);
   }
   .filters button:hover{border-color:var(--border-strong);color:var(--ink)}
+  .filtro-badge{
+    position:absolute;top:-7px;right:-7px;min-width:19px;height:19px;padding:0 5px;border-radius:50%;
+    background:var(--danger);color:#fff;font-size:10.5px;font-weight:800;display:flex;align-items:center;justify-content:center;
+    border:2px solid var(--bg);
+  }
   .filters button.active{
     background:var(--accent);
     border-color:var(--accent);color:#1D1911;
@@ -164,6 +192,30 @@
   .mesa-group .order-card{margin-bottom:10px;background:var(--surface)}
   .mesa-group .order-card:last-child{margin-bottom:0}
   .order-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-md)}
+
+  /* Ronda de mesa ya lista: chip angosto en vez de la tarjeta completa — se puede
+     abrir para ver el detalle sin volver a ocupar todo el espacio. */
+  .ronda-minimizada{
+    border:1.5px solid var(--success-border);background:var(--success-bg);border-radius:var(--radius-md);
+    margin-bottom:10px;overflow:hidden;transition:var(--transition);
+  }
+  .ronda-minimizada summary{
+    list-style:none;cursor:pointer;display:flex;align-items:center;gap:10px;padding:10px 12px;user-select:none;
+  }
+  .ronda-minimizada summary::-webkit-details-marker{display:none}
+  .ronda-minimizada summary::marker{content:''}
+  .ronda-minimizada .ronda-id{font-family:var(--display);font-weight:700;font-size:12.5px;color:var(--ink)}
+  .ronda-minimizada .ronda-total{margin-left:auto;font-family:var(--display);font-weight:800;font-size:13px;color:var(--ink)}
+  .ronda-minimizada .cat-chevron{
+    font-size:11px;color:var(--ink-secondary);transition:transform .25s;flex-shrink:0;
+    width:20px;height:20px;border-radius:50%;background:rgba(255,255,255,0.6);display:flex;align-items:center;justify-content:center;
+  }
+  .ronda-minimizada[open] .cat-chevron{transform:rotate(180deg)}
+  .ronda-minimizada .ronda-detalle{padding:0 12px 12px}
+  .ronda-minimizada .ronda-detalle ul{list-style:none;padding:0;margin:0 0 10px}
+  .ronda-minimizada .ronda-detalle li{padding:5px 0;font-size:13px;color:var(--ink);border-bottom:1px solid rgba(0,0,0,0.07)}
+  .ronda-minimizada .ronda-detalle li:last-child{border-bottom:none}
+  .ronda-minimizada .order-actions{margin-top:6px}
 
   .order-card .head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:8px}
   .order-card .head .src{font-family:var(--display);font-size:14.5px;font-weight:700;color:var(--ink);letter-spacing:-0.01em;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
@@ -298,12 +350,13 @@
   .sector-titulo{font-family:var(--display);font-weight:800;font-size:13px;color:var(--ink-secondary);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:10px}
   .mapa-mesas{display:grid;grid-template-columns:repeat(auto-fit,minmax(76px,1fr));gap:10px}
   .mesa-celda{
-    position:relative;aspect-ratio:1;border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;
+    position:relative;aspect-ratio:1;border-radius:var(--radius-md);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
     cursor:pointer;transition:var(--transition);border:2px solid var(--border);background:var(--surface);
     box-shadow:var(--shadow-sm);
   }
   .mesa-celda:hover{transform:translateY(-2px)}
-  .mesa-celda .num{font-family:var(--display);font-size:24px;font-weight:900;color:var(--ink)}
+  .mesa-celda .num{font-family:var(--display);font-size:24px;font-weight:900;color:var(--ink);line-height:1}
+  .mesa-timer{font-family:var(--body);font-size:10px;font-weight:700;color:var(--tipo-mesa-ink);letter-spacing:0.01em}
   .mesa-editar-btn{
     position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;border:none;
     background:rgba(0,0,0,0.08);color:var(--ink-secondary);font-size:10.5px;cursor:pointer;
@@ -665,12 +718,24 @@
 
 <div class="wrap">
   <nav class="side-nav">
-    <div class="side-nav-logo"><img src="logo.png" alt="Nano Resto Bar"></div>
-    <button class="side-nav-item active" id="navPedidosBtn" onclick="irAVistaPedidos()" title="Pedidos">🧾</button>
-    <button class="side-nav-item" id="nuevoPedidoBtn" onclick="abrirNuevoPedido()" title="Nuevo pedido">➕</button>
-    <button class="side-nav-item" id="mesasBtn" onclick="abrirMesas()" title="Mesas">🍽️</button>
-    <button class="side-nav-item" id="cajaBtn" onclick="abrirCaja()" title="Caja">💰</button>
-    <button class="side-nav-item" id="editarMenuBtn" onclick="abrirProductos()" title="Editar menú">✎</button>
+    <div class="side-nav-sticky">
+      <div class="side-nav-logo"><img src="logo.png" alt="Nano Resto Bar"></div>
+      <button class="side-nav-item active" id="navPedidosBtn" onclick="irAVistaPedidos()" aria-label="Pedidos">
+        <span class="side-nav-ico">🧾</span><span class="side-nav-label">Pedidos</span>
+      </button>
+      <button class="side-nav-item" id="nuevoPedidoBtn" onclick="abrirNuevoPedido()" aria-label="Nuevo pedido">
+        <span class="side-nav-ico">➕</span><span class="side-nav-label">Nuevo pedido</span>
+      </button>
+      <button class="side-nav-item" id="mesasBtn" onclick="abrirMesas()" aria-label="Mesas">
+        <span class="side-nav-ico">🍽️</span><span class="side-nav-label">Mesas</span>
+      </button>
+      <button class="side-nav-item" id="cajaBtn" onclick="abrirCaja()" aria-label="Caja">
+        <span class="side-nav-ico">💰</span><span class="side-nav-label">Caja</span>
+      </button>
+      <button class="side-nav-item" id="editarMenuBtn" onclick="abrirProductos()" aria-label="Editar menú">
+        <span class="side-nav-ico">✎</span><span class="side-nav-label">Editar menú</span>
+      </button>
+    </div>
   </nav>
   <div id="app-local">
     <div id="vistaPedidos">
@@ -858,6 +923,7 @@ function marcarNavActivo(id){
 
 function irAVistaPedidos(){
   if(!avisoSiHayPedidoSinConfirmar()) return;
+  detenerTimerMesas();
   document.getElementById('vistaMesas').style.display = 'none';
   document.getElementById('vistaCaja').style.display = 'none';
   document.getElementById('vistaProductos').style.display = 'none';
@@ -867,6 +933,7 @@ function irAVistaPedidos(){
 
 function abrirProductos(){
   if(!avisoSiHayPedidoSinConfirmar()) return;
+  detenerTimerMesas();
   document.getElementById('loginOverlay').style.display = 'flex';
   document.getElementById('claveInput').value = '';
   document.getElementById('loginErr').textContent = '';
@@ -1071,11 +1138,15 @@ function cargarPedidos(){
     .then(res => {
       if(!res.ok) return;
 
-      // Detecta pedidos que no estaban en la carga anterior, para avisar (sonido + toast + título)
+      // Detecta pedidos que no estaban en la carga anterior, para avisar (toast + badge + título)
       const idsNuevos = res.pedidos.map(p => p.id_pedido);
       const pedidosNuevos = primeraCarga ? [] : res.pedidos.filter(p => !idsConocidos.has(p.id_pedido));
       idsConocidos = new Set(idsNuevos);
       primeraCarga = false;
+
+      // Se suma al contador antes de renderizar, para que el badge del filtro
+      // ya aparezca en este mismo ciclo y no recién en el próximo sondeo.
+      pedidosNuevos.forEach(p => { if(p.tipo === 'retiro' || p.tipo === 'envio') pedidosSinVer[p.tipo]++; });
 
       staffOrders = res.pedidos;
       renderStaffOrders();
@@ -1093,24 +1164,8 @@ function actualizarTituloPestana(){
 }
 
 function notificarPedidoNuevo(p){
-  reproducirBeep();
   const desc = p.tipo === 'mesa' ? `Mesa ${p.mesa}` : `${TIPO_LABEL[p.tipo]}${p.nombre_cliente ? ' — ' + p.nombre_cliente : ''}`;
   showToast(`🔔 Nuevo pedido — ${desc}`, true);
-}
-
-function reproducirBeep(){
-  try{
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.connect(gain); gain.connect(ctx.destination);
-    osc.frequency.value = 880;
-    gain.gain.setValueAtTime(0.0001, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.35, ctx.currentTime + 0.01);
-    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.4);
-    osc.start();
-    osc.stop(ctx.currentTime + 0.4);
-  }catch(e){ /* si el navegador todavía no habilitó audio (sin interacción previa), no rompe nada */ }
 }
 
 /* ======================= ICONOS DE TIPO ======================= */
@@ -1126,15 +1181,29 @@ function tipoChip(tipo){
 }
 
 /* ======================= FILTROS ======================= */
+// Pedidos de retiro/envío que llegaron nuevos y todavía no se miró esa pestaña —
+// se muestran como un contador chiquito sobre el filtro correspondiente, y se
+// limpian solos al entrar a esa pestaña (ver setFilter).
+let pedidosSinVer = { retiro: 0, envio: 0 };
+
+const TIPO_FILTROS = ['todos', 'mesa', 'retiro', 'envio'];
+const TIPO_FILTRO_LABEL = { todos:'Todos', mesa:'Mesas', retiro:'Retiro', envio:'Envío' };
+
 function renderFilters(){
-  const counts = {todos: staffOrders.length, nuevo:0, prep:0, listo:0};
-  staffOrders.forEach(o => counts[o.estado] = (counts[o.estado]||0) + 1);
-  const labels = {todos:'Todos', nuevo:'Nuevos', prep:'En preparación', listo:'Listos'};
-  document.getElementById('filters').innerHTML = Object.keys(labels).map(k =>
-    `<button class="${filter===k?'active':''}" onclick="setFilter('${k}')">${labels[k]} (${counts[k]||0})</button>`
+  const counts = { todos: staffOrders.length, mesa:0, retiro:0, envio:0 };
+  staffOrders.forEach(o => counts[o.tipo] = (counts[o.tipo]||0) + 1);
+  document.getElementById('filters').innerHTML = TIPO_FILTROS.map(k => `
+    <button class="${filter===k?'active':''}" onclick="setFilter('${k}')">
+      ${TIPO_FILTRO_LABEL[k]} (${counts[k]||0})
+      ${(k==='retiro'||k==='envio') && pedidosSinVer[k] > 0 ? `<span class="filtro-badge">${pedidosSinVer[k]}</span>` : ''}
+    </button>`
   ).join('');
 }
-function setFilter(f){ filter = f; renderStaffOrders(); }
+function setFilter(f){
+  filter = f;
+  if(f==='retiro' || f==='envio') pedidosSinVer[f] = 0;
+  renderStaffOrders();
+}
 
 /* ======================= RENDER PRINCIPAL ======================= */
 function renderStaffOrders(){
@@ -1142,20 +1211,24 @@ function renderStaffOrders(){
   document.getElementById('countLine').textContent =
     `${staffOrders.length} pedido${staffOrders.length===1?'':'s'} activo${staffOrders.length===1?'':'s'}`;
 
-  const visibles = filter === 'todos' ? staffOrders : staffOrders.filter(o => o.estado === filter);
+  const visibles = filter === 'todos' ? staffOrders : staffOrders.filter(o => o.tipo === filter);
   const el = document.getElementById('ordersList');
 
-  if(visibles.length === 0){ el.innerHTML = '<div class="empty-orders">No hay pedidos en este estado</div>'; return; }
+  if(visibles.length === 0){ el.innerHTML = '<div class="empty-orders">No hay pedidos de este tipo</div>'; return; }
 
-  // Agrupar rondas de mesa; retiro/envío se muestran sueltos
+  // Siempre en el mismo orden — mesas, después envíos, después retiros — sin
+  // importar en qué momento llegó cada uno, para que no salte de un lado a otro.
   const mesas = {};
-  const sueltos = [];
+  const envios = [];
+  const retiros = [];
   visibles.forEach(o => {
     if(o.tipo === 'mesa'){
       if(!mesas[o.mesa]) mesas[o.mesa] = [];
       mesas[o.mesa].push(o);
-    } else {
-      sueltos.push(o);
+    } else if(o.tipo === 'envio'){
+      envios.push(o);
+    } else if(o.tipo === 'retiro'){
+      retiros.push(o);
     }
   });
 
@@ -1169,13 +1242,34 @@ function renderStaffOrders(){
           <span class="titulo">${tipoChip('mesa')} Mesa ${mesaNum} · ${rondas.length} ronda${rondas.length===1?'':'s'}</span>
           <span class="total">${formatPrecio(total)}</span>
         </div>
-        ${rondas.map(orderCardHtml).join('')}
+        ${rondas.map(o => o.estado === 'listo' ? rondaMinimizadaHtml(o) : orderCardHtml(o)).join('')}
         <button class="cerrar-mesa-btn" onclick="cerrarMesa('${mesaNum}', ${rondas.length})">Cerrar mesa e imprimir cuenta</button>
       </div>`;
   });
-  sueltos.forEach(o => { html += orderCardHtml(o); });
+  envios.forEach(o => { html += orderCardHtml(o); });
+  retiros.forEach(o => { html += orderCardHtml(o); });
 
   el.innerHTML = html;
+}
+
+// Una ronda de mesa que ya está "lista" no necesita seguir ocupando toda la tarjeta
+// con la lista de ítems — eso es lo que hacía que una mesa con varias rondas se
+// hiciera eterna. Queda un chip angosto, y se puede abrir para ver el detalle
+// (por ejemplo antes de cerrar la mesa) sin volver a la tarjeta completa.
+function rondaMinimizadaHtml(o){
+  return `
+    <details class="ronda-minimizada">
+      <summary>
+        <span class="status-pill listo">LISTO</span>
+        <span class="ronda-id">#${o.id_pedido.slice(-4)}</span>
+        <span class="ronda-total">${formatPrecio(o.total)}</span>
+        <span class="cat-chevron">▾</span>
+      </summary>
+      <div class="ronda-detalle">
+        <ul>${o.items.map(i => `<li><span class="line">${i.cantidad}× ${i.categoria ? `<span style="color:var(--ink-muted);font-weight:600">${i.categoria}</span> - ` : ''}${i.nombre}${i.nota?`<span class="note">📝 ${i.nota}</span>`:''}</span></li>`).join('')}</ul>
+        <div class="order-actions"><button class="deshacer" onclick="deshacer('${o.id_pedido}')">Deshacer</button></div>
+      </div>
+    </details>`;
 }
 
 function orderCardHtml(o){
@@ -1393,6 +1487,7 @@ function abrirMesas(){
   document.getElementById('vistaCaja').style.display = 'none';
   document.getElementById('vistaMesas').style.display = 'block';
   marcarNavActivo('mesasBtn');
+  iniciarTimerMesas();
   if(mesasData.length){ renderMesas(); return; }
   fetch(`${WEBAPP_URL}?action=listarMesas`)
     .then(r => r.json())
@@ -1404,6 +1499,7 @@ function abrirMesas(){
 }
 
 function cerrarMesasView(){
+  detenerTimerMesas();
   document.getElementById('vistaMesas').style.display = 'none';
   document.getElementById('vistaPedidos').style.display = 'block';
   marcarNavActivo('navPedidosBtn');
@@ -1435,6 +1531,7 @@ function avisoSiHayPedidoSinConfirmar(){
 }
 
 function abrirNuevoPedido(){
+  detenerTimerMesas();
   document.getElementById('vistaPedidos').style.display = 'none';
   document.getElementById('vistaMesas').style.display = 'none';
   document.getElementById('vistaProductos').style.display = 'none';
@@ -1878,6 +1975,7 @@ function confirmarNuevoPedido(){
 /* ======================= CIERRE DE CAJA ======================= */
 function abrirCaja(){
   if(!avisoSiHayPedidoSinConfirmar()) return;
+  detenerTimerMesas();
   document.getElementById('vistaPedidos').style.display = 'none';
   document.getElementById('vistaMesas').style.display = 'none';
   document.getElementById('vistaProductos').style.display = 'none';
@@ -2086,11 +2184,40 @@ function celdaMesaHtml(m){
   const rondas = staffOrders.filter(o => o.tipo === 'mesa' && String(o.mesa) === String(m.mesa));
   const ocupada = rondas.length > 0;
   const sectorAttr = (m.sector || '').replace(/"/g, '&quot;');
+  let timerHtml = '';
+  if(ocupada){
+    const desde = Math.min(...rondas.map(o => new Date(o.fecha).getTime()));
+    timerHtml = `<span class="mesa-timer" data-timer-desde="${desde}">${formatearDuracion(Date.now() - desde)}</span>`;
+  }
   return `
     <div class="mesa-celda ${ocupada ? 'ocupada' : 'libre'}" onclick="${ocupada ? `verMesaEnPedidos('${m.mesa}')` : ''}">
       <button class="mesa-editar-btn" onclick="event.stopPropagation();abrirEditarMesa('${m.mesa}','${sectorAttr}')" title="Editar mesa">✎</button>
       <span class="num">${m.mesa}</span>
+      ${timerHtml}
     </div>`;
+}
+
+/* ---------- Cronómetro por mesa: cuánto hace que está ocupada ---------- */
+function formatearDuracion(ms){
+  const min = Math.max(0, Math.floor(ms / 60000));
+  if(min < 60) return `${min} min`;
+  return `${Math.floor(min/60)}h ${min%60}m`;
+}
+
+let timerMesasInterval = null;
+function iniciarTimerMesas(){
+  detenerTimerMesas();
+  // Alcanza con actualizar cada 15s — es un cronómetro de mesa, no hace falta
+  // precisión al segundo, y así no se recalcula todo el mapa a cada rato.
+  timerMesasInterval = setInterval(actualizarTimersMesas, 15000);
+}
+function detenerTimerMesas(){
+  if(timerMesasInterval){ clearInterval(timerMesasInterval); timerMesasInterval = null; }
+}
+function actualizarTimersMesas(){
+  document.querySelectorAll('.mesa-timer[data-timer-desde]').forEach(el => {
+    el.textContent = formatearDuracion(Date.now() - Number(el.dataset.timerDesde));
+  });
 }
 
 /* ---------- Alta / edición de mesas ---------- */
