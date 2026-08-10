@@ -536,6 +536,10 @@
   .np-review-box .cerrar-mesa-btn{margin:0 18px 18px;width:auto}
 
   .np-pago-box{max-width:340px}
+  .np-confirm-box{max-width:360px}
+  .np-confirm-msg{padding:18px;font-size:14px;line-height:1.5;color:var(--ink)}
+  .np-confirm-acciones{display:flex;gap:10px;padding:0 18px 18px}
+  .np-confirm-acciones button{flex:1;margin:0}
   .np-pago-opciones{display:flex;flex-direction:column;gap:10px;padding:18px}
   .np-pago-opt{
     padding:16px;border-radius:var(--radius-md);border:1.5px solid var(--border);background:var(--surface-alt);
@@ -936,6 +940,20 @@
   </div>
 </div>
 
+<!-- Modal propio de alerta/confirmación — reemplaza a alert()/confirm() nativos del
+     navegador (esos muestran el nombre del sitio delante del mensaje y no se pueden
+     personalizar). Un solo overlay reutilizado por uiAlert()/uiConfirm(). -->
+<div id="uiConfirmOverlay" class="np-overlay" style="display:none">
+  <div class="np-review-box np-confirm-box">
+    <div class="np-review-head"><span>Nano Resto Bar</span></div>
+    <div class="np-confirm-msg" id="uiConfirmMsg"></div>
+    <div class="np-confirm-acciones">
+      <button class="editar-menu-btn" id="uiConfirmCancelBtn" onclick="uiConfirmResolver(false)">Cancelar</button>
+      <button class="cerrar-mesa-btn" id="uiConfirmOkBtn" onclick="uiConfirmResolver(true)">Aceptar</button>
+    </div>
+  </div>
+</div>
+
 <!-- Se completa dinámicamente antes de cada window.print() -->
 <div id="comprobante"></div>
 
@@ -947,6 +965,39 @@ const POLL_MS = 8000; // cada cuánto se refresca la lista de pedidos sola
 let CLAVE = '';         // se pide recién cuando se abre el módulo de productos/precios (no hace falta para ver pedidos)
 let staffOrders = [];   // pedidos que trae el backend
 let filter = 'todos';
+
+/* ======================= MODAL DE ALERTA/CONFIRMACIÓN ======================= */
+// Reemplazo de alert()/confirm() nativos del navegador: esos anteponen el nombre del
+// sitio al mensaje ("nicolasr1990.github.io dice...") y no se pueden personalizar.
+// Ambos son async (a diferencia de los nativos, que bloquean) así que todo lo que antes
+// seguía después de un "if(!confirm(...)) return" ahora va adentro del .then().
+let uiConfirmResolve = null;
+function uiConfirmResolver(valor){
+  document.getElementById('uiConfirmOverlay').style.display = 'none';
+  const resolve = uiConfirmResolve;
+  uiConfirmResolve = null;
+  if(resolve) resolve(valor);
+}
+function uiConfirm(mensaje, opts={}){
+  return new Promise(resolve => {
+    uiConfirmResolve = resolve;
+    document.getElementById('uiConfirmMsg').textContent = mensaje;
+    const cancelBtn = document.getElementById('uiConfirmCancelBtn');
+    cancelBtn.style.display = '';
+    cancelBtn.textContent = opts.textoCancelar || 'Cancelar';
+    document.getElementById('uiConfirmOkBtn').textContent = opts.textoOk || 'Aceptar';
+    document.getElementById('uiConfirmOverlay').style.display = 'flex';
+  });
+}
+function uiAlert(mensaje){
+  return new Promise(resolve => {
+    uiConfirmResolve = resolve;
+    document.getElementById('uiConfirmMsg').textContent = mensaje;
+    document.getElementById('uiConfirmCancelBtn').style.display = 'none';
+    document.getElementById('uiConfirmOkBtn').textContent = 'Entendido';
+    document.getElementById('uiConfirmOverlay').style.display = 'flex';
+  });
+}
 
 /* ======================= INICIO ======================= */
 // El panel de pedidos no pide login: se ve todo apenas se abre el HTML.
@@ -984,22 +1035,26 @@ function marcarNavActivo(id){
 }
 
 function irAVistaPedidos(){
-  if(!avisoSiHayPedidoSinConfirmar()) return;
-  detenerTimerMesas();
-  document.getElementById('vistaMesas').style.display = 'none';
-  document.getElementById('vistaCaja').style.display = 'none';
-  document.getElementById('vistaProductos').style.display = 'none';
-  document.getElementById('vistaPedidos').style.display = 'block';
-  marcarNavActivo('navPedidosBtn');
+  avisoSiHayPedidoSinConfirmar().then(ok => {
+    if(!ok) return;
+    detenerTimerMesas();
+    document.getElementById('vistaMesas').style.display = 'none';
+    document.getElementById('vistaCaja').style.display = 'none';
+    document.getElementById('vistaProductos').style.display = 'none';
+    document.getElementById('vistaPedidos').style.display = 'block';
+    marcarNavActivo('navPedidosBtn');
+  });
 }
 
 function abrirProductos(){
-  if(!avisoSiHayPedidoSinConfirmar()) return;
-  detenerTimerMesas();
-  document.getElementById('loginOverlay').style.display = 'flex';
-  document.getElementById('claveInput').value = '';
-  document.getElementById('loginErr').textContent = '';
-  document.getElementById('claveInput').focus();
+  avisoSiHayPedidoSinConfirmar().then(ok => {
+    if(!ok) return;
+    detenerTimerMesas();
+    document.getElementById('loginOverlay').style.display = 'flex';
+    document.getElementById('claveInput').value = '';
+    document.getElementById('loginErr').textContent = '';
+    document.getElementById('claveInput').focus();
+  });
 }
 
 function cerrarLoginOverlay(){
@@ -1044,12 +1099,15 @@ function cargarCategoriasYRenderProductos(){
 }
 
 function cerrarProductos(){
-  if((Object.keys(cambiosProductos).length || categoriasOrdenCambiado) && !confirm('Tenés cambios sin guardar, ¿salir igual y perderlos?')) return;
-  document.getElementById('vistaProductos').style.display = 'none';
-  document.getElementById('vistaPedidos').style.display = 'block';
-  document.getElementById('editarMenuBtn').disabled = false;
-  categoriasOrdenCambiado = false;
-  marcarNavActivo('navPedidosBtn');
+  const seguir = () => {
+    document.getElementById('vistaProductos').style.display = 'none';
+    document.getElementById('vistaPedidos').style.display = 'block';
+    document.getElementById('editarMenuBtn').disabled = false;
+    categoriasOrdenCambiado = false;
+    marcarNavActivo('navPedidosBtn');
+  };
+  if(!(Object.keys(cambiosProductos).length || categoriasOrdenCambiado)) return seguir();
+  uiConfirm('Tenés cambios sin guardar, ¿salir igual y perderlos?').then(ok => { if(ok) seguir(); });
 }
 
 function renderProductos(){
@@ -1404,7 +1462,7 @@ function marcarEntregado(id, tipo){
   if(uiBloqueada) return;
   chequearCajaDiaAnterior().then(hayCajaVieja => {
     if(hayCajaVieja){
-      alert('⚠️ Hay una caja de un día anterior sin cerrar. Andá a Caja y cerrala antes de cobrar este pedido.');
+      uiAlert('⚠️ Hay una caja de un día anterior sin cerrar. Andá a Caja y cerrala antes de cobrar este pedido.');
       return;
     }
     lockUI();
@@ -1473,14 +1531,16 @@ function cerrarMesa(mesa, cantRondas){
   if(uiBloqueada) return;
   chequearCajaDiaAnterior().then(hayCajaVieja => {
     if(hayCajaVieja){
-      alert('⚠️ Hay una caja de un día anterior sin cerrar. Andá a Caja y cerrala antes de cobrar mesas.');
+      uiAlert('⚠️ Hay una caja de un día anterior sin cerrar. Andá a Caja y cerrala antes de cobrar mesas.');
       return;
     }
-    if(!confirm(`¿Cerrar Mesa ${mesa}? Se van a cerrar sus ${cantRondas} ronda(s) y no se van a poder editar más.`)) return;
-    // Antes de cerrar de verdad, preguntamos cómo pagó — ese dato alimenta el cierre de caja.
-    cierreMesaPendiente = { mesa, rondas: staffOrders.filter(o => o.tipo === 'mesa' && String(o.mesa) === String(mesa)) };
-    document.getElementById('pagoTitulo').textContent = `¿Cómo pagó la Mesa ${mesa}?`;
-    document.getElementById('pagoOverlay').style.display = 'flex';
+    uiConfirm(`¿Cerrar Mesa ${mesa}? Se van a cerrar sus ${cantRondas} ronda(s) y no se van a poder editar más.`).then(ok => {
+      if(!ok) return;
+      // Antes de cerrar de verdad, preguntamos cómo pagó — ese dato alimenta el cierre de caja.
+      cierreMesaPendiente = { mesa, rondas: staffOrders.filter(o => o.tipo === 'mesa' && String(o.mesa) === String(mesa)) };
+      document.getElementById('pagoTitulo').textContent = `¿Cómo pagó la Mesa ${mesa}?`;
+      document.getElementById('pagoOverlay').style.display = 'flex';
+    });
   });
 }
 
@@ -1601,21 +1661,23 @@ function imprimirComprobanteFinal(cabecera, rondas){
 let mesasData = [];
 
 function abrirMesas(){
-  if(!avisoSiHayPedidoSinConfirmar()) return;
-  document.getElementById('vistaPedidos').style.display = 'none';
-  document.getElementById('vistaProductos').style.display = 'none';
-  document.getElementById('vistaCaja').style.display = 'none';
-  document.getElementById('vistaMesas').style.display = 'block';
-  marcarNavActivo('mesasBtn');
-  iniciarTimerMesas();
-  if(mesasData.length){ renderMesas(); return; }
-  fetch(`${WEBAPP_URL}?action=listarMesas`)
-    .then(r => r.json())
-    .then(res => {
-      if(!res.ok){ showToast('No se pudo cargar el mapa de mesas'); return; }
-      mesasData = res.mesas;
-      renderMesas();
-    });
+  avisoSiHayPedidoSinConfirmar().then(ok => {
+    if(!ok) return;
+    document.getElementById('vistaPedidos').style.display = 'none';
+    document.getElementById('vistaProductos').style.display = 'none';
+    document.getElementById('vistaCaja').style.display = 'none';
+    document.getElementById('vistaMesas').style.display = 'block';
+    marcarNavActivo('mesasBtn');
+    iniciarTimerMesas();
+    if(mesasData.length){ renderMesas(); return; }
+    fetch(`${WEBAPP_URL}?action=listarMesas`)
+      .then(r => r.json())
+      .then(res => {
+        if(!res.ok){ showToast('No se pudo cargar el mapa de mesas'); return; }
+        mesasData = res.mesas;
+        renderMesas();
+      });
+  });
 }
 
 function cerrarMesasView(){
@@ -1644,16 +1706,19 @@ function hayPedidoSinConfirmar(){
 // Se usa desde los otros botones de la barra superior (Mesas/Caja/Editar menú) para no
 // perder en silencio un pedido que la moza todavía no confirmó.
 function avisoSiHayPedidoSinConfirmar(){
-  if(document.getElementById('vistaNuevoPedido').style.display === 'none') return true;
-  if(hayPedidoSinConfirmar() && !confirm('Tenés un pedido sin confirmar, ¿salir igual y perderlo?')) return false;
-  cerrarNuevoPedido();
-  return true;
+  if(document.getElementById('vistaNuevoPedido').style.display === 'none') return Promise.resolve(true);
+  if(!hayPedidoSinConfirmar()){ cerrarNuevoPedido(); return Promise.resolve(true); }
+  return uiConfirm('Tenés un pedido sin confirmar, ¿salir igual y perderlo?').then(ok => {
+    if(!ok) return false;
+    cerrarNuevoPedido();
+    return true;
+  });
 }
 
 function abrirNuevoPedido(){
   chequearEstadoCaja().then(estado => {
     if(estado.bloqueado){
-      alert(CAJA_MOTIVO_MSG[estado.motivo]);
+      uiAlert(CAJA_MOTIVO_MSG[estado.motivo]);
       return;
     }
     detenerTimerMesas();
@@ -2115,22 +2180,24 @@ function confirmarNuevoPedido(){
 
 /* ======================= CIERRE DE CAJA ======================= */
 function abrirCaja(){
-  if(!avisoSiHayPedidoSinConfirmar()) return;
-  detenerTimerMesas();
-  document.getElementById('vistaPedidos').style.display = 'none';
-  document.getElementById('vistaMesas').style.display = 'none';
-  document.getElementById('vistaProductos').style.display = 'none';
-  document.getElementById('vistaCaja').style.display = 'block';
-  marcarNavActivo('cajaBtn');
-  const hoy = new Date();
-  const hoyStr = hoy.getFullYear() + '-' + String(hoy.getMonth()+1).padStart(2,'0') + '-' + String(hoy.getDate()).padStart(2,'0');
-  const desdeInput = document.getElementById('cajaDesde');
-  const hastaInput = document.getElementById('cajaHasta');
-  if(!desdeInput.value) desdeInput.value = hoyStr;
-  if(!hastaInput.value) hastaInput.value = hoyStr;
-  cargarCajaActual();
-  cargarCierresCajaHoy();
-  cargarCaja();
+  avisoSiHayPedidoSinConfirmar().then(ok => {
+    if(!ok) return;
+    detenerTimerMesas();
+    document.getElementById('vistaPedidos').style.display = 'none';
+    document.getElementById('vistaMesas').style.display = 'none';
+    document.getElementById('vistaProductos').style.display = 'none';
+    document.getElementById('vistaCaja').style.display = 'block';
+    marcarNavActivo('cajaBtn');
+    const hoy = new Date();
+    const hoyStr = hoy.getFullYear() + '-' + String(hoy.getMonth()+1).padStart(2,'0') + '-' + String(hoy.getDate()).padStart(2,'0');
+    const desdeInput = document.getElementById('cajaDesde');
+    const hastaInput = document.getElementById('cajaHasta');
+    if(!desdeInput.value) desdeInput.value = hoyStr;
+    if(!hastaInput.value) hastaInput.value = hoyStr;
+    cargarCajaActual();
+    cargarCierresCajaHoy();
+    cargarCaja();
+  });
 }
 
 function cerrarCaja(){
@@ -2240,12 +2307,14 @@ function handleRegistrarGasto(){
 }
 
 function handleCerrarCaja(){
-  if(!confirm('¿Cerrar la caja? Después hace falta abrir una nueva para seguir registrando efectivo.')) return;
-  postAction('cerrarCajaTurno', {}).then(res => {
-    if(!res.ok){ showToast('No se pudo cerrar la caja: ' + (res.error||'')); return; }
-    showToast(`Caja cerrada · Efectivo esperado ${formatPrecio(res.efectivo_esperado)}`);
-    cargarCajaActual();
-    cargarCierresCajaHoy();
+  uiConfirm('¿Cerrar la caja? Después hace falta abrir una nueva para seguir registrando efectivo.').then(ok => {
+    if(!ok) return;
+    postAction('cerrarCajaTurno', {}).then(res => {
+      if(!res.ok){ showToast('No se pudo cerrar la caja: ' + (res.error||'')); return; }
+      showToast(`Caja cerrada · Efectivo esperado ${formatPrecio(res.efectivo_esperado)}`);
+      cargarCajaActual();
+      cargarCierresCajaHoy();
+    });
   });
 }
 
@@ -2455,13 +2524,15 @@ function handleGuardarSectorMesa(mesa){
 }
 
 function handleDesactivarMesa(mesa){
-  if(!confirm(`¿Desactivar la Mesa ${mesa}? Deja de aparecer en el mapa y en Nuevo pedido (se puede reactivar más adelante desde el Sheet).`)) return;
-  postAction('editarMesa', { mesa, activa: false }).then(res => {
-    if(!res.ok){ showToast('No se pudo desactivar: ' + (res.error||'')); return; }
-    showToast(`Mesa ${mesa} desactivada`);
-    document.getElementById('mesasFormEdicion').innerHTML = '';
-    mesasData = [];
-    abrirMesas();
+  uiConfirm(`¿Desactivar la Mesa ${mesa}? Deja de aparecer en el mapa y en Nuevo pedido (se puede reactivar más adelante desde el Sheet).`).then(ok => {
+    if(!ok) return;
+    postAction('editarMesa', { mesa, activa: false }).then(res => {
+      if(!res.ok){ showToast('No se pudo desactivar: ' + (res.error||'')); return; }
+      showToast(`Mesa ${mesa} desactivada`);
+      document.getElementById('mesasFormEdicion').innerHTML = '';
+      mesasData = [];
+      abrirMesas();
+    });
   });
 }
 
