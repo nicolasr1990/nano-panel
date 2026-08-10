@@ -4,6 +4,16 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Nano Resto Bar · Panel del local</title>
+
+<!-- PWA: instalable como app en la tablet, con ícono propio y sin la barra del navegador -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#161209">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Nano Panel">
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -256,6 +266,22 @@
     box-shadow:0 14px 34px rgba(24,43,45,0.35);
   }
   .toast.show{opacity:1;transform:translateX(-50%) translateY(-6px)}
+
+  /* Aviso de actualización disponible — franja fija arriba de todo, no se cierra
+     sola: queda hasta que alguien toca "Actualizar ahora" cuando le convenga. */
+  .update-banner{
+    position:fixed;top:0;left:0;right:0;z-index:80;background:var(--accent);color:#1D1911;
+    display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;
+    padding:10px 16px;font-family:var(--body);font-size:13px;font-weight:700;
+    animation:slideDownBanner 0.3s ease;
+  }
+  @keyframes slideDownBanner{from{transform:translateY(-100%)}to{transform:translateY(0)}}
+  .update-banner button{
+    background:#1D1911;color:#fff;border:none;padding:7px 16px;border-radius:var(--radius-xl);
+    font-family:var(--body);font-size:12.5px;font-weight:700;cursor:pointer;transition:var(--transition);
+  }
+  .update-banner button:hover{background:#332B1E}
+  .update-banner button:active{transform:scale(0.96)}
 
   /* Login overlay */
   #loginOverlay{
@@ -831,6 +857,14 @@
 </div>
 
 <div class="toast" id="toast"></div>
+
+<!-- Aviso de que hay una versión nueva del panel lista para usar. No se recarga
+     sola: si alguien está a mitad de cargar un pedido, un refresh de golpe le
+     haría perder lo que estaba tipeando. Queda a la vista hasta que lo tocan. -->
+<div class="update-banner" id="updateBanner" style="display:none">
+  <span>🔄 Hay una actualización del panel lista</span>
+  <button onclick="location.reload()">Actualizar ahora</button>
+</div>
 
 <!-- Barra flotante del carrito de "Nuevo pedido" -->
 <div class="np-cartbar" id="npCartbar" style="display:none">
@@ -2304,6 +2338,29 @@ function showToast(msg, alerta){
   t.classList.add('show');
   clearTimeout(window._toastTimer);
   window._toastTimer = setTimeout(()=> t.classList.remove('show'), alerta ? 4500 : 2600);
+}
+
+/* ======================= PWA: instalación + actualización automática =======================
+   El service worker pide siempre la red primero (ver sw.js), así que con conexión
+   cualquier recarga ya trae lo último — esto de acá es solo para el caso de dejar
+   la tablet con el panel abierto varios días seguidos sin recargar nunca: cuando
+   el navegador detecta una versión nueva de sw.js, avisa con una franja arriba en
+   vez de recargar solo (podría cortar un pedido que alguien está cargando). */
+if('serviceWorker' in navigator){
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').then(reg => {
+      // Cada 1h alcanza y sobra para revisar si hay versión nueva — no es una
+      // app donde importe enterarse al segundo.
+      setInterval(() => reg.update(), 60 * 60 * 1000);
+    }).catch(err => console.warn('No se pudo registrar el service worker:', err));
+  });
+
+  let avisoYaMostrado = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if(avisoYaMostrado) return;
+    avisoYaMostrado = true;
+    document.getElementById('updateBanner').style.display = 'flex';
+  });
 }
 </script>
 </body>

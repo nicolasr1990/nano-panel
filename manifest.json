@@ -1,0 +1,17 @@
+{
+  "name": "Nano Resto Bar — Panel del local",
+  "short_name": "Nano Panel",
+  "description": "Panel de pedidos, mesas y caja de Nano Resto Bar",
+  "id": "./index.html",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#161209",
+  "theme_color": "#161209",
+  "lang": "es-AR",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}
