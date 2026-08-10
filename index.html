@@ -672,6 +672,10 @@
     .np-cats{
       flex:0 0 210px;flex-direction:column;position:sticky;top:16px;background:transparent;
       padding:2px;overflow-x:visible;align-self:flex-start;
+      /* Alto tope + scroll propio: así la columna de categorías nunca es más alta que
+         la pantalla. Antes, si había muchas categorías, la lista se salía del alto
+         visible y quedaba "enganchada" al scroll del detalle en vez de quedarse fija. */
+      max-height:calc(100vh - 32px);overflow-y:auto;scrollbar-width:thin;
     }
     .np-main{flex:1;min-width:0}
     .np-cats button{width:100%;padding:13px 16px;font-size:13.5px}
@@ -868,6 +872,10 @@
       </div>
 
       <div id="cajaTurno"><div class="empty-orders">Cargando…</div></div>
+
+      <div class="local-title" style="font-size:17px;margin:26px 0 2px">Cierres de hoy</div>
+      <div class="local-sub">Si se abrió y cerró la caja más de una vez hoy, cada corte queda acá</div>
+      <div id="cajaCierresHoy"><div class="empty-orders">Cargando…</div></div>
 
       <div class="local-title" style="font-size:17px;margin:30px 0 2px">Resumen general</div>
       <div class="local-sub">Recaudación por rango de fechas — para consultas históricas, no reemplaza la apertura/cierre de arriba</div>
@@ -1376,11 +1384,16 @@ function tomarPedido(id){
 function marcarListo(id, tipo){
   if(uiBloqueada) return;
   lockUI();
+  const o = staffOrders.find(x => x.id_pedido === id);
   postAction('actualizarEstado', { id_pedido:id, estado:'listo' }).then(res => {
     if(!res.ok) return showToast('No se pudo actualizar: ' + (res.error||''));
     if(tipo === 'mesa'){
       showToast('Pedido listo para servir');
     } else {
+      // Retiro/envío: acá es donde el cliente se entera (aviso por WhatsApp) y donde
+      // se le entrega el comprobante final — "marcar entregado" es un paso posterior,
+      // ya sin nada que imprimir, solo para cerrar y que cuente en la caja.
+      imprimirComprobanteFinal(o, [o]);
       showToast('📲 Aviso enviado: tu pedido está listo'); // acá se conecta después el WhatsApp real
     }
     cargarPedidos();
@@ -1389,14 +1402,23 @@ function marcarListo(id, tipo){
 
 function marcarEntregado(id, tipo){
   if(uiBloqueada) return;
-  lockUI();
-  const o = staffOrders.find(x => x.id_pedido === id);
-  postAction('actualizarEstado', { id_pedido:id, estado:'cerrado' }).then(res => {
-    if(!res.ok) return showToast('No se pudo cerrar: ' + (res.error||''));
-    imprimirComprobanteFinal(o, [o]);
-    showToast('Pedido cerrado');
-    cargarPedidos();
-  }).finally(unlockUI);
+  chequearCajaDiaAnterior().then(hayCajaVieja => {
+    if(hayCajaVieja){
+      alert('⚠️ Hay una caja de un día anterior sin cerrar. Andá a Caja y cerrala antes de cobrar este pedido.');
+      return;
+    }
+    lockUI();
+    postAction('actualizarEstado', { id_pedido:id, estado:'cerrado' }).then(res => {
+      if(!res.ok){
+        if(res.error === 'caja_dia_anterior_sin_cerrar'){
+          return showToast('⚠️ Hay una caja de un día anterior sin cerrar. Cerrala antes de cobrar.');
+        }
+        return showToast('No se pudo cerrar: ' + (res.error||''));
+      }
+      showToast('Pedido entregado y cobrado');
+      cargarPedidos();
+    }).finally(unlockUI);
+  });
 }
 
 function deshacer(id){
@@ -1414,13 +1436,52 @@ const METODO_ICON = { efectivo:'💵', tarjeta:'💳', transferencia:'📲', sin
 
 let cierreMesaPendiente = null;
 
+// Si quedó una caja abierta de un día anterior (se abrió y nunca se cerró), no hay que
+// dejar cobrar nada ni tomar pedidos nuevos hasta que se cierre: si no, esa venta cuenta
+// contra la caja vieja (por rango de fecha/hora) y la caja de hoy, cuando se abra, no la
+// va a ver — quedó "perdida" entre medio. Mismo criterio si directamente no hay ninguna
+// caja abierta: esa venta tampoco la va a contar ninguna caja futura. El backend es quien
+// realmente lo bloquea en cada acción (ver Code.gs); esto de acá es solo para avisar
+// ANTES de mostrar el paso de cobro o el de tomar el pedido, no después.
+function fechaEsHoy(fechaStr){
+  const d = new Date(fechaStr);
+  const hoy = new Date();
+  return d.getFullYear() === hoy.getFullYear() && d.getMonth() === hoy.getMonth() && d.getDate() === hoy.getDate();
+}
+const CAJA_MOTIVO_MSG = {
+  caja_cerrada: '⚠️ La caja está cerrada. Abrila (menú Caja) antes de tomar pedidos.',
+  caja_dia_anterior_sin_cerrar: '⚠️ Hay una caja de un día anterior sin cerrar. Andá a Caja y cerrala antes de continuar.',
+};
+// { bloqueado:false } si está todo bien, o { bloqueado:true, motivo } si no.
+function chequearEstadoCaja(){
+  return fetch(`${WEBAPP_URL}?action=cajaActual`)
+    .then(r => r.json())
+    .then(res => {
+      if(!res.ok) return { bloqueado:false }; // ej. todavía no se corrió crearHojasCaja() — no bloqueamos por eso
+      if(!res.abierta) return { bloqueado:true, motivo:'caja_cerrada' };
+      if(!fechaEsHoy(res.fecha_apertura)) return { bloqueado:true, motivo:'caja_dia_anterior_sin_cerrar' };
+      return { bloqueado:false };
+    })
+    .catch(() => ({ bloqueado:false })); // si falla la consulta no bloqueamos acá — el backend igual lo rechaza
+}
+// Alias usado en el flujo de cobro (mesa/retiro/envío), donde solo interesa la caja vieja.
+function chequearCajaDiaAnterior(){
+  return chequearEstadoCaja().then(r => r.bloqueado && r.motivo === 'caja_dia_anterior_sin_cerrar');
+}
+
 function cerrarMesa(mesa, cantRondas){
   if(uiBloqueada) return;
-  if(!confirm(`¿Cerrar Mesa ${mesa}? Se van a cerrar sus ${cantRondas} ronda(s) y no se van a poder editar más.`)) return;
-  // Antes de cerrar de verdad, preguntamos cómo pagó — ese dato alimenta el cierre de caja.
-  cierreMesaPendiente = { mesa, rondas: staffOrders.filter(o => o.tipo === 'mesa' && String(o.mesa) === String(mesa)) };
-  document.getElementById('pagoTitulo').textContent = `¿Cómo pagó la Mesa ${mesa}?`;
-  document.getElementById('pagoOverlay').style.display = 'flex';
+  chequearCajaDiaAnterior().then(hayCajaVieja => {
+    if(hayCajaVieja){
+      alert('⚠️ Hay una caja de un día anterior sin cerrar. Andá a Caja y cerrala antes de cobrar mesas.');
+      return;
+    }
+    if(!confirm(`¿Cerrar Mesa ${mesa}? Se van a cerrar sus ${cantRondas} ronda(s) y no se van a poder editar más.`)) return;
+    // Antes de cerrar de verdad, preguntamos cómo pagó — ese dato alimenta el cierre de caja.
+    cierreMesaPendiente = { mesa, rondas: staffOrders.filter(o => o.tipo === 'mesa' && String(o.mesa) === String(mesa)) };
+    document.getElementById('pagoTitulo').textContent = `¿Cómo pagó la Mesa ${mesa}?`;
+    document.getElementById('pagoOverlay').style.display = 'flex';
+  });
 }
 
 function cerrarPagoOverlay(){
@@ -1434,7 +1495,12 @@ function confirmarCierreMesa(metodo){
   document.getElementById('pagoOverlay').style.display = 'none';
   lockUI();
   postAction('cerrarMesa', { mesa, metodo_pago: metodo }).then(res => {
-    if(!res.ok) return showToast('No se pudo cerrar la mesa: ' + (res.error||''));
+    if(!res.ok){
+      if(res.error === 'caja_dia_anterior_sin_cerrar'){
+        return showToast('⚠️ Hay una caja de un día anterior sin cerrar. Cerrala antes de cobrar.');
+      }
+      return showToast('No se pudo cerrar la mesa: ' + (res.error||''));
+    }
     imprimirComprobanteFinal({ tipo:'mesa', mesa }, rondas);
     showToast(`Mesa ${mesa} cerrada · ${METODO_LABEL[metodo]}`);
     cargarPedidos();
@@ -1585,15 +1651,21 @@ function avisoSiHayPedidoSinConfirmar(){
 }
 
 function abrirNuevoPedido(){
-  detenerTimerMesas();
-  document.getElementById('vistaPedidos').style.display = 'none';
-  document.getElementById('vistaMesas').style.display = 'none';
-  document.getElementById('vistaProductos').style.display = 'none';
-  document.getElementById('vistaCaja').style.display = 'none';
-  document.getElementById('vistaNuevoPedido').style.display = 'block';
-  document.getElementById('npTitulo').textContent = 'Nuevo pedido';
-  marcarNavActivo('nuevoPedidoBtn');
-  mostrarPasoNuevoPedido('npPasoTipo');
+  chequearEstadoCaja().then(estado => {
+    if(estado.bloqueado){
+      alert(CAJA_MOTIVO_MSG[estado.motivo]);
+      return;
+    }
+    detenerTimerMesas();
+    document.getElementById('vistaPedidos').style.display = 'none';
+    document.getElementById('vistaMesas').style.display = 'none';
+    document.getElementById('vistaProductos').style.display = 'none';
+    document.getElementById('vistaCaja').style.display = 'none';
+    document.getElementById('vistaNuevoPedido').style.display = 'block';
+    document.getElementById('npTitulo').textContent = 'Nuevo pedido';
+    marcarNavActivo('nuevoPedidoBtn');
+    mostrarPasoNuevoPedido('npPasoTipo');
+  });
 }
 
 function mostrarPasoNuevoPedido(pasoId){
@@ -1720,12 +1792,24 @@ const NP_CAT_EMOJI = {
   pizzas:'🍕', empanadas:'🥟', entradas:'🧀', ensaladas:'🥗', guarniciones:'🍟',
   milanesas:'🍗', hamburguesas:'🍔', lomitos:'🥪', miga:'🥪', pastas:'🍝',
   elaborados:'🍽️', postres:'🍰', bebidas:'🥤',
+  bebidas_sin_alcohol:'🥤', cervezas_y_vinos:'🍻', cervezas:'🍺', vinos:'🍷',
 };
-function npCatEmoji(id){ return NP_CAT_EMOJI[id] || '🍽️'; }
+// Si el id de una categoría nueva no está arriba (ej. una que se creó desde el panel,
+// con un id que no podemos anticipar acá), probamos por palabra clave en el nombre antes
+// de caer en el ícono genérico — así no hace falta tocar código cada vez que se agrega una.
+const NP_CAT_EMOJI_KEYWORDS = [
+  [/cerveza/i, '🍺'], [/vino/i, '🍷'], [/sin alcohol|gaseosa|jugo|agua/i, '🥤'],
+  [/trago|cocktail|cóctel/i, '🍹'], [/bebida/i, '🥤'],
+];
+function npCatEmoji(id, nombre){
+  if(NP_CAT_EMOJI[id]) return NP_CAT_EMOJI[id];
+  const match = NP_CAT_EMOJI_KEYWORDS.find(([re]) => re.test(nombre || '') || re.test(id || ''));
+  return match ? match[1] : '🍽️';
+}
 
 function renderNpCats(){
   document.getElementById('npCats').innerHTML = menuNuevoPedidoData.categorias.map(c =>
-    `<button class="${c.id===nuevoPedido.catActiva?'active':''}" onclick="npSetCat('${c.id}')"><span class="np-cat-ico">${npCatEmoji(c.id)}</span><span>${c.nombre}</span></button>`
+    `<button class="${c.id===nuevoPedido.catActiva?'active':''}" onclick="npSetCat('${c.id}')"><span class="np-cat-ico">${npCatEmoji(c.id, c.nombre)}</span><span>${c.nombre}</span></button>`
   ).join('');
   const activa = menuNuevoPedidoData.categorias.find(c => c.id === nuevoPedido.catActiva);
   const heading = document.getElementById('npCatHeading');
@@ -2008,7 +2092,10 @@ function confirmarNuevoPedido(){
   }
 
   postAction('crearPedidoPanel', payload).then(res => {
-    if(!res.ok){ showToast('No se pudo crear el pedido: ' + (res.error||'')); return; }
+    if(!res.ok){
+      if(CAJA_MOTIVO_MSG[res.error]) return showToast(CAJA_MOTIVO_MSG[res.error]);
+      return showToast('No se pudo crear el pedido: ' + (res.error||''));
+    }
     // Lo mandamos a cocina en el mismo momento: la moza ya lo tomó, no hace falta el
     // paso extra de "Tomar pedido" que sí necesitan los pedidos que llegan solos.
     const pedidoParaImprimir = {
@@ -2042,6 +2129,7 @@ function abrirCaja(){
   if(!desdeInput.value) desdeInput.value = hoyStr;
   if(!hastaInput.value) hastaInput.value = hoyStr;
   cargarCajaActual();
+  cargarCierresCajaHoy();
   cargarCaja();
 }
 
@@ -2157,7 +2245,37 @@ function handleCerrarCaja(){
     if(!res.ok){ showToast('No se pudo cerrar la caja: ' + (res.error||'')); return; }
     showToast(`Caja cerrada · Efectivo esperado ${formatPrecio(res.efectivo_esperado)}`);
     cargarCajaActual();
+    cargarCierresCajaHoy();
   });
+}
+
+function cargarCierresCajaHoy(){
+  const el = document.getElementById('cajaCierresHoy');
+  fetch(`${WEBAPP_URL}?action=cierresCajaHoy`)
+    .then(r => r.json())
+    .then(res => {
+      if(!res.ok){ el.innerHTML = '<div class="empty-orders">No se pudo cargar los cierres de hoy</div>'; return; }
+      renderCierresCajaHoy(res.cierres || []);
+    })
+    .catch(() => { el.innerHTML = '<div class="empty-orders">Sin conexión</div>'; });
+}
+
+function renderCierresCajaHoy(cierres){
+  const el = document.getElementById('cajaCierresHoy');
+  if(!cierres.length){
+    el.innerHTML = '<div class="empty-orders">Todavía no se cerró ninguna caja hoy</div>';
+    return;
+  }
+  el.innerHTML = cierres.map((c, i) => {
+    const horaApertura = new Date(c.fecha_apertura).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit',hour12:false});
+    const horaCierre = new Date(c.fecha_cierre).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit',hour12:false});
+    return `
+    <div class="caja-total-card" style="margin-bottom:10px">
+      <div class="label">Cierre ${i+1} · ${horaApertura} a ${horaCierre} hs</div>
+      <div class="monto">${formatPrecio(c.efectivo_esperado)}</div>
+      <div class="sub">Ingresó ${formatPrecio(c.monto_inicial)} inicial + ${formatPrecio(c.total_efectivo_ventas)} en ventas − ${formatPrecio(c.total_gastos)} en gastos · debería haber cerrado con ${formatPrecio(c.efectivo_esperado)}</div>
+    </div>`;
+  }).join('');
 }
 
 function cargarCaja(){
@@ -2201,7 +2319,7 @@ function renderCaja(res){
     <div class="caja-total-card">
       <div class="label">Total recaudado</div>
       <div class="monto">${formatPrecio(res.recaudacionTotal)}</div>
-      <div class="sub">${res.cantidadPedidos} pedido${res.cantidadPedidos===1?'':'s'} cerrado${res.cantidadPedidos===1?'':'s'} · ticket promedio ${formatPrecio(res.ticketPromedio)}</div>
+      <div class="sub">${res.cantidadPedidos} pedido${res.cantidadPedidos===1?'':'s'} cerrado${res.cantidadPedidos===1?'':'s'}</div>
     </div>
     <div class="caja-metodos">${metodosHtml}</div>
     <div class="caja-canales">${canalesHtml}</div>
