@@ -201,6 +201,13 @@
   }
   .cerrar-mesa-btn:hover{background:#B37D00;border-color:#B37D00}
   .cerrar-mesa-btn:active{transform:scale(0.97)}
+  .imprimir-cuenta-btn{
+    width:100%;margin-top:10px;padding:12px;border-radius:var(--radius-md);border:1.5px solid var(--border-strong);
+    background:var(--surface-alt);color:var(--ink);font-family:var(--body);font-weight:700;
+    font-size:12.5px;letter-spacing:0.02em;cursor:pointer;transition:var(--transition);
+  }
+  .imprimir-cuenta-btn:hover{background:var(--surface-tint)}
+  .imprimir-cuenta-btn:active{transform:scale(0.97)}
 
   /* Order Cards */
   .order-card{
@@ -539,7 +546,19 @@
   .np-confirm-box{max-width:360px}
   .np-confirm-msg{padding:18px;font-size:14px;line-height:1.5;color:var(--ink)}
   .np-confirm-acciones{display:flex;gap:10px;padding:0 18px 18px}
-  .np-confirm-acciones button{flex:1;margin:0}
+  /* Los dos botones comparten tamaño/tipografía exactos (mismo padding, radio y fuente);
+     antes usaban .editar-menu-btn y .cerrar-mesa-btn, dos clases con paddings distintos,
+     y quedaban de ancho distinto pese al flex:1 por el min-width de su propio contenido. */
+  .ui-confirm-btn{
+    flex:1;margin:0;padding:12px;border-radius:var(--radius-md);font-family:var(--body);
+    font-weight:700;font-size:12.5px;letter-spacing:0.02em;cursor:pointer;transition:var(--transition);
+    border:1.5px solid transparent;
+  }
+  .ui-confirm-btn:active{transform:scale(0.97)}
+  .ui-confirm-btn-cancel{background:var(--surface-alt);border-color:var(--border-strong);color:var(--ink)}
+  .ui-confirm-btn-cancel:hover{background:var(--surface-tint)}
+  .ui-confirm-btn-ok{background:var(--tipo-mesa);border-color:var(--tipo-mesa);color:#fff}
+  .ui-confirm-btn-ok:hover{background:#B37D00;border-color:#B37D00}
   .np-pago-opciones{display:flex;flex-direction:column;gap:10px;padding:18px}
   .np-pago-opt{
     padding:16px;border-radius:var(--radius-md);border:1.5px solid var(--border);background:var(--surface-alt);
@@ -948,8 +967,8 @@
     <div class="np-review-head"><span>Nano Resto Bar</span></div>
     <div class="np-confirm-msg" id="uiConfirmMsg"></div>
     <div class="np-confirm-acciones">
-      <button class="editar-menu-btn" id="uiConfirmCancelBtn" onclick="uiConfirmResolver(false)">Cancelar</button>
-      <button class="cerrar-mesa-btn" id="uiConfirmOkBtn" onclick="uiConfirmResolver(true)">Aceptar</button>
+      <button class="ui-confirm-btn ui-confirm-btn-cancel" id="uiConfirmCancelBtn" onclick="uiConfirmResolver(false)">Cancelar</button>
+      <button class="ui-confirm-btn ui-confirm-btn-ok" id="uiConfirmOkBtn" onclick="uiConfirmResolver(true)">Aceptar</button>
     </div>
   </div>
 </div>
@@ -1363,7 +1382,9 @@ function renderStaffOrders(){
           <span class="total">${formatPrecio(total)}</span>
         </div>
         ${rondas.map(o => o.estado === 'listo' ? rondaMinimizadaHtml(o) : orderCardHtml(o)).join('')}
-        <button class="cerrar-mesa-btn" onclick="cerrarMesa('${mesaNum}', ${rondas.length})">Cerrar mesa e imprimir cuenta</button>
+        ${mesasConCuentaImpresa.has(String(mesaNum))
+          ? `<button class="cerrar-mesa-btn" onclick="cerrarMesa('${mesaNum}', ${rondas.length})">💰 Ya pagó — cerrar mesa</button>`
+          : `<button class="imprimir-cuenta-btn" onclick="imprimirCuentaMesa('${mesaNum}')">🖨️ Imprimir cuenta</button>`}
       </div>`;
   });
   envios.forEach(o => { html += orderCardHtml(o); });
@@ -1494,6 +1515,14 @@ const METODO_ICON = { efectivo:'💵', tarjeta:'💳', transferencia:'📲', sin
 
 let cierreMesaPendiente = null;
 
+// Mesas a las que ya se les imprimió la cuenta (paso 1: imprimir y llevar a la mesa)
+// pero todavía no se cobraron ni se cerraron de verdad (paso 2). Se guarda en localStorage
+// para que sobreviva un refresh de la tablet mientras el cliente todavía está pagando.
+let mesasConCuentaImpresa = new Set(JSON.parse(localStorage.getItem('mesasConCuentaImpresa') || '[]'));
+function guardarMesasConCuentaImpresa(){
+  localStorage.setItem('mesasConCuentaImpresa', JSON.stringify([...mesasConCuentaImpresa]));
+}
+
 // Si quedó una caja abierta de un día anterior (se abrió y nunca se cerró), no hay que
 // dejar cobrar nada ni tomar pedidos nuevos hasta que se cierre: si no, esa venta cuenta
 // contra la caja vieja (por rango de fecha/hora) y la caja de hoy, cuando se abra, no la
@@ -1527,6 +1556,20 @@ function chequearCajaDiaAnterior(){
   return chequearEstadoCaja().then(r => r.bloqueado && r.motivo === 'caja_dia_anterior_sin_cerrar');
 }
 
+// Paso 1: imprime el resumen para llevar a la mesa. No toca el backend ni pregunta forma
+// de pago — la mesa sigue abierta y se puede seguir agregando/editando hasta el paso 2.
+function imprimirCuentaMesa(mesa){
+  if(uiBloqueada) return;
+  const rondas = staffOrders.filter(o => o.tipo === 'mesa' && String(o.mesa) === String(mesa));
+  if(rondas.length === 0) return;
+  imprimirComprobanteFinal({ tipo:'mesa', mesa }, rondas);
+  mesasConCuentaImpresa.add(String(mesa));
+  guardarMesasConCuentaImpresa();
+  renderStaffOrders();
+}
+
+// Paso 2: se aprieta una vez que en la mesa ya pagaron (con la cuenta del paso 1 en mano).
+// Acá sí se pregunta la forma de pago y se cierra de verdad contra la caja.
 function cerrarMesa(mesa, cantRondas){
   if(uiBloqueada) return;
   chequearCajaDiaAnterior().then(hayCajaVieja => {
@@ -1561,7 +1604,8 @@ function confirmarCierreMesa(metodo){
       }
       return showToast('No se pudo cerrar la mesa: ' + (res.error||''));
     }
-    imprimirComprobanteFinal({ tipo:'mesa', mesa }, rondas);
+    mesasConCuentaImpresa.delete(String(mesa));
+    guardarMesasConCuentaImpresa();
     showToast(`Mesa ${mesa} cerrada · ${METODO_LABEL[metodo]}`);
     cargarPedidos();
   }).finally(() => { unlockUI(); cierreMesaPendiente = null; });
@@ -2102,7 +2146,7 @@ function abrirRevisionPedido(){
   let html = lines.length === 0
     ? '<div class="empty-orders">Todavía no agregaste nada</div>'
     : lines.map(l => `<div class="np-review-item">
-        <span class="nom">${l.qty}× ${l.name}${l.desc?`<span class="nota">📝 ${l.desc}</span>`:''}</span>
+        <span class="nom">${l.qty}× ${l.catName ? `<span style="color:var(--ink-muted);font-weight:600">${l.catName}</span> - ` : ''}${l.name}${l.desc?`<span class="nota">📝 ${l.desc}</span>`:''}</span>
         <span style="display:flex;align-items:center;gap:8px">${formatPrecio(l.price*l.qty)}<button class="del" onclick="npRemoveLine('${l.key}')">✕</button></span>
       </div>`).join('');
   if(lines.length > 0 && nuevoPedido.tipo === 'envio'){
