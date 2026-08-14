@@ -629,44 +629,50 @@
     *{animation-duration:0.01ms !important;animation-iteration-count:1 !important;transition-duration:0.01ms !important}
   }
 
-  /* Comprobante de impresión — oculto en pantalla (display:none), pero con todos sus estilos
-     "reales" siempre activos (no solo dentro de @media print). Esto permite que el JS lo mida
-     temporalmente fuera de pantalla ANTES de imprimir y calcule el achique exacto que necesita
-     (variable --escala), en vez de usar niveles fijos que no siempre calzan. */
+  /* Comprobante de impresión — oculto en pantalla (display:none). Pensado para el rollo
+     térmico continuo de 80mm (impresora ITPOS 8012 por USB), no para hoja A4: el ancho es
+     fijo (72mm de área imprimible, dejando margen a los dos lados del rollo) y el LARGO es
+     libre — el papel corta solo después del contenido, así que a diferencia de antes no
+     hace falta medir ni achicar nada para que "entre" en una altura fija. Todo en negro
+     puro (#000): la térmica es monocromática, un color como el dorado del resto del panel
+     saldría gris/desteñido en vez de nítido. */
   #comprobante{
-    display:none;--escala:1;
-    width:92mm;                 /* ancho aprox. de un cuarto de A4, con margen para cortar */
-    padding:5mm 6mm;
+    display:none;
+    width:72mm;
+    padding:3mm 4mm;
     color:#000;background:#fff;
     font-family:Arial,Helvetica,sans-serif;font-weight:700;
   }
-  #comprobante .ticket-logo{text-align:center;margin-bottom:calc(2mm*var(--escala))}
-  #comprobante .ticket-logo img{width:calc(26mm*var(--escala));height:calc(26mm*var(--escala));object-fit:contain}
+  #comprobante .ticket-logo{text-align:center;margin-bottom:2mm}
+  #comprobante .ticket-logo img{width:22mm;height:22mm;object-fit:contain}
   #comprobante h1{
-    text-align:center;font-size:calc(15px*var(--escala));font-weight:800;letter-spacing:0.06em;text-transform:uppercase;
-    border-top:2px dashed #000;border-bottom:2px dashed #000;padding:calc(2.2mm*var(--escala)) 0;margin-bottom:calc(2.5mm*var(--escala));
+    text-align:center;font-size:15px;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;
+    border-top:2px dashed #000;border-bottom:2px dashed #000;padding:2.2mm 0;margin-bottom:2.5mm;
   }
-  #comprobante .nota{font-size:calc(12px*var(--escala));font-weight:700;text-align:center;color:#000;line-height:1.4}
-  #comprobante .sep{border-top:2px dashed #000;margin:calc(2.2mm*var(--escala)) 0}
-  #comprobante .linea{display:flex;justify-content:space-between;gap:6px;font-size:calc(14px*var(--escala));font-weight:800;padding:calc(1.6mm*var(--escala)) 0}
+  #comprobante .nota{font-size:12px;font-weight:700;text-align:center;color:#000;line-height:1.4}
+  #comprobante .sep{border-top:2px dashed #000;margin:2.2mm 0}
+  #comprobante .linea{display:flex;justify-content:space-between;gap:6px;font-size:14px;font-weight:800;padding:1.6mm 0}
   #comprobante .linea .cant{font-weight:800}
   /* Líneas de cocina: no hay precio, así que van alineadas a la izquierda (no space-between) */
-  #comprobante .linea-cocina{display:flex;align-items:baseline;gap:7px;font-size:calc(14px*var(--escala));font-weight:800;padding:calc(1.6mm*var(--escala)) 0}
+  #comprobante .linea-cocina{display:flex;align-items:baseline;gap:7px;font-size:14px;font-weight:800;padding:1.6mm 0}
   #comprobante .linea-cocina .cant{flex-shrink:0}
-  #comprobante .item-nota{font-size:calc(11px*var(--escala));font-weight:700;color:#333;padding-left:4mm;margin-bottom:calc(1mm*var(--escala))}
-  #comprobante .cat-label{font-size:calc(12px*var(--escala));font-weight:800;text-transform:uppercase;letter-spacing:0.04em;color:#c9531f;margin-top:calc(2mm*var(--escala))}
-  #comprobante .total{font-weight:800;font-size:calc(17px*var(--escala));margin-top:calc(2mm*var(--escala));padding-top:calc(2mm*var(--escala));border-top:2px dashed #000}
-  #comprobante .footer{text-align:center;font-size:calc(12px*var(--escala));font-weight:800;color:#c9531f;margin-top:calc(3mm*var(--escala))}
-  #comprobante .footer-sub{text-align:center;font-size:calc(10px*var(--escala));font-weight:700;color:#888;margin-top:1mm}
+  #comprobante .item-nota{font-size:11px;font-weight:700;color:#333;padding-left:4mm;margin-bottom:1mm}
+  #comprobante .cat-label{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:0.04em;color:#000;margin-top:2mm}
+  #comprobante .total{font-weight:800;font-size:17px;margin-top:2mm;padding-top:2mm;border-top:2px dashed #000}
+  #comprobante .footer{text-align:center;font-size:12px;font-weight:800;color:#000;margin-top:3mm}
+  #comprobante .footer-sub{text-align:center;font-size:10px;font-weight:700;color:#333;margin-top:1mm}
 
   @media print{
-    @page{ size:A4; margin:0; }
+    /* "auto" en el largo es lo que le dice al driver de la térmica que no corte a una
+       altura fija tipo A4/carta, sino que siga imprimiendo hasta que termine el contenido
+       (así funcionan Loyverse, Square y demás sistemas de punto de venta basados en navegador). */
+    @page{ size:80mm auto; margin:0; }
     body *{visibility:hidden}
     #comprobante, #comprobante *{visibility:visible}
     /* El panel completo (min-height:100vh) sigue ocupando espacio aunque esté oculto por visibility,
        y eso genera una segunda hoja en blanco al imprimir. Lo sacamos del flujo del todo. */
     .wrap, #loginOverlay, .toast, #npCartbar, #npRevisionOverlay, #pagoOverlay{ display:none !important; }
-    #comprobante{ display:block;position:absolute;top:6mm;left:6mm; }
+    #comprobante{ display:block;position:static;margin:0; }
   }
 
   /* ======================= VERSIÓN DE ESCRITORIO =======================
@@ -1635,33 +1641,6 @@ function fechaHoraTicket(){
   return `${f} · ${horaTicket()}`;
 }
 
-// Mide de verdad cuánto ocupa el ticket ya renderizado (fuera de pantalla, con sus estilos
-// reales aplicados) y calcula el --escala exacto para que entre en el cuarto de A4, en vez
-// de adivinar con niveles fijos. Hace un par de pasadas por si el achique cambia la altura.
-const ALTO_MAX_TICKET_MM = 132; // alto útil del cuarto de A4 (148mm) con margen para el corte
-const PX_POR_MM = 96 / 25.4;
-
-function escalarYPrepararImpresion(el){
-  el.style.display = 'block';
-  el.style.position = 'fixed';
-  el.style.left = '-9999px';
-  el.style.top = '0';
-  el.style.setProperty('--escala', 1);
-
-  let escala = 1;
-  for(let intento = 0; intento < 4; intento++){
-    el.style.setProperty('--escala', escala);
-    const altoMM = el.offsetHeight / PX_POR_MM;
-    if(altoMM <= ALTO_MAX_TICKET_MM) break;
-    escala = Math.max(0.45, escala * (ALTO_MAX_TICKET_MM / altoMM) * 0.97); // 3% de margen extra
-  }
-
-  el.style.position = '';
-  el.style.left = '';
-  el.style.top = '';
-  el.style.display = ''; // vuelve a display:none en pantalla; @media print lo muestra igual
-}
-
 function imprimirComprobanteCocina(o){
   const el = document.getElementById('comprobante');
   // La cocina no sirve bebidas — eso lo hace el mozo, así que no tiene sentido en la comanda.
@@ -1686,7 +1665,6 @@ function imprimirComprobanteCocina(o){
       return bloque;
     }).join('')}
   `;
-  escalarYPrepararImpresion(el);
   window.print();
 }
 
@@ -1707,7 +1685,6 @@ function imprimirComprobanteFinal(cabecera, rondas){
     <div class="footer">¡Gracias por tu visita!</div>
     <div class="footer-sub">Te esperamos pronto</div>
   `;
-  escalarYPrepararImpresion(el);
   window.print();
 }
 
