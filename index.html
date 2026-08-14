@@ -1655,8 +1655,11 @@ function escalarYPrepararImpresion(el){
 
 function imprimirComprobanteCocina(o){
   const el = document.getElementById('comprobante');
-  // La cocina no sirve bebidas — eso lo hace el mozo, así que no tiene sentido en la comanda
-  const itemsCocina = o.items.filter(i => !(i.categoria && i.categoria.toLowerCase().includes('bebida')));
+  // La cocina no sirve bebidas — eso lo hace el mozo, así que no tiene sentido en la comanda.
+  // Cubre las 3 categorías de bebidas (antes era una sola "Bebidas"; ahora Bebidas sin Alcohol,
+  // Cervezas y Vinos y Espumantes no comparten esa palabra, así que hay que buscar cada una).
+  const CATEGORIAS_BEBIDA = ['bebida', 'cerveza', 'vino', 'espumante'];
+  const itemsCocina = o.items.filter(i => !(i.categoria && CATEGORIAS_BEBIDA.some(k => i.categoria.toLowerCase().includes(k))));
 
   if(itemsCocina.length === 0){
     showToast('Pedido solo de bebidas — no hace falta comanda para cocina');
