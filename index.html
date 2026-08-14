@@ -1023,6 +1023,15 @@ function uiAlert(mensaje){
 cargarPedidos();
 setInterval(cargarPedidos, POLL_MS);
 
+// Precarga en segundo plano el menú y el mapa de mesas (recién se usan al tocar "+"),
+// para que ya estén en caché en memoria y el primer "Nuevo pedido" del turno no tenga
+// que esperar la red. setTimeout(...,0) para correr esto después de que termine de
+// declararse todo el script (nuevoPedido/mesasData son `let` más abajo en el archivo).
+setTimeout(() => {
+  cargarMenuNuevoPedido();
+  fetch(`${WEBAPP_URL}?action=listarMesas`).then(r => r.json()).then(res => { if(res.ok) mesasData = res.mesas; });
+}, 0);
+
 /* ======================= RED ======================= */
 function postAction(action, data){
   return fetch(WEBAPP_URL, {
@@ -1763,20 +1772,24 @@ function avisoSiHayPedidoSinConfirmar(){
 }
 
 function abrirNuevoPedido(){
+  // La pantalla se abre al toque, sin esperar red: antes acá se bloqueaba todo hasta que
+  // volvía chequearEstadoCaja() (un viaje entero a Apps Script, a veces 1-2s), y tocar "+"
+  // se sentía trabado. El chequeo de caja corre en paralelo y solo interrumpe si hace
+  // falta — si la caja está cerrada, avisa y vuelve atrás en vez de nunca abrir.
+  detenerTimerMesas();
+  document.getElementById('vistaPedidos').style.display = 'none';
+  document.getElementById('vistaMesas').style.display = 'none';
+  document.getElementById('vistaProductos').style.display = 'none';
+  document.getElementById('vistaCaja').style.display = 'none';
+  document.getElementById('vistaNuevoPedido').style.display = 'block';
+  document.getElementById('npTitulo').textContent = 'Nuevo pedido';
+  marcarNavActivo('nuevoPedidoBtn');
+  mostrarPasoNuevoPedido('npPasoTipo');
+
   chequearEstadoCaja().then(estado => {
     if(estado.bloqueado){
-      uiAlert(CAJA_MOTIVO_MSG[estado.motivo]);
-      return;
+      uiAlert(CAJA_MOTIVO_MSG[estado.motivo]).then(() => cerrarNuevoPedido());
     }
-    detenerTimerMesas();
-    document.getElementById('vistaPedidos').style.display = 'none';
-    document.getElementById('vistaMesas').style.display = 'none';
-    document.getElementById('vistaProductos').style.display = 'none';
-    document.getElementById('vistaCaja').style.display = 'none';
-    document.getElementById('vistaNuevoPedido').style.display = 'block';
-    document.getElementById('npTitulo').textContent = 'Nuevo pedido';
-    marcarNavActivo('nuevoPedidoBtn');
-    mostrarPasoNuevoPedido('npPasoTipo');
   });
 }
 
