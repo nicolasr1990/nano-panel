@@ -588,7 +588,9 @@
   .caja-turno-header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px}
   .caja-turno-header .desde{font-size:12px;color:var(--ink-secondary);font-weight:600}
   .caja-gastos-lista{display:flex;flex-direction:column;gap:8px;margin:14px 0}
-  .caja-gasto-row{display:flex;justify-content:space-between;align-items:center;background:var(--surface);border:1px solid var(--border-soft);border-radius:var(--radius-md);padding:11px 15px;font-size:13px}
+  /* Tinte rojo en toda la fila (antes solo el número lo tenía) — que se lea "sale
+     plata" de un vistazo, sin tener que leer el monto para darse cuenta. */
+  .caja-gasto-row{display:flex;justify-content:space-between;align-items:center;background:var(--danger-bg);border:1px solid var(--danger-border);border-radius:var(--radius-md);padding:11px 15px;font-size:13px}
   .caja-gasto-row .desc{color:var(--ink);font-weight:600}
   .caja-gasto-row .hora{display:block;font-size:10.5px;color:var(--ink-muted);font-weight:500;margin-top:1px}
   .caja-gasto-row .monto{font-family:var(--display);font-weight:800;color:var(--danger)}
@@ -607,12 +609,24 @@
   .caja-total-card .label{font-size:12px;letter-spacing:0.06em;text-transform:uppercase;color:var(--accent-light);font-weight:700}
   .caja-total-card .monto{font-family:var(--display);font-size:34px;font-weight:800;margin-top:4px}
   .caja-total-card .sub{font-size:12px;color:rgba(255,255,255,0.65);margin-top:6px}
+  /* "Total recaudado" (resumen por fecha) usa verde en vez del navy del turno en vivo —
+     son dos cosas distintas (ventas totales de un período vs. efectivo en el cajón ahora
+     mismo) y antes se veían idénticas, como si fueran el mismo dato. */
+  .caja-total-card.recaudado{background:linear-gradient(135deg,var(--success) 0%,#0f6b38 100%)}
+  .caja-total-card.recaudado .label{color:rgba(255,255,255,0.85)}
   .caja-metodos{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:16px}
   .caja-metodo-card{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius-md);padding:14px;box-shadow:var(--shadow-sm)}
   .caja-metodo-card .nombre{font-size:11.5px;font-weight:700;color:var(--ink-secondary);text-transform:uppercase;letter-spacing:0.03em}
   .caja-metodo-card .monto{font-family:var(--display);font-size:19px;font-weight:800;color:var(--ink);margin-top:4px}
   .caja-metodo-card .cant{font-size:11px;color:var(--ink-muted);margin-top:2px}
   .caja-canales{display:flex;flex-direction:column;gap:8px}
+  /* Cajas del período (apertura → cierre), en el resumen filtrado por fecha */
+  .caja-periodos{display:flex;flex-direction:column;gap:10px;margin-top:10px}
+  .caja-periodo-card{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius-md);padding:12px 14px;box-shadow:var(--shadow-sm)}
+  .caja-periodo-head{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12.5px;font-weight:700;color:var(--ink);flex-wrap:wrap;margin-bottom:8px}
+  .caja-periodo-montos{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--ink-secondary);font-weight:600}
+  .caja-periodo-montos .gasto{color:var(--danger)}
+  .caja-periodo-montos .cierre{color:var(--ink);font-weight:800}
   .caja-canal-row{display:flex;align-items:center;justify-content:space-between;background:var(--surface);border:1px solid var(--border-soft);border-radius:var(--radius-md);padding:10px 14px}
   .caja-canal-row .monto{font-family:var(--display);font-weight:700;color:var(--ink)}
 
@@ -851,6 +865,8 @@
         <div class="local-h"><a href="#" onclick="cerrarProductos();return false;">← Volver a pedidos</a></div>
       </div>
       <div class="local-sub" id="productosSub"></div>
+      <button class="editar-menu-btn" style="margin-bottom:12px" onclick="abrirFormNuevoProducto()">+ Nuevo producto</button>
+      <div id="nuevoProductoForm"></div>
       <div id="listaProductos"></div>
       <button class="cerrar-mesa-btn" style="margin-top:6px" onclick="guardarCambiosProductos()">Guardar cambios</button>
     </div>
@@ -1076,6 +1092,15 @@ function marcarNavActivo(id){
   document.querySelectorAll('.side-nav-item').forEach(b => b.classList.remove('active'));
   const el = document.getElementById(id);
   if(el) el.classList.add('active');
+  // El botón de Menú se deshabilita al entrar (ver intentarLoginProductos), para no poder
+  // re-abrirlo mientras ya estás adentro. Antes solo se reactivaba en cerrarProductos()
+  // ("Volver a pedidos") — si salías del módulo por cualquier otro botón (Mesas, Caja,
+  // Nuevo pedido) quedaba trabado en disabled para siempre, oscurecido y sin responder.
+  // Cualquier navegación que no sea "entrar a Menú" lo reactiva sola.
+  if(id !== 'editarMenuBtn'){
+    const menuBtn = document.getElementById('editarMenuBtn');
+    if(menuBtn) menuBtn.disabled = false;
+  }
 }
 
 function irAVistaPedidos(){
@@ -1183,6 +1208,56 @@ function renderProductos(){
       </div>
     </details>
   `; }).join('');
+}
+
+function abrirFormNuevoProducto(){
+  document.getElementById('nuevoProductoForm').innerHTML = `
+    <div class="caja-apertura-box caja-form-gasto">
+      <div class="local-sub" style="margin-bottom:8px">Nuevo producto</div>
+      <input type="text" id="nuevoProdNombre" class="np-input" placeholder="Nombre del producto">
+      <select id="nuevoProdCategoria" class="np-input">
+        <option value="">Elegí una categoría</option>
+        ${categoriasData.map(c => `<option value="${c.id}">${c.nombre}</option>`).join('')}
+      </select>
+      <input type="text" id="nuevoProdDescripcion" class="np-input" placeholder="Descripción corta (opcional)">
+      <input type="number" id="nuevoProdPrecio" class="np-input" placeholder="Precio" min="0" step="50">
+      <div class="caja-acciones" style="flex-wrap:wrap">
+        <label class="switch-mini" title="Disponible para mesa"><input type="checkbox" id="nuevoProdMesa" checked><span>Mesa</span></label>
+        <label class="switch-mini" title="Disponible para retiro"><input type="checkbox" id="nuevoProdRetiro" checked><span>Retiro</span></label>
+        <label class="switch-mini" title="Disponible para envío"><input type="checkbox" id="nuevoProdEnvio" checked><span>Envío</span></label>
+      </div>
+      <div class="caja-acciones">
+        <button class="editar-menu-btn" onclick="document.getElementById('nuevoProductoForm').innerHTML=''">Cancelar</button>
+        <button class="cerrar-mesa-btn" onclick="handleCrearProducto()">Crear producto</button>
+      </div>
+    </div>`;
+  document.getElementById('nuevoProductoForm').scrollIntoView({ behavior:'smooth', block:'nearest' });
+}
+
+function handleCrearProducto(){
+  const nombre = document.getElementById('nuevoProdNombre').value.trim();
+  const categoriaId = document.getElementById('nuevoProdCategoria').value;
+  const descripcion = document.getElementById('nuevoProdDescripcion').value.trim();
+  const precio = document.getElementById('nuevoProdPrecio').valueAsNumber;
+  if(!nombre){ showToast('Ingresá el nombre del producto'); return; }
+  if(!categoriaId){ showToast('Elegí una categoría'); return; }
+  if(isNaN(precio) || precio < 0){ showToast('Ingresá un precio válido'); return; }
+
+  postActionConClave('crearProducto', {
+    categoria_id: categoriaId, nombre, descripcion, precio,
+    disponible_mesa: document.getElementById('nuevoProdMesa').checked,
+    disponible_retiro: document.getElementById('nuevoProdRetiro').checked,
+    disponible_envio: document.getElementById('nuevoProdEnvio').checked,
+  }).then(res => {
+    if(!res.ok){ showToast('No se pudo crear el producto: ' + (res.error||'')); return; }
+    showToast(`"${nombre}" creado`);
+    document.getElementById('nuevoProductoForm').innerHTML = '';
+    // Recargamos la lista completa (sin filtrar, con clave) para traer el producto nuevo
+    // con su ID real generado por el backend — no alcanza con pushearlo a mano acá.
+    postActionConClave('listarProductos', {}).then(res2 => {
+      if(res2.ok){ productosData = res2.productos; renderProductos(); }
+    });
+  });
 }
 
 function productoRowHtml(p){
@@ -2523,14 +2598,41 @@ function renderCaja(res){
       <span class="monto">${formatPrecio(res.porCanal[c].monto)} · ${res.porCanal[c].cantidad} pedido${res.porCanal[c].cantidad===1?'':'s'}</span>
     </div>`).join('');
 
+  // Aperturas/cierres de caja del mismo rango — antes acá solo se veían las ventas, sin
+  // ningún dato de con cuánto se abrió/cerró la caja ni si hubo gastos en el período,
+  // aunque el backend ya lo manda (ver obtenerCajasEnRango en Code.gs).
+  const cajas = res.cajas || [];
+  const cajasHtml = cajas.length
+    ? cajas.map(c => {
+        const horaApertura = new Date(c.fecha_apertura).toLocaleString('es-AR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit', hour12:false });
+        const horaCierre = c.fecha_cierre
+          ? new Date(c.fecha_cierre).toLocaleString('es-AR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit', hour12:false }) + ' hs'
+          : 'sigue abierta';
+        return `
+        <div class="caja-periodo-card">
+          <div class="caja-periodo-head">
+            <span>${horaApertura} hs → ${horaCierre}</span>
+            <span class="status-pill ${c.estado === 'cerrada' ? 'listo' : 'nuevo'}">${c.estado === 'cerrada' ? 'CERRADA' : 'ABIERTA'}</span>
+          </div>
+          <div class="caja-periodo-montos">
+            <span>Inicial ${formatPrecio(c.monto_inicial)}</span>
+            <span class="gasto">− ${formatPrecio(c.total_gastos)} gastos</span>
+            <span class="cierre">${c.estado === 'cerrada' ? 'Cerró con' : 'Esperado ahora'} ${formatPrecio(c.efectivo_esperado)}</span>
+          </div>
+        </div>`;
+      }).join('')
+    : '<div class="empty-orders">No se abrió ninguna caja en este rango de fechas</div>';
+
   document.getElementById('cajaContenido').innerHTML = `
-    <div class="caja-total-card">
+    <div class="caja-total-card recaudado">
       <div class="label">Total recaudado</div>
       <div class="monto">${formatPrecio(res.recaudacionTotal)}</div>
-      <div class="sub">${res.cantidadPedidos} pedido${res.cantidadPedidos===1?'':'s'} cerrado${res.cantidadPedidos===1?'':'s'}</div>
+      <div class="sub">${res.cantidadPedidos} pedido${res.cantidadPedidos===1?'':'s'} cerrado${res.cantidadPedidos===1?'':'s'}${res.totalGastosCaja ? ` · ${formatPrecio(res.totalGastosCaja)} en gastos de caja` : ''}</div>
     </div>
     <div class="caja-metodos">${metodosHtml}</div>
     <div class="caja-canales">${canalesHtml}</div>
+    <div class="local-sub" style="margin-top:18px">Cajas en este período</div>
+    <div class="caja-periodos">${cajasHtml}</div>
   `;
 }
 
