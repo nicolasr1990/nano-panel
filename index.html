@@ -237,6 +237,9 @@
   .ronda-minimizada summary::-webkit-details-marker{display:none}
   .ronda-minimizada summary::marker{content:''}
   .ronda-minimizada .ronda-id{font-family:var(--display);font-weight:700;font-size:12.5px;color:var(--ink)}
+  /* Encabezado de una fila de "Historial hoy" — más largo que el .ronda-id de mesa
+     (lleva tipo + nombre de cliente), así que puede envolver en dos líneas si hace falta. */
+  .ronda-minimizada .hist-encabezado{font-family:var(--display);font-weight:700;font-size:12.5px;color:var(--ink);display:flex;align-items:center;gap:6px;flex-wrap:wrap}
   .ronda-minimizada .ronda-total{margin-left:auto;font-family:var(--display);font-weight:800;font-size:13px;color:var(--ink)}
   .ronda-minimizada .cat-chevron{
     font-size:11px;color:var(--ink-secondary);transition:transform .25s;flex-shrink:0;
@@ -260,6 +263,13 @@
   .status-pill.nuevo{background:var(--danger);color:#fff;border:1px solid var(--danger);box-shadow:0 3px 10px rgba(212,47,34,0.35)}
   .status-pill.prep{background:var(--warning);color:#fff;border:1px solid var(--warning);box-shadow:0 3px 10px rgba(180,116,10,0.35)}
   .status-pill.listo{background:var(--success);color:#fff;border:1px solid var(--success);box-shadow:0 3px 10px rgba(23,138,70,0.35)}
+  /* Forma de pago del pedido — solo retiro/envío la traen desde que el cliente pidió
+     (mesa recién la sabe al cerrar la mesa, ver METODO_LABEL más abajo). */
+  .metodo-pago-chip{
+    display:inline-flex;align-items:center;gap:4px;font-family:var(--body);font-size:11px;font-weight:700;
+    padding:4px 9px;border-radius:var(--radius-xl);background:var(--surface-tint);color:var(--ink-secondary);
+    border:1px solid var(--border);flex-shrink:0;
+  }
 
   .order-card ul{list-style:none;padding:0;margin:0 0 14px}
   .order-card li{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border-soft)}
@@ -1340,15 +1350,22 @@ function tipoChip(tipo){
 // limpian solos al entrar a esa pestaña (ver setFilter).
 let pedidosSinVer = { retiro: 0, envio: 0 };
 
-const TIPO_FILTROS = ['todos', 'mesa', 'retiro', 'envio'];
-const TIPO_FILTRO_LABEL = { todos:'Todos', mesa:'Mesas', retiro:'Retiro', envio:'Envío' };
+// "historial" no es un tipo de pedido real (como mesa/retiro/envio) — es una pestaña
+// aparte que muestra lo ya cerrado/cobrado HOY, minimizado, para no perderle el rastro
+// sin que estorbe en la lista de pedidos activos. Ver cargarHistorialHoy()/renderHistorialHoy().
+const TIPO_FILTROS = ['todos', 'mesa', 'retiro', 'envio', 'historial'];
+const TIPO_FILTRO_LABEL = { todos:'Todos', mesa:'Mesas', retiro:'Retiro', envio:'Envío', historial:'Historial hoy' };
+
+// null = todavía no se cargó nunca; se pide fresco cada vez que se entra a la pestaña
+// (no en cada poll de 8s como el resto — es una pestaña de consulta, no de trabajo activo).
+let historialHoyData = null;
 
 function renderFilters(){
   const counts = { todos: staffOrders.length, mesa:0, retiro:0, envio:0 };
   staffOrders.forEach(o => counts[o.tipo] = (counts[o.tipo]||0) + 1);
   document.getElementById('filters').innerHTML = TIPO_FILTROS.map(k => `
     <button class="${filter===k?'active':''}" onclick="setFilter('${k}')">
-      ${TIPO_FILTRO_LABEL[k]} (${counts[k]||0})
+      ${TIPO_FILTRO_LABEL[k]}${k==='historial' ? '' : ` (${counts[k]||0})`}
       ${(k==='retiro'||k==='envio') && pedidosSinVer[k] > 0 ? `<span class="filtro-badge">${pedidosSinVer[k]}</span>` : ''}
     </button>`
   ).join('');
@@ -1356,12 +1373,69 @@ function renderFilters(){
 function setFilter(f){
   filter = f;
   if(f==='retiro' || f==='envio') pedidosSinVer[f] = 0;
+  if(f === 'historial'){ cargarHistorialHoy(); return; }
   renderStaffOrders();
+}
+
+function cargarHistorialHoy(){
+  renderFilters(); // marca la pestaña activa ya, sin esperar la red
+  document.getElementById('ordersList').innerHTML = '<div class="empty-orders">Cargando…</div>';
+  fetch(`${WEBAPP_URL}?action=listarCerradosHoy`)
+    .then(r => r.json())
+    .then(res => { historialHoyData = res.ok ? res.pedidos : []; renderHistorialHoy(); })
+    .catch(() => { historialHoyData = []; renderHistorialHoy(); });
+}
+
+function renderHistorialHoy(){
+  const el = document.getElementById('ordersList');
+  document.getElementById('countLine').textContent = historialHoyData
+    ? `${historialHoyData.length} pedido${historialHoyData.length===1?'':'s'} cerrado${historialHoyData.length===1?'':'s'} hoy`
+    : '';
+  if(!historialHoyData || historialHoyData.length === 0){
+    el.innerHTML = '<div class="empty-orders">Todavía no se cerró ningún pedido hoy</div>';
+    return;
+  }
+  el.innerHTML = `
+    <button class="imprimir-cuenta-btn" style="margin-bottom:12px" onclick="cargarHistorialHoy()">🔄 Actualizar</button>
+    ${historialHoyData.map(historialItemHtml).join('')}
+  `;
+}
+
+// Cada fila del historial: minimizada por defecto (mismo patrón que una ronda de mesa
+// "lista"), se abre para ver qué se le entregó a ese cliente/mesa. "Deshacer cierre"
+// reutiliza el mismo deshacer() de siempre — vuelve el pedido a como estaba justo antes
+// de cerrarse (mesa: "listo"; retiro/envío: "listo", con el botón de rescate visible).
+function historialItemHtml(o){
+  const encabezado = o.tipo === 'mesa'
+    ? `${tipoChip('mesa')} Mesa ${o.mesa} · #${o.id_pedido.slice(-4)}`
+    : `${tipoChip(o.tipo)} ${o.nombre_cliente || 'Sin nombre'} · #${o.id_pedido.slice(-4)}`;
+  const metodoPago = o.metodo_pago
+    ? `<span class="metodo-pago-chip">${METODO_ICON[o.metodo_pago]||''} ${METODO_LABEL[o.metodo_pago]||o.metodo_pago}</span>` : '';
+  return `
+    <details class="ronda-minimizada">
+      <summary>
+        <span class="hist-encabezado">${encabezado}</span>
+        ${metodoPago}
+        <span class="ronda-total">${formatPrecio(o.total)}</span>
+        <span class="cat-chevron">▾</span>
+      </summary>
+      <div class="ronda-detalle">
+        <ul>${o.items.map(i => `<li><span class="line">${i.cantidad}× ${i.categoria ? `<span style="color:var(--ink-muted);font-weight:600">${i.categoria}</span> - ` : ''}${i.nombre}${i.nota?`<span class="note">📝 ${i.nota}</span>`:''}</span></li>`).join('')}</ul>
+        <div class="order-actions"><button class="deshacer" onclick="deshacerDesdeHistorial('${o.id_pedido}')">Deshacer cierre</button></div>
+      </div>
+    </details>`;
+}
+
+function deshacerDesdeHistorial(id){
+  const p = deshacer(id);
+  if(p) p.then(() => cargarHistorialHoy());
 }
 
 /* ======================= RENDER PRINCIPAL ======================= */
 function renderStaffOrders(){
   renderFilters();
+  if(filter === 'historial'){ renderHistorialHoy(); return; }
+
   document.getElementById('countLine').textContent =
     `${staffOrders.length} pedido${staffOrders.length===1?'':'s'} activo${staffOrders.length===1?'':'s'}`;
 
@@ -1432,10 +1506,15 @@ function orderCardHtml(o){
   const encabezado = o.tipo === 'mesa'
     ? `#${o.id_pedido.slice(-4)}`
     : `${tipoChip(o.tipo)} ${o.nombre_cliente || 'Sin nombre'} · #${o.id_pedido.slice(-4)}`;
+  // Mesa recién sabe la forma de pago al cerrar la mesa — retiro/envío ya la traen desde
+  // que el cliente hizo el pedido (nanorestobar se la pide antes de mandarlo).
+  const metodoPagoBadge = o.tipo !== 'mesa' && o.metodo_pago
+    ? `<span class="metodo-pago-chip">${METODO_ICON[o.metodo_pago]||''} ${METODO_LABEL[o.metodo_pago]||o.metodo_pago}</span>`
+    : '';
   return `
     <div class="order-card ${o.estado} tipo-${o.tipo}">
       <div class="head">
-        <span class="src">${encabezado}</span>
+        <span class="src">${encabezado}${metodoPagoBadge}</span>
         <span class="status-pill ${o.estado}">${statusLabel(o.estado)}</span>
       </div>
       <ul>
@@ -1455,7 +1534,10 @@ function nextActionButtons(o){
   if(o.estado === 'prep') return `<button class="primary" onclick="marcarListo('${o.id_pedido}', '${o.tipo}')">Marcar listo</button>`;
   // listo:
   if(o.tipo === 'mesa') return `<span style="flex:2;display:flex;align-items:center;justify-content:center;font-size:11.5px;color:var(--ink-muted)">Se cierra junto con la mesa</span>`;
-  return `<button class="primary" onclick="marcarEntregado('${o.id_pedido}', '${o.tipo}')">Marcar entregado</button>`;
+  // Retiro/envío se cierra solo al marcar listo (ver marcarListo) — en el flujo normal esto
+  // no debería verse nunca. Si el cierre automático falló y quedó trabado en "listo", queda
+  // este botón de rescate para cerrarlo a mano en vez de dejarlo colgado para siempre.
+  return `<button class="primary" onclick="marcarEntregado('${o.id_pedido}', '${o.tipo}')">Marcar entregado (rescate)</button>`;
 }
 
 /* ======================= ACCIONES ======================= */
@@ -1465,33 +1547,51 @@ function unlockUI(){ uiBloqueada = false; document.body.classList.remove('ui-loc
 
 function tomarPedido(id){
   if(uiBloqueada) return;
-  lockUI();
-  const o = staffOrders.find(x => x.id_pedido === id);
-  postAction('actualizarEstado', { id_pedido:id, estado:'prep' }).then(res => {
-    if(!res.ok) return showToast('No se pudo actualizar: ' + (res.error||''));
-    imprimirComprobanteCocina(o);
-    showToast('Pedido enviado a cocina');
-    cargarPedidos();
-  }).finally(unlockUI);
+  // "Tomar pedido" es el momento justo para exigir caja abierta: a partir de acá cocina
+  // ya se pone a laburar sobre el pedido. Antes de esto (todavía "nuevo") no hace falta —
+  // el cliente puede pedir por retiro/envío a cualquier hora sin que le importe la caja.
+  chequearEstadoCaja().then(estado => {
+    if(estado.bloqueado){
+      uiAlert(CAJA_MOTIVO_MSG[estado.motivo]);
+      return;
+    }
+    lockUI();
+    const o = staffOrders.find(x => x.id_pedido === id);
+    postAction('actualizarEstado', { id_pedido:id, estado:'prep' }).then(res => {
+      if(!res.ok) return showToast('No se pudo actualizar: ' + (res.error||''));
+      imprimirComprobanteCocina(o);
+      showToast('Pedido enviado a cocina');
+      cargarPedidos();
+    }).finally(unlockUI);
+  });
 }
 
 function marcarListo(id, tipo){
   if(uiBloqueada) return;
   lockUI();
   const o = staffOrders.find(x => x.id_pedido === id);
-  postAction('actualizarEstado', { id_pedido:id, estado:'listo' }).then(res => {
-    if(!res.ok) return showToast('No se pudo actualizar: ' + (res.error||''));
-    if(tipo === 'mesa'){
-      showToast('Pedido listo para servir');
-    } else {
-      // Retiro/envío: acá es donde el cliente se entera (aviso por WhatsApp) y donde
-      // se le entrega el comprobante final — "marcar entregado" es un paso posterior,
-      // ya sin nada que imprimir, solo para cerrar y que cuente en la caja.
+  postAction('actualizarEstado', { id_pedido:id, estado:'listo' })
+    .then(res => {
+      if(!res.ok){ showToast('No se pudo actualizar: ' + (res.error||'')); return; }
+      if(tipo === 'mesa'){
+        showToast('Pedido listo para servir');
+        return;
+      }
+      // Retiro/envío: acá es donde el cliente se entera (aviso por WhatsApp) y se imprime
+      // el comprobante final. La forma de pago ya se sabe desde que el cliente hizo el
+      // pedido (la eligió en nanorestobar), así que no hay nada más que decidir en este
+      // punto — se cierra directo, sin un paso extra de "marcar entregado" a mano.
       imprimirComprobanteFinal(o, [o]);
-      showToast('📲 Aviso enviado: tu pedido está listo'); // acá se conecta después el WhatsApp real
-    }
-    cargarPedidos();
-  }).finally(unlockUI);
+      return postAction('actualizarEstado', { id_pedido:id, estado:'cerrado' }).then(res2 => {
+        if(!res2.ok){
+          showToast('📲 Aviso enviado, pero no se pudo cerrar solo (' + (res2.error||'') + ') — cerralo a mano.');
+          return;
+        }
+        showToast('📲 Aviso enviado y pedido cerrado');
+      });
+    })
+    .then(() => cargarPedidos())
+    .finally(unlockUI);
 }
 
 function marcarEntregado(id, tipo){
@@ -1518,7 +1618,9 @@ function marcarEntregado(id, tipo){
 function deshacer(id){
   if(uiBloqueada) return;
   lockUI();
-  postAction('deshacerEstado', { id_pedido:id }).then(res => {
+  // Devuelve la promesa (antes no hacía falta) para que deshacerDesdeHistorial() pueda
+  // esperar a que termine y recién ahí refrescar la pestaña de historial.
+  return postAction('deshacerEstado', { id_pedido:id }).then(res => {
     if(!res.ok) return showToast('Nada para deshacer');
     showToast('Se deshizo el último cambio');
     cargarPedidos();
