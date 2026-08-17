@@ -1483,7 +1483,7 @@ function renderHistorialHoy(){
 function historialItemHtml(o){
   const encabezado = o.tipo === 'mesa'
     ? `${tipoChip('mesa')} Mesa ${o.mesa} · #${o.id_pedido.slice(-4)}`
-    : `${tipoChip(o.tipo)} ${o.nombre_cliente || 'Sin nombre'} · #${o.id_pedido.slice(-4)}`;
+    : `${tipoChip(o.tipo)} ${esc(o.nombre_cliente) || 'Sin nombre'} · #${o.id_pedido.slice(-4)}`;
   const metodoPago = o.metodo_pago
     ? `<span class="metodo-pago-chip">${METODO_ICON[o.metodo_pago]||''} ${METODO_LABEL[o.metodo_pago]||o.metodo_pago}</span>` : '';
   return `
@@ -1495,7 +1495,7 @@ function historialItemHtml(o){
         <span class="cat-chevron">▾</span>
       </summary>
       <div class="ronda-detalle">
-        <ul>${o.items.map(i => `<li><span class="line">${i.cantidad}× ${i.categoria ? `<span style="color:var(--ink-muted);font-weight:600">${i.categoria}</span> - ` : ''}${i.nombre}${i.nota?`<span class="note">📝 ${i.nota}</span>`:''}</span></li>`).join('')}</ul>
+        <ul>${o.items.map(i => `<li><span class="line">${i.cantidad}× ${i.categoria ? `<span style="color:var(--ink-muted);font-weight:600">${i.categoria}</span> - ` : ''}${i.nombre}${i.nota?`<span class="note">📝 ${esc(i.nota)}</span>`:''}</span></li>`).join('')}</ul>
         <div class="order-actions"><button class="deshacer" onclick="deshacerDesdeHistorial('${o.id_pedido}')">Deshacer cierre</button></div>
       </div>
     </details>`;
@@ -1571,7 +1571,7 @@ function rondaMinimizadaHtml(o){
         <span class="cat-chevron">▾</span>
       </summary>
       <div class="ronda-detalle">
-        <ul>${o.items.map(i => `<li><span class="line">${i.cantidad}× ${i.categoria ? `<span style="color:var(--ink-muted);font-weight:600">${i.categoria}</span> - ` : ''}${i.nombre}${i.nota?`<span class="note">📝 ${i.nota}</span>`:''}</span></li>`).join('')}</ul>
+        <ul>${o.items.map(i => `<li><span class="line">${i.cantidad}× ${i.categoria ? `<span style="color:var(--ink-muted);font-weight:600">${i.categoria}</span> - ` : ''}${i.nombre}${i.nota?`<span class="note">📝 ${esc(i.nota)}</span>`:''}</span></li>`).join('')}</ul>
         <div class="order-actions"><button class="deshacer" onclick="deshacer('${o.id_pedido}')">Deshacer</button></div>
       </div>
     </details>`;
@@ -1580,7 +1580,7 @@ function rondaMinimizadaHtml(o){
 function orderCardHtml(o){
   const encabezado = o.tipo === 'mesa'
     ? `#${o.id_pedido.slice(-4)}`
-    : `${tipoChip(o.tipo)} ${o.nombre_cliente || 'Sin nombre'} · #${o.id_pedido.slice(-4)}`;
+    : `${tipoChip(o.tipo)} ${esc(o.nombre_cliente) || 'Sin nombre'} · #${o.id_pedido.slice(-4)}`;
   // Mesa recién sabe la forma de pago al cerrar la mesa — retiro/envío ya la traen desde
   // que el cliente hizo el pedido (nanorestobar se la pide antes de mandarlo).
   const metodoPagoBadge = o.tipo !== 'mesa' && o.metodo_pago
@@ -1593,7 +1593,7 @@ function orderCardHtml(o){
         <span class="status-pill ${o.estado}">${statusLabel(o.estado)}</span>
       </div>
       <ul>
-        ${o.items.map(i => `<li><span class="line">${i.cantidad}× ${i.categoria ? `<span style="color:var(--ink-muted);font-weight:600">${i.categoria}</span> - ` : ''}${i.nombre}${i.nota?`<span class="note">📝 ${i.nota}</span>`:''}</span></li>`).join('')}
+        ${o.items.map(i => `<li><span class="line">${i.cantidad}× ${i.categoria ? `<span style="color:var(--ink-muted);font-weight:600">${i.categoria}</span> - ` : ''}${i.nombre}${i.nota?`<span class="note">📝 ${esc(i.nota)}</span>`:''}</span></li>`).join('')}
       </ul>
       <div class="order-actions">
         ${nextActionButtons(o)}
@@ -1807,6 +1807,17 @@ function confirmarCierreMesa(metodo){
 // Reemplazá LOGO_SRC por la ruta real del logo cuando subas panel-local.html junto con logo.png
 const LOGO_SRC = 'logo.png';
 
+// Escapa HTML antes de meter texto de terceros en un template de innerHTML. Sin esto,
+// alguien podía escribir su nombre como "<img src=x onerror=...>" en el checkout público
+// de retiro/envío (nanorestobar no valida ese campo) y ese script corría en el navegador
+// del mozo apenas el panel mostraba ese pedido — con acceso a todo lo que hay en esa
+// pestaña, incluida la variable CLAVE del módulo de Menú. Se usa en todo lo que venga de
+// nombre_cliente/direccion/telefono/nota (texto libre de un cliente anónimo), no en
+// nombre/categoría de producto (esos salen del propio menú, no de un formulario público).
+function esc(s){
+  return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
 function formatPrecio(n){
   return '$' + Math.round(Number(n) || 0).toLocaleString('es-AR');
 }
@@ -1834,11 +1845,11 @@ function imprimirComprobanteCocina(o){
   el.innerHTML = `
     <div class="ticket-logo"><img src="${LOGO_SRC}" alt="Logo"></div>
     <h1>Pedido para cocina</h1>
-    <div class="nota">${o.tipo === 'mesa' ? 'MESA ' + o.mesa : TIPO_LABEL[o.tipo].toUpperCase() + (o.nombre_cliente ? ' — ' + o.nombre_cliente : '')} · #${o.id_pedido.slice(-4)} · ${horaTicket()}</div>
+    <div class="nota">${o.tipo === 'mesa' ? 'MESA ' + o.mesa : TIPO_LABEL[o.tipo].toUpperCase() + (o.nombre_cliente ? ' — ' + esc(o.nombre_cliente) : '')} · #${o.id_pedido.slice(-4)} · ${horaTicket()}</div>
     <div class="sep"></div>
     ${itemsCocina.map(i => {
       let bloque = `<div class="linea-cocina"><span class="cant">${i.cantidad}×</span><span>${i.categoria ? i.categoria + ' - ' : ''}${i.nombre}</span></div>`;
-      if(i.nota) bloque += `<div class="item-nota">↳ ${i.nota}</div>`;
+      if(i.nota) bloque += `<div class="item-nota">↳ ${esc(i.nota)}</div>`;
       return bloque;
     }).join('')}
   `;
@@ -1848,7 +1859,7 @@ function imprimirComprobanteCocina(o){
 function imprimirComprobanteFinal(cabecera, rondas){
   const el = document.getElementById('comprobante');
   const total = rondas.reduce((s,r) => s + r.total, 0);
-  const identificador = cabecera.tipo === 'mesa' ? 'Mesa ' + cabecera.mesa : TIPO_LABEL[cabecera.tipo] + (cabecera.nombre_cliente ? ' — ' + cabecera.nombre_cliente : '');
+  const identificador = cabecera.tipo === 'mesa' ? 'Mesa ' + cabecera.mesa : TIPO_LABEL[cabecera.tipo] + (cabecera.nombre_cliente ? ' — ' + esc(cabecera.nombre_cliente) : '');
   el.innerHTML = `
     <div class="ticket-logo"><img src="${LOGO_SRC}" alt="Logo"></div>
     <h1>Comprobante</h1>
