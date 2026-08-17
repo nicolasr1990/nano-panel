@@ -1011,6 +1011,13 @@
 <script>
 /* ======================= CONFIG ======================= */
 const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbwZbKOiZmtimoOVp8dt5wAehccD1J-fQTLfGLk8oMf6AAdFkoN1_G3x7zGoQXFHMHqubg/exec';
+// Token del dispositivo: viaja solo, en cada acción que crea o cambia algo (tomar pedido,
+// cerrar mesa, abrir caja, etc.), sin que el mozo tenga que loguearse ni escribir nada. No
+// reemplaza un login de verdad — cualquiera que lea el código de este archivo lo puede ver
+// igual — pero frena a cualquiera que le pegue a la URL del backend sin pasar por este panel
+// (la URL no es secreta: queda a la vista en el código fuente de la página). Tiene que
+// coincidir con DEVICE_TOKEN en las Propiedades del script de Code.gs — ver setDeviceToken().
+const DEVICE_TOKEN = 'a0f020c9d0d7dc8481d395b388efcade0097723f3ad1b80b';
 const POLL_MS = 8000; // cada cuánto se refresca la lista de pedidos sola
 
 let CLAVE = '';         // se pide recién cuando se abre el módulo de productos/precios (no hace falta para ver pedidos)
@@ -1069,7 +1076,7 @@ function postAction(action, data){
   return fetch(WEBAPP_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // evita preflight en Apps Script
-    body: JSON.stringify({ action, ...data }), // la clave solo se manda desde las acciones del módulo de productos
+    body: JSON.stringify({ action, device_token: DEVICE_TOKEN, ...data }), // la clave solo se manda desde las acciones del módulo de productos
   }).then(r => r.json()).catch(() => ({ ok:false, error:'sin_conexion' }));
 }
 
