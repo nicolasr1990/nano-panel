@@ -2420,12 +2420,14 @@ function abrirCaja(){
     document.getElementById('vistaProductos').style.display = 'none';
     document.getElementById('vistaCaja').style.display = 'block';
     marcarNavActivo('cajaBtn');
+    // Siempre vuelve a "hoy" al entrar al módulo, sin importar qué filtro haya quedado
+    // puesto la vez anterior — antes solo lo tocaba si el campo estaba vacío, y como el
+    // valor se mantiene entre navegaciones (el DOM no se destruye, solo se oculta), en la
+    // práctica nunca volvía a "hoy" después de la primera vez.
     const hoy = new Date();
     const hoyStr = hoy.getFullYear() + '-' + String(hoy.getMonth()+1).padStart(2,'0') + '-' + String(hoy.getDate()).padStart(2,'0');
-    const desdeInput = document.getElementById('cajaDesde');
-    const hastaInput = document.getElementById('cajaHasta');
-    if(!desdeInput.value) desdeInput.value = hoyStr;
-    if(!hastaInput.value) hastaInput.value = hoyStr;
+    document.getElementById('cajaDesde').value = hoyStr;
+    document.getElementById('cajaHasta').value = hoyStr;
     cargarCajaActual();
     cargarCierresCajaHoy();
     cargarCaja();
@@ -2535,6 +2537,7 @@ function handleRegistrarGasto(){
     if(!res.ok){ showToast('No se pudo cargar el gasto: ' + (res.error||'')); return; }
     showToast('Gasto cargado');
     cargarCajaActual();
+    cargarCaja(); // el resumen por fecha también muestra los gastos del período, hay que refrescarlo
   });
 }
 
@@ -2546,6 +2549,7 @@ function handleCerrarCaja(){
       showToast(`Caja cerrada · Efectivo esperado ${formatPrecio(res.efectivo_esperado)}`);
       cargarCajaActual();
       cargarCierresCajaHoy();
+      cargarCaja(); // el resumen por fecha también muestra el detalle de esta caja ya cerrada
     });
   });
 }
