@@ -1242,6 +1242,7 @@ function abrirFormNuevoProducto(){
 }
 
 function handleCrearProducto(){
+  if(uiBloqueada) return;
   const nombre = document.getElementById('nuevoProdNombre').value.trim();
   const categoriaId = document.getElementById('nuevoProdCategoria').value;
   const descripcion = document.getElementById('nuevoProdDescripcion').value.trim();
@@ -1250,6 +1251,7 @@ function handleCrearProducto(){
   if(!categoriaId){ showToast('Elegí una categoría'); return; }
   if(isNaN(precio) || precio < 0){ showToast('Ingresá un precio válido'); return; }
 
+  lockUI();
   postActionConClave('crearProducto', {
     categoria_id: categoriaId, nombre, descripcion, precio,
     disponible_mesa: document.getElementById('nuevoProdMesa').checked,
@@ -1261,10 +1263,10 @@ function handleCrearProducto(){
     document.getElementById('nuevoProductoForm').innerHTML = '';
     // Recargamos la lista completa (sin filtrar, con clave) para traer el producto nuevo
     // con su ID real generado por el backend — no alcanza con pushearlo a mano acá.
-    postActionConClave('listarProductos', {}).then(res2 => {
+    return postActionConClave('listarProductos', {}).then(res2 => {
       if(res2.ok){ productosData = res2.productos; renderProductos(); }
     });
-  });
+  }).finally(unlockUI);
 }
 
 function productoRowHtml(p){
@@ -1604,7 +1606,7 @@ function orderCardHtml(o){
       </ul>
       <div class="order-actions">
         ${nextActionButtons(o)}
-        <button class="deshacer" onclick="deshacer('${o.id_pedido}')">Deshacer</button>
+        <button class="deshacer" onclick="deshacer('${o.id_pedido}')">${o.estado === 'nuevo' ? 'Cancelar pedido' : 'Deshacer'}</button>
       </div>
     </div>`;
 }
@@ -1699,6 +1701,24 @@ function marcarEntregado(id, tipo){
 
 function deshacer(id){
   if(uiBloqueada) return;
+
+  // Un pedido "nuevo" (todavía nadie lo tomó) no tiene ningún estado anterior al que
+  // volver — "deshacer" no tiene sentido ahí, lo que hace falta es poder cancelarlo
+  // directamente (llegó por error desde la URL, se equivocaron de mesa, pidieron mal).
+  // A partir de "prep" ya hay un estado anterior de verdad, y sigue el flujo de siempre.
+  const o = staffOrders.find(x => x.id_pedido === id);
+  if(o && o.estado === 'nuevo'){
+    return uiConfirm('¿Cancelar este pedido? No se va a poder recuperar.', { textoOk:'Cancelar pedido', textoCancelar:'Volver' }).then(ok => {
+      if(!ok) return;
+      lockUI();
+      return postAction('cancelarPedido', { id_pedido:id }).then(res => {
+        if(!res.ok) return showToast('No se pudo cancelar: ' + (res.error||''));
+        showToast('Pedido cancelado');
+        cargarPedidos();
+      }).finally(unlockUI);
+    });
+  }
+
   lockUI();
   // Devuelve la promesa (antes no hacía falta) para que deshacerDesdeHistorial() pueda
   // esperar a que termine y recién ahí refrescar la pestaña de historial.
@@ -2518,39 +2538,45 @@ function abrirFormGasto(){
 }
 
 function handleAbrirCaja(){
+  if(uiBloqueada) return;
   const input = document.getElementById('cajaMontoInicial');
   const monto = Number(input.value);
   if(isNaN(monto) || monto < 0){ showToast('Ingresá un monto inicial válido'); return; }
+  lockUI();
   postAction('abrirCaja', { monto_inicial: monto }).then(res => {
     if(!res.ok){ showToast('No se pudo abrir la caja: ' + (res.error||'')); return; }
     showToast('Caja abierta');
     cargarCajaActual();
-  });
+  }).finally(unlockUI);
 }
 
 function handleRegistrarGasto(){
+  if(uiBloqueada) return;
   const descripcion = document.getElementById('gastoDescripcion').value.trim();
   const monto = Number(document.getElementById('gastoMonto').value);
   if(!descripcion){ showToast('Falta la descripción del gasto'); return; }
   if(isNaN(monto) || monto <= 0){ showToast('Ingresá un monto válido'); return; }
+  lockUI();
   postAction('registrarGastoCaja', { monto, descripcion }).then(res => {
     if(!res.ok){ showToast('No se pudo cargar el gasto: ' + (res.error||'')); return; }
     showToast('Gasto cargado');
     cargarCajaActual();
     cargarCaja(); // el resumen por fecha también muestra los gastos del período, hay que refrescarlo
-  });
+  }).finally(unlockUI);
 }
 
 function handleCerrarCaja(){
+  if(uiBloqueada) return;
   uiConfirm('¿Cerrar la caja? Después hace falta abrir una nueva para seguir registrando efectivo.').then(ok => {
     if(!ok) return;
+    lockUI();
     postAction('cerrarCajaTurno', {}).then(res => {
       if(!res.ok){ showToast('No se pudo cerrar la caja: ' + (res.error||'')); return; }
       showToast(`Caja cerrada · Efectivo esperado ${formatPrecio(res.efectivo_esperado)}`);
       cargarCajaActual();
       cargarCierresCajaHoy();
       cargarCaja(); // el resumen por fecha también muestra el detalle de esta caja ya cerrada
-    });
+    }).finally(unlockUI);
   });
 }
 
@@ -2748,16 +2774,18 @@ function abrirFormNuevaMesa(){
 }
 
 function handleCrearMesa(){
+  if(uiBloqueada) return;
   const numero = document.getElementById('nuevaMesaNumero').value.trim();
   const sector = document.getElementById('nuevaMesaSector').value.trim();
   if(!numero){ showToast('Ingresá el número de mesa'); return; }
+  lockUI();
   postAction('crearMesa', { mesa: numero, sector }).then(res => {
     if(!res.ok){ showToast('No se pudo crear la mesa: ' + (res.error||'')); return; }
     showToast(`Mesa ${numero} creada`);
     document.getElementById('mesasFormEdicion').innerHTML = '';
     mesasData = [];
     abrirMesas();
-  });
+  }).finally(unlockUI);
 }
 
 function abrirEditarMesa(mesa, sectorActual){
@@ -2776,26 +2804,30 @@ function abrirEditarMesa(mesa, sectorActual){
 }
 
 function handleGuardarSectorMesa(mesa){
+  if(uiBloqueada) return;
   const sector = document.getElementById('editarMesaSector').value.trim();
+  lockUI();
   postAction('editarMesa', { mesa, sector }).then(res => {
     if(!res.ok){ showToast('No se pudo guardar: ' + (res.error||'')); return; }
     showToast('Mesa actualizada');
     document.getElementById('mesasFormEdicion').innerHTML = '';
     mesasData = [];
     abrirMesas();
-  });
+  }).finally(unlockUI);
 }
 
 function handleDesactivarMesa(mesa){
+  if(uiBloqueada) return;
   uiConfirm(`¿Desactivar la Mesa ${mesa}? Deja de aparecer en el mapa y en Nuevo pedido (se puede reactivar más adelante desde el Sheet).`).then(ok => {
     if(!ok) return;
+    lockUI();
     postAction('editarMesa', { mesa, activa: false }).then(res => {
       if(!res.ok){ showToast('No se pudo desactivar: ' + (res.error||'')); return; }
       showToast(`Mesa ${mesa} desactivada`);
       document.getElementById('mesasFormEdicion').innerHTML = '';
       mesasData = [];
       abrirMesas();
-    });
+    }).finally(unlockUI);
   });
 }
 
