@@ -1068,7 +1068,7 @@ setInterval(cargarPedidos, POLL_MS);
 // declararse todo el script (nuevoPedido/mesasData son `let` más abajo en el archivo).
 setTimeout(() => {
   cargarMenuNuevoPedido();
-  fetch(`${WEBAPP_URL}?action=listarMesas`).then(r => r.json()).then(res => { if(res.ok) mesasData = res.mesas; });
+  fetch(`${WEBAPP_URL}?action=listarMesas&device_token=${DEVICE_TOKEN}`).then(r => r.json()).then(res => { if(res.ok) mesasData = res.mesas; });
 }, 0);
 
 /* ======================= RED ======================= */
@@ -1381,7 +1381,7 @@ let primeraCarga = true;
 const TITULO_BASE = document.title;
 
 function cargarPedidos(){
-  fetch(`${WEBAPP_URL}?action=listarPedidos`)
+  fetch(`${WEBAPP_URL}?action=listarPedidos&device_token=${DEVICE_TOKEN}`)
     .then(r => r.json())
     .then(res => {
       if(!res.ok) return;
@@ -1464,7 +1464,7 @@ function setFilter(f){
 function cargarHistorialHoy(){
   renderFilters(); // marca la pestaña activa ya, sin esperar la red
   document.getElementById('ordersList').innerHTML = '<div class="empty-orders">Cargando…</div>';
-  fetch(`${WEBAPP_URL}?action=listarCerradosHoy`)
+  fetch(`${WEBAPP_URL}?action=listarCerradosHoy&device_token=${DEVICE_TOKEN}`)
     .then(r => r.json())
     .then(res => { historialHoyData = res.ok ? res.pedidos : []; renderHistorialHoy(); })
     .catch(() => { historialHoyData = []; renderHistorialHoy(); });
@@ -1760,7 +1760,7 @@ const CAJA_MOTIVO_MSG = {
 };
 // { bloqueado:false } si está todo bien, o { bloqueado:true, motivo } si no.
 function chequearEstadoCaja(){
-  return fetch(`${WEBAPP_URL}?action=cajaActual`)
+  return fetch(`${WEBAPP_URL}?action=cajaActual&device_token=${DEVICE_TOKEN}`)
     .then(r => r.json())
     .then(res => {
       if(!res.ok) return { bloqueado:false }; // ej. todavía no se corrió crearHojasCaja() — no bloqueamos por eso
@@ -1918,7 +1918,7 @@ function abrirMesas(){
     marcarNavActivo('mesasBtn');
     iniciarTimerMesas();
     if(mesasData.length){ renderMesas(); return; }
-    fetch(`${WEBAPP_URL}?action=listarMesas`)
+    fetch(`${WEBAPP_URL}?action=listarMesas&device_token=${DEVICE_TOKEN}`)
       .then(r => r.json())
       .then(res => {
         if(!res.ok){ showToast('No se pudo cargar el mapa de mesas'); return; }
@@ -2010,7 +2010,7 @@ function elegirTipoNuevoPedido(tipo){
   if(tipo === 'mesa'){
     mostrarPasoNuevoPedido('npPasoMesa');
     if(mesasData.length) renderNpMapaMesas();
-    else fetch(`${WEBAPP_URL}?action=listarMesas`).then(r => r.json()).then(res => {
+    else fetch(`${WEBAPP_URL}?action=listarMesas&device_token=${DEVICE_TOKEN}`).then(r => r.json()).then(res => {
       if(!res.ok){ showToast('No se pudo cargar el mapa de mesas'); return; }
       mesasData = res.mesas;
       renderNpMapaMesas();
@@ -2466,7 +2466,7 @@ let cajaActualData = null;
 function cargarCajaActual(){
   const el = document.getElementById('cajaTurno');
   el.innerHTML = '<div class="empty-orders">Cargando…</div>';
-  fetch(`${WEBAPP_URL}?action=cajaActual`)
+  fetch(`${WEBAPP_URL}?action=cajaActual&device_token=${DEVICE_TOKEN}`)
     .then(r => r.json())
     .then(res => {
       if(!res.ok){
@@ -2582,7 +2582,7 @@ function handleCerrarCaja(){
 
 function cargarCierresCajaHoy(){
   const el = document.getElementById('cajaCierresHoy');
-  fetch(`${WEBAPP_URL}?action=cierresCajaHoy`)
+  fetch(`${WEBAPP_URL}?action=cierresCajaHoy&device_token=${DEVICE_TOKEN}`)
     .then(r => r.json())
     .then(res => {
       if(!res.ok){ el.innerHTML = '<div class="empty-orders">No se pudo cargar los cierres de hoy</div>'; return; }
@@ -2614,7 +2614,7 @@ function cargarCaja(){
   const hasta = document.getElementById('cajaHasta').value;
   if(!desde || !hasta) return;
   document.getElementById('cajaContenido').innerHTML = '<div class="empty-orders">Cargando…</div>';
-  fetch(`${WEBAPP_URL}?action=resumenDashboard&desde=${desde}&hasta=${hasta}`)
+  fetch(`${WEBAPP_URL}?action=resumenDashboard&desde=${desde}&hasta=${hasta}&device_token=${DEVICE_TOKEN}`)
     .then(r => r.json())
     .then(res => {
       if(!res.ok){ document.getElementById('cajaContenido').innerHTML = '<div class="empty-orders">No se pudo cargar el cierre de caja</div>'; return; }
