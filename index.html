@@ -409,7 +409,12 @@
   .mesas-toolbar{margin-bottom:16px}
   .sector-bloque{margin-bottom:28px}
   .sector-titulo{font-family:var(--display);font-weight:800;font-size:13px;color:var(--ink-secondary);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:10px}
-  .mapa-mesas{display:grid;grid-template-columns:repeat(auto-fit,minmax(76px,1fr));gap:10px}
+  /* auto-fill (no auto-fit) + un tope de ancho: así todas las celdas miden lo mismo sin
+     importar cuántas mesas tenga cada sector — antes un sector con pocas mesas (ej. 4) las
+     estiraba enormes porque "auto-fit" repartía todo el ancho disponible entre esas 4. */
+  .mapa-mesas{display:grid;grid-template-columns:repeat(auto-fill,minmax(76px,88px));justify-content:start;gap:10px}
+  .mesas-inactivas-lista{display:flex;flex-direction:column;gap:8px}
+  .mesa-inactiva-row{display:flex;justify-content:space-between;align-items:center;background:var(--surface-tint);border:1px solid var(--border);border-radius:var(--radius-md);padding:10px 14px;font-size:13px;font-weight:600;color:var(--ink-secondary)}
   .mesa-celda{
     position:relative;aspect-ratio:1;border-radius:var(--radius-md);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
     cursor:pointer;transition:var(--transition);border:2px solid var(--border);background:var(--surface);
@@ -881,6 +886,7 @@
       <div class="mesas-toolbar"><button class="editar-menu-btn" onclick="abrirFormNuevaMesa()">+ Nueva mesa</button></div>
       <div id="mesasFormEdicion"></div>
       <div id="mapaMesasPorSector"></div>
+      <div id="mesasInactivas"></div>
     </div>
 
     <div id="vistaProductos" style="display:none">
@@ -2861,6 +2867,35 @@ function renderMesas(){
       <div class="sector-titulo">${sector}</div>
       <div class="mapa-mesas">${porSector[sector].map(celdaMesaHtml).join('')}</div>
     </div>`).join('');
+  renderMesasInactivas();
+}
+
+function renderMesasInactivas(){
+  const inactivas = mesasData.filter(m => !isSiJs(m.activa)).sort((a,b) => Number(a.mesa) - Number(b.mesa));
+  const el = document.getElementById('mesasInactivas');
+  if(inactivas.length === 0){ el.innerHTML = ''; return; }
+  el.innerHTML = `
+    <div class="sector-bloque">
+      <div class="sector-titulo">Mesas desactivadas</div>
+      <div class="mesas-inactivas-lista">
+        ${inactivas.map(m => `
+          <div class="mesa-inactiva-row">
+            <span>Mesa ${esc(m.mesa)}${m.sector ? ` · ${esc(m.sector)}` : ''}</span>
+            <button class="editar-menu-btn" onclick="handleReactivarMesa('${m.mesa}')">Reactivar</button>
+          </div>`).join('')}
+      </div>
+    </div>`;
+}
+
+function handleReactivarMesa(mesa){
+  if(uiBloqueada) return;
+  lockUI();
+  postAction('editarMesa', { mesa, activa: true }).then(res => {
+    if(!res.ok){ showToast('No se pudo reactivar: ' + (res.error||'')); return; }
+    showToast(`Mesa ${mesa} reactivada`);
+    mesasData = [];
+    abrirMesas();
+  }).finally(unlockUI);
 }
 
 function celdaMesaHtml(m){
@@ -2963,7 +2998,7 @@ function handleGuardarSectorMesa(mesa){
 
 function handleDesactivarMesa(mesa){
   if(uiBloqueada) return;
-  uiConfirm(`¿Desactivar la Mesa ${mesa}? Deja de aparecer en el mapa y en Nuevo pedido (se puede reactivar más adelante desde el Sheet).`).then(ok => {
+  uiConfirm(`¿Desactivar la Mesa ${mesa}? Deja de aparecer en el mapa y en Nuevo pedido (se puede reactivar más adelante desde acá mismo, en "Mesas desactivadas").`).then(ok => {
     if(!ok) return;
     lockUI();
     postAction('editarMesa', { mesa, activa: false }).then(res => {
