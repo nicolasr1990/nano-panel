@@ -1010,13 +1010,24 @@
 
 <script>
 /* ======================= CONFIG ======================= */
-const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbwZbKOiZmtimoOVp8dt5wAehccD1J-fQTLfGLk8oMf6AAdFkoN1_G3x7zGoQXFHMHqubg/exec';
+// Antes esto era la URL de un Web App de Apps Script (no pedía ningún header). Ahora es una
+// Edge Function de Supabase, que sí exige "apikey"/"Authorization" en cada request — sin eso
+// ni siquiera llega al código de la función, Supabase la rechaza antes (gateway propio, en
+// paralelo al DEVICE_TOKEN nuestro de acá abajo, que es un chequeo aparte).
+const WEBAPP_URL = 'https://hmfsqgacoxfpfvhvfzsq.supabase.co/functions/v1/api';
+const SUPABASE_ANON_KEY = 'sb_publishable_rsbuuHshmfgdYfNK9Ir2Hg_QtAHbTQV';
+const SUPABASE_HEADERS = { apikey: SUPABASE_ANON_KEY, Authorization: 'Bearer ' + SUPABASE_ANON_KEY };
+// Uso solo para los fetch GET sueltos (postAction/postActionConClave ya arman sus propios
+// headers, sumando Content-Type). Mismo WEBAPP_URL de siempre, así el resto del código que
+// arma la URL con ?action=... no cambia en nada.
+function fetchGet(url){ return fetch(url, { headers: SUPABASE_HEADERS }); }
+
 // Token del dispositivo: viaja solo, en cada acción que crea o cambia algo (tomar pedido,
 // cerrar mesa, abrir caja, etc.), sin que el mozo tenga que loguearse ni escribir nada. No
 // reemplaza un login de verdad — cualquiera que lea el código de este archivo lo puede ver
 // igual — pero frena a cualquiera que le pegue a la URL del backend sin pasar por este panel
 // (la URL no es secreta: queda a la vista en el código fuente de la página). Tiene que
-// coincidir con DEVICE_TOKEN en las Propiedades del script de Code.gs — ver setDeviceToken().
+// coincidir con DEVICE_TOKEN en los secrets de la Edge Function — ver supabase/SETUP.md.
 const DEVICE_TOKEN = 'a0f020c9d0d7dc8481d395b388efcade0097723f3ad1b80b';
 const POLL_MS = 8000; // cada cuánto se refresca la lista de pedidos sola
 
@@ -1068,14 +1079,17 @@ setInterval(cargarPedidos, POLL_MS);
 // declararse todo el script (nuevoPedido/mesasData son `let` más abajo en el archivo).
 setTimeout(() => {
   cargarMenuNuevoPedido();
-  fetch(`${WEBAPP_URL}?action=listarMesas&device_token=${DEVICE_TOKEN}`).then(r => r.json()).then(res => { if(res.ok) mesasData = res.mesas; });
+  fetchGet(`${WEBAPP_URL}?action=listarMesas&device_token=${DEVICE_TOKEN}`).then(r => r.json()).then(res => { if(res.ok) mesasData = res.mesas; }).catch(() => {});
 }, 0);
 
 /* ======================= RED ======================= */
+// El "evita preflight" que decía acá cuando esto era Apps Script ya no aplica: Supabase
+// exige el header Authorization en cada request, así que el navegador manda un preflight
+// (OPTIONS) igual, sea cual sea el Content-Type. Por eso ahora sí va application/json posta.
 function postAction(action, data){
   return fetch(WEBAPP_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // evita preflight en Apps Script
+    headers: { 'Content-Type': 'application/json', ...SUPABASE_HEADERS },
     body: JSON.stringify({ action, device_token: DEVICE_TOKEN, ...data }), // la clave solo se manda desde las acciones del módulo de productos
   }).then(r => r.json()).catch(() => ({ ok:false, error:'sin_conexion' }));
 }
@@ -1083,7 +1097,7 @@ function postAction(action, data){
 function postActionConClave(action, data){
   return fetch(WEBAPP_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    headers: { 'Content-Type': 'application/json', ...SUPABASE_HEADERS },
     body: JSON.stringify({ action, clave: CLAVE, ...data }),
   }).then(r => r.json()).catch(() => ({ ok:false, error:'sin_conexion' }));
 }
@@ -1169,7 +1183,7 @@ function intentarLoginProductos(){
 
 function cargarCategoriasYRenderProductos(){
   if(categoriasData.length){ renderProductos(); return; }
-  fetch(`${WEBAPP_URL}?action=menu&canal=mesa`)
+  fetchGet(`${WEBAPP_URL}?action=menu&canal=mesa`)
     .then(r => r.json())
     .then(res => { categoriasData = res.categorias || []; renderProductos(); });
 }
@@ -1381,7 +1395,7 @@ let primeraCarga = true;
 const TITULO_BASE = document.title;
 
 function cargarPedidos(){
-  fetch(`${WEBAPP_URL}?action=listarPedidos&device_token=${DEVICE_TOKEN}`)
+  fetchGet(`${WEBAPP_URL}?action=listarPedidos&device_token=${DEVICE_TOKEN}`)
     .then(r => r.json())
     .then(res => {
       if(!res.ok) return;
@@ -1464,7 +1478,7 @@ function setFilter(f){
 function cargarHistorialHoy(){
   renderFilters(); // marca la pestaña activa ya, sin esperar la red
   document.getElementById('ordersList').innerHTML = '<div class="empty-orders">Cargando…</div>';
-  fetch(`${WEBAPP_URL}?action=listarCerradosHoy&device_token=${DEVICE_TOKEN}`)
+  fetchGet(`${WEBAPP_URL}?action=listarCerradosHoy&device_token=${DEVICE_TOKEN}`)
     .then(r => r.json())
     .then(res => { historialHoyData = res.ok ? res.pedidos : []; renderHistorialHoy(); })
     .catch(() => { historialHoyData = []; renderHistorialHoy(); });
@@ -1760,7 +1774,7 @@ const CAJA_MOTIVO_MSG = {
 };
 // { bloqueado:false } si está todo bien, o { bloqueado:true, motivo } si no.
 function chequearEstadoCaja(){
-  return fetch(`${WEBAPP_URL}?action=cajaActual&device_token=${DEVICE_TOKEN}`)
+  return fetchGet(`${WEBAPP_URL}?action=cajaActual&device_token=${DEVICE_TOKEN}`)
     .then(r => r.json())
     .then(res => {
       if(!res.ok) return { bloqueado:false }; // ej. todavía no se corrió crearHojasCaja() — no bloqueamos por eso
@@ -1918,7 +1932,7 @@ function abrirMesas(){
     marcarNavActivo('mesasBtn');
     iniciarTimerMesas();
     if(mesasData.length){ renderMesas(); return; }
-    fetch(`${WEBAPP_URL}?action=listarMesas&device_token=${DEVICE_TOKEN}`)
+    fetchGet(`${WEBAPP_URL}?action=listarMesas&device_token=${DEVICE_TOKEN}`)
       .then(r => r.json())
       .then(res => {
         if(!res.ok){ showToast('No se pudo cargar el mapa de mesas'); return; }
@@ -2010,7 +2024,7 @@ function elegirTipoNuevoPedido(tipo){
   if(tipo === 'mesa'){
     mostrarPasoNuevoPedido('npPasoMesa');
     if(mesasData.length) renderNpMapaMesas();
-    else fetch(`${WEBAPP_URL}?action=listarMesas&device_token=${DEVICE_TOKEN}`).then(r => r.json()).then(res => {
+    else fetchGet(`${WEBAPP_URL}?action=listarMesas&device_token=${DEVICE_TOKEN}`).then(r => r.json()).then(res => {
       if(!res.ok){ showToast('No se pudo cargar el mapa de mesas'); return; }
       mesasData = res.mesas;
       renderNpMapaMesas();
@@ -2088,7 +2102,7 @@ function volverAPasoAnterior(){
 
 function cargarMenuNuevoPedido(){
   if(menuNuevoPedidoData.categorias.length){ renderNpCats(); renderNpGrid(); return; }
-  fetch(`${WEBAPP_URL}?action=menu&canal=mesa`)
+  fetchGet(`${WEBAPP_URL}?action=menu&canal=mesa`)
     .then(r => r.json())
     .then(res => {
       menuNuevoPedidoData.categorias = res.categorias || [];
@@ -2466,7 +2480,7 @@ let cajaActualData = null;
 function cargarCajaActual(){
   const el = document.getElementById('cajaTurno');
   el.innerHTML = '<div class="empty-orders">Cargando…</div>';
-  fetch(`${WEBAPP_URL}?action=cajaActual&device_token=${DEVICE_TOKEN}`)
+  fetchGet(`${WEBAPP_URL}?action=cajaActual&device_token=${DEVICE_TOKEN}`)
     .then(r => r.json())
     .then(res => {
       if(!res.ok){
@@ -2582,7 +2596,7 @@ function handleCerrarCaja(){
 
 function cargarCierresCajaHoy(){
   const el = document.getElementById('cajaCierresHoy');
-  fetch(`${WEBAPP_URL}?action=cierresCajaHoy&device_token=${DEVICE_TOKEN}`)
+  fetchGet(`${WEBAPP_URL}?action=cierresCajaHoy&device_token=${DEVICE_TOKEN}`)
     .then(r => r.json())
     .then(res => {
       if(!res.ok){ el.innerHTML = '<div class="empty-orders">No se pudo cargar los cierres de hoy</div>'; return; }
@@ -2614,7 +2628,7 @@ function cargarCaja(){
   const hasta = document.getElementById('cajaHasta').value;
   if(!desde || !hasta) return;
   document.getElementById('cajaContenido').innerHTML = '<div class="empty-orders">Cargando…</div>';
-  fetch(`${WEBAPP_URL}?action=resumenDashboard&desde=${desde}&hasta=${hasta}&device_token=${DEVICE_TOKEN}`)
+  fetchGet(`${WEBAPP_URL}?action=resumenDashboard&desde=${desde}&hasta=${hasta}&device_token=${DEVICE_TOKEN}`)
     .then(r => r.json())
     .then(res => {
       if(!res.ok){ document.getElementById('cajaContenido').innerHTML = '<div class="empty-orders">No se pudo cargar el cierre de caja</div>'; return; }
