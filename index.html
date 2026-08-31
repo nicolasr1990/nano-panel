@@ -321,36 +321,39 @@
   .update-banner button:active{transform:scale(0.96)}
 
   /* Login overlay */
-  #loginOverlay{
+  /* #panelGateOverlay comparte el mismo look que #loginOverlay (login del módulo de Menú) —
+     mismo tipo de pantalla, así que mismo estilo en vez de duplicarlo. */
+  #loginOverlay, #panelGateOverlay{
     position:fixed;inset:0;background:linear-gradient(180deg,var(--bg),var(--bg-deep));display:flex;align-items:center;justify-content:center;
     z-index:100;padding:20px;
   }
-  #loginOverlay .box{
+  #panelGateOverlay{ z-index:200; } /* por encima de todo lo demás, incluido #loginOverlay */
+  #loginOverlay .box, #panelGateOverlay .box{
     width:100%;max-width:300px;background:var(--surface);border:1px solid var(--border);
     border-radius:var(--radius-lg);padding:28px 24px;text-align:center;box-shadow:var(--shadow-md);
   }
-  #loginOverlay h2{font-family:var(--display);font-size:17px;margin-bottom:6px;color:var(--ink);font-weight:700}
-  #loginOverlay p{font-size:12px;color:var(--ink-secondary);margin-bottom:18px}
-  #loginOverlay input{
+  #loginOverlay h2, #panelGateOverlay h2{font-family:var(--display);font-size:17px;margin-bottom:6px;color:var(--ink);font-weight:700}
+  #loginOverlay p, #panelGateOverlay p{font-size:12px;color:var(--ink-secondary);margin-bottom:18px}
+  #loginOverlay input, #panelGateOverlay input{
     width:100%;padding:12px 14px;border-radius:var(--radius-md);border:1.5px solid var(--border);
     background:var(--surface-alt);color:var(--ink);font-family:var(--body);font-size:14px;text-align:center;
     letter-spacing:0.15em;margin-bottom:10px;outline:none;
   }
-  #loginOverlay input:focus{border-color:var(--accent)}
-  #loginOverlay button{
+  #loginOverlay input:focus, #panelGateOverlay input:focus{border-color:var(--accent)}
+  #loginOverlay button, #panelGateOverlay button{
     width:100%;padding:12px;border-radius:var(--radius-md);border:1.5px solid var(--accent);
     background:var(--accent);color:#1D1911;font-family:var(--body);
     font-weight:700;font-size:13px;cursor:pointer;margin-bottom:8px;transition:var(--transition);
   }
-  #loginOverlay button:hover{background:var(--accent-light);border-color:var(--accent-light)}
-  #loginOverlay button:active{transform:scale(0.97)}
+  #loginOverlay button:hover, #panelGateOverlay button:hover{background:var(--accent-light);border-color:var(--accent-light)}
+  #loginOverlay button:active, #panelGateOverlay button:active{transform:scale(0.97)}
   /* Botón "Volver" del login: acción secundaria, sin fondo llamativo, para poder salir sin ingresar clave */
   #loginOverlay button.volver{
     background:var(--surface-alt);color:var(--ink-secondary);box-shadow:none;
     border:1px solid var(--border);font-weight:600;margin-bottom:0;
   }
   #loginOverlay button.volver:hover{background:var(--surface-tint);color:var(--ink)}
-  #loginOverlay .err{color:var(--danger);font-size:11.5px;margin-top:8px;min-height:14px;font-weight:600}
+  #loginOverlay .err, #panelGateOverlay .err{color:var(--danger);font-size:11.5px;margin-top:8px;min-height:14px;font-weight:600}
 
   /* Módulo de productos */
   .cat-block{
@@ -569,6 +572,10 @@
   .ui-confirm-btn-cancel:hover{background:var(--surface-tint)}
   .ui-confirm-btn-ok{background:var(--tipo-mesa);border-color:var(--tipo-mesa);color:#fff}
   .ui-confirm-btn-ok:hover{background:#B37D00;border-color:#B37D00}
+  /* Variante roja para acciones destructivas de verdad (eliminar un pedido/gasto) —
+     distinta del dorado genérico de "Aceptar", para que se note que no hay vuelta atrás. */
+  .ui-confirm-btn-danger{background:var(--danger);border-color:var(--danger);color:#fff}
+  .ui-confirm-btn-danger:hover{background:#B32418;border-color:#B32418}
   .np-pago-opciones{display:flex;flex-direction:column;gap:10px;padding:18px}
   .np-pago-opt{
     padding:16px;border-radius:var(--radius-md);border:1.5px solid var(--border);background:var(--surface-alt);
@@ -594,6 +601,11 @@
   .caja-gasto-row .desc{color:var(--ink);font-weight:600}
   .caja-gasto-row .hora{display:block;font-size:10.5px;color:var(--ink-muted);font-weight:500;margin-top:1px}
   .caja-gasto-row .monto{font-family:var(--display);font-weight:800;color:var(--danger)}
+  .gasto-borrar-btn{
+    width:22px;height:22px;border-radius:50%;border:none;background:rgba(0,0,0,0.08);color:var(--danger);
+    font-size:12px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  }
+  .gasto-borrar-btn:hover{background:var(--danger);color:#fff}
   .caja-acciones{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px}
   .caja-acciones button{flex:1;min-width:170px;margin-top:0}
   .caja-form-gasto{margin-top:14px;text-align:left}
@@ -802,6 +814,18 @@
 </head>
 <body>
 
+<!-- Login para entrar al panel — tapa todo hasta que se ingresa la clave correcta. Se
+     muestra u oculta desde JS al arrancar, según haya o no una sesión válida guardada. -->
+<div id="panelGateOverlay" style="display:none">
+  <div class="box">
+    <h2>Nano Resto Bar</h2>
+    <p>Ingresá la clave para entrar al panel</p>
+    <input id="panelGateInput" type="password" placeholder="Clave" autocomplete="off">
+    <button onclick="intentarLoginPanel()">Ingresar</button>
+    <div class="err" id="panelGateErr"></div>
+  </div>
+</div>
+
 <!-- Login del módulo de productos (los pedidos NO piden esta clave) -->
 <div id="loginOverlay" style="display:none">
   <div class="box">
@@ -1005,6 +1029,21 @@
   </div>
 </div>
 
+<!-- Eliminar un pedido del historial o un gasto de caja pide la clave del panel de nuevo,
+     aparte de ya estar adentro — es una acción sin vuelta atrás (a diferencia de deshacer
+     un estado, esto borra el registro de verdad). Un solo overlay, reusado por las dos. -->
+<div id="borrarConClaveOverlay" class="np-overlay" style="display:none">
+  <div class="np-review-box np-confirm-box">
+    <div class="np-review-head"><span>Confirmar con la clave</span></div>
+    <div class="np-confirm-msg" id="borrarConClaveMsg"></div>
+    <input type="password" id="borrarConClaveInput" class="np-input" placeholder="Clave del panel" autocomplete="off" style="margin:0 18px 14px;width:calc(100% - 36px)">
+    <div class="np-confirm-acciones">
+      <button class="ui-confirm-btn ui-confirm-btn-cancel" onclick="cerrarBorrarConClave()">Cancelar</button>
+      <button class="ui-confirm-btn ui-confirm-btn-danger" onclick="confirmarBorrarConClave()">Eliminar</button>
+    </div>
+  </div>
+</div>
+
 <!-- Se completa dinámicamente antes de cada window.print() -->
 <div id="comprobante"></div>
 
@@ -1034,6 +1073,29 @@ const POLL_MS = 8000; // cada cuánto se refresca la lista de pedidos sola
 let CLAVE = '';         // se pide recién cuando se abre el módulo de productos/precios (no hace falta para ver pedidos)
 let staffOrders = [];   // pedidos que trae el backend
 let filter = 'todos';
+
+/* ======================= LOGIN DEL PANEL ======================= */
+// Antes cualquiera que abriera esta URL veía pedidos, clientes y caja sin que se le pida
+// nada. sessionStorage (no localStorage) para que la sesión dure mientras el navegador de
+// la tablet siga abierto en la misma pestaña, pero pida la clave de nuevo si se cierra del
+// todo — como un "desbloqueo" de turno, no un login que haya que repetir en cada toque.
+let panelAutenticado = sessionStorage.getItem('panel_autenticado') === '1';
+if(!panelAutenticado){
+  document.getElementById('panelGateOverlay').style.display = 'flex';
+}
+
+function intentarLoginPanel(){
+  const val = document.getElementById('panelGateInput').value.trim();
+  const err = document.getElementById('panelGateErr');
+  if(!val){ err.textContent = 'Ingresá la clave'; return; }
+  postAction('login', { clave: val }).then(res => {
+    if(!res.ok){ err.textContent = 'Clave incorrecta'; return; }
+    CLAVE = val; // así el módulo de Menú no vuelve a pedirla — ya se validó acá
+    panelAutenticado = true;
+    sessionStorage.setItem('panel_autenticado', '1');
+    document.getElementById('panelGateOverlay').style.display = 'none';
+  });
+}
 
 /* ======================= MODAL DE ALERTA/CONFIRMACIÓN ======================= */
 // Reemplazo de alert()/confirm() nativos del navegador: esos anteponen el nombre del
@@ -1066,6 +1128,30 @@ function uiAlert(mensaje){
     document.getElementById('uiConfirmOkBtn').textContent = 'Entendido';
     document.getElementById('uiConfirmOverlay').style.display = 'flex';
   });
+}
+
+// Pide la clave del panel antes de una acción sin vuelta atrás (eliminar un pedido del
+// historial, eliminar un gasto de caja). callback(clave) se llama solo si se tocó
+// "Eliminar" — la validación de si la clave es correcta la hace el backend, esto solo la
+// pide y la manda.
+let borrarConClaveCallback = null;
+function pedirClaveYEliminar(mensaje, callback){
+  document.getElementById('borrarConClaveMsg').textContent = mensaje;
+  document.getElementById('borrarConClaveInput').value = '';
+  borrarConClaveCallback = callback;
+  document.getElementById('borrarConClaveOverlay').style.display = 'flex';
+  document.getElementById('borrarConClaveInput').focus();
+}
+function cerrarBorrarConClave(){
+  document.getElementById('borrarConClaveOverlay').style.display = 'none';
+  borrarConClaveCallback = null;
+}
+function confirmarBorrarConClave(){
+  const clave = document.getElementById('borrarConClaveInput').value;
+  const cb = borrarConClaveCallback;
+  document.getElementById('borrarConClaveOverlay').style.display = 'none';
+  borrarConClaveCallback = null;
+  if(cb) cb(clave);
 }
 
 /* ======================= INICIO ======================= */
@@ -1152,7 +1238,9 @@ function cerrarLoginOverlay(){
 }
 
 document.addEventListener('keydown', e => {
-  if(e.key === 'Enter' && document.getElementById('loginOverlay').style.display === 'flex') intentarLoginProductos();
+  if(e.key !== 'Enter') return;
+  if(document.getElementById('panelGateOverlay').style.display === 'flex') intentarLoginPanel();
+  else if(document.getElementById('loginOverlay').style.display === 'flex') intentarLoginProductos();
 });
 
 function intentarLoginProductos(){
@@ -1519,9 +1607,24 @@ function historialItemHtml(o){
       </summary>
       <div class="ronda-detalle">
         <ul>${o.items.map(i => `<li><span class="line">${i.cantidad}× ${i.categoria ? `<span style="color:var(--ink-muted);font-weight:600">${i.categoria}</span> - ` : ''}${i.nombre}${i.nota?`<span class="note">📝 ${esc(i.nota)}</span>`:''}</span></li>`).join('')}</ul>
-        <div class="order-actions"><button class="deshacer" onclick="deshacerDesdeHistorial('${o.id_pedido}')">Deshacer cierre</button></div>
+        <div class="order-actions">
+          <button class="deshacer" onclick="deshacerDesdeHistorial('${o.id_pedido}')">Deshacer cierre</button>
+          <button class="deshacer" onclick="eliminarPedidoHistorial('${o.id_pedido}')">Eliminar</button>
+        </div>
       </div>
     </details>`;
+}
+
+function eliminarPedidoHistorial(id){
+  pedirClaveYEliminar('Vas a eliminar este pedido del historial para siempre — no se puede deshacer. Ingresá la clave del panel para confirmar.', (clave) => {
+    if(uiBloqueada) return;
+    lockUI();
+    postAction('eliminarPedido', { id_pedido:id, clave }).then(res => {
+      if(!res.ok){ showToast(res.error === 'clave_incorrecta' ? 'Clave incorrecta' : 'No se pudo eliminar: ' + (res.error||'')); return; }
+      showToast('Pedido eliminado');
+      cargarHistorialHoy();
+    }).finally(unlockUI);
+  });
 }
 
 function deshacerDesdeHistorial(id){
@@ -2526,8 +2629,11 @@ function renderCajaTurno(){
     <div class="caja-gastos-lista">
       ${t.gastos.length === 0 ? '<div class="empty-orders">Todavía no se cargó ningún gasto</div>' : t.gastos.map(g => `
         <div class="caja-gasto-row">
-          <span class="desc">${g.descripcion}<span class="hora">${new Date(g.fecha_hora).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit',hour12:false})} hs</span></span>
-          <span class="monto">− ${formatPrecio(g.monto)}</span>
+          <span class="desc">${esc(g.descripcion)}<span class="hora">${new Date(g.fecha_hora).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit',hour12:false})} hs</span></span>
+          <span style="display:flex;align-items:center;gap:10px">
+            <span class="monto">− ${formatPrecio(g.monto)}</span>
+            <button class="gasto-borrar-btn" onclick="eliminarGasto(${g.id}, '${esc(g.descripcion).replace(/'/g,"&#39;")}')" title="Eliminar gasto">✕</button>
+          </span>
         </div>`).join('')}
     </div>
     <div class="caja-acciones">
@@ -2577,6 +2683,19 @@ function handleRegistrarGasto(){
     cargarCajaActual();
     cargarCaja(); // el resumen por fecha también muestra los gastos del período, hay que refrescarlo
   }).finally(unlockUI);
+}
+
+function eliminarGasto(id, descripcion){
+  pedirClaveYEliminar(`¿Eliminar el gasto "${descripcion}"? No se puede deshacer. Ingresá la clave del panel para confirmar.`, (clave) => {
+    if(uiBloqueada) return;
+    lockUI();
+    postAction('eliminarGastoCaja', { id, clave }).then(res => {
+      if(!res.ok){ showToast(res.error === 'clave_incorrecta' ? 'Clave incorrecta' : 'No se pudo eliminar: ' + (res.error||'')); return; }
+      showToast('Gasto eliminado');
+      cargarCajaActual();
+      cargarCaja();
+    }).finally(unlockUI);
+  });
 }
 
 function handleCerrarCaja(){
