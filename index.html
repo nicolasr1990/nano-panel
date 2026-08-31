@@ -2530,13 +2530,25 @@ function confirmarNuevoPedido(){
       if(CAJA_MOTIVO_MSG[res.error]) return showToast(CAJA_MOTIVO_MSG[res.error]);
       return showToast('No se pudo crear el pedido: ' + (res.error||''));
     }
-    // Lo mandamos a cocina en el mismo momento: la moza ya lo tomó, no hace falta el
-    // paso extra de "Tomar pedido" que sí necesitan los pedidos que llegan solos.
+    const etiqueta = npPedidoLabel();
+    // Mesa: se toma con la tablet en la mesa, pero la impresora está conectada por USB a la
+    // notebook — no a la tablet. Así que acá solo confirmamos y el pedido queda "nuevo" en
+    // el módulo de Pedidos; el "Tomar pedido" (y la impresión) se hace desde ahí, en la
+    // máquina que sí tiene la impresora.
+    if(nuevoPedido.tipo === 'mesa'){
+      showToast(`Pedido confirmado — ${etiqueta}`);
+      cerrarRevisionPedido();
+      cerrarNuevoPedido();
+      cargarPedidos();
+      return;
+    }
+    // Retiro/envío cargado a mano en el panel: quien lo carga ya está frente a la
+    // impresora, así que lo mandamos a cocina en el mismo momento — no hace falta el paso
+    // extra de "Tomar pedido" que sí necesitan los pedidos que llegan solos.
     const pedidoParaImprimir = {
       id_pedido: res.id_pedido, tipo: nuevoPedido.tipo, mesa: nuevoPedido.mesa, nombre_cliente: nuevoPedido.nombreCliente,
       items: lines.map(l => ({ categoria:l.catName, cantidad:l.qty, nombre:l.name, nota:l.desc||'' })),
     };
-    const etiqueta = npPedidoLabel();
     return postAction('actualizarEstado', { id_pedido: res.id_pedido, estado:'prep' }).then(() => {
       imprimirComprobanteCocina(pedidoParaImprimir);
       showToast(`Pedido enviado a cocina — ${etiqueta}`);
