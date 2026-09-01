@@ -1086,6 +1086,11 @@ let filter = 'todos';
 // la tablet siga abierto en la misma pestaña, pero pida la clave de nuevo si se cierra del
 // todo — como un "desbloqueo" de turno, no un login que haya que repetir en cada toque.
 let panelAutenticado = sessionStorage.getItem('panel_autenticado') === '1';
+// La clave de entrada se manda de acá en más en TODAS las acciones protegidas (ver
+// postAction/fetchGetProtegido) — no alcanza con el DEVICE_TOKEN, que está a la vista en
+// este mismo archivo. Se guarda en sessionStorage (no localStorage) junto con el flag de
+// arriba, mismo criterio: dura mientras el navegador siga abierto, se pierde si se cierra.
+let PANEL_ENTRY_CLAVE = sessionStorage.getItem('panel_clave_entrada') || '';
 if(!panelAutenticado){
   document.getElementById('panelGateOverlay').style.display = 'flex';
 }
@@ -1098,9 +1103,22 @@ function intentarLoginPanel(){
     if(!res.ok){ err.textContent = 'Clave incorrecta'; return; }
     CLAVE = val; // así el módulo de Menú no vuelve a pedirla — ya se validó acá
     panelAutenticado = true;
+    PANEL_ENTRY_CLAVE = val;
     sessionStorage.setItem('panel_autenticado', '1');
+    sessionStorage.setItem('panel_clave_entrada', val);
     document.getElementById('panelGateOverlay').style.display = 'none';
   });
+}
+
+// Si el backend rechaza clave_entrada (clave cambiada por el dueño, o una sesión vieja de
+// antes de este cambio que nunca la guardó), no tiene sentido seguir mostrando el panel como
+// "logueado" — se fuerza a pasar de nuevo por el login.
+function forzarReloginPanel(){
+  panelAutenticado = false;
+  PANEL_ENTRY_CLAVE = '';
+  sessionStorage.removeItem('panel_autenticado');
+  sessionStorage.removeItem('panel_clave_entrada');
+  document.getElementById('panelGateOverlay').style.display = 'flex';
 }
 
 /* ======================= MODAL DE ALERTA/CONFIRMACIÓN ======================= */
@@ -1171,7 +1189,7 @@ setInterval(cargarPedidos, POLL_MS);
 // declararse todo el script (nuevoPedido/mesasData son `let` más abajo en el archivo).
 setTimeout(() => {
   cargarMenuNuevoPedido();
-  fetchGet(`${WEBAPP_URL}?action=listarMesas&device_token=${DEVICE_TOKEN}`).then(r => r.json()).then(res => { if(res.ok) mesasData = res.mesas; }).catch(() => {});
+  fetchGetProtegido('listarMesas').then(res => { if(res.ok) mesasData = res.mesas; }).catch(() => {});
 }, 0);
 
 /* ======================= RED ======================= */
@@ -1182,8 +1200,25 @@ function postAction(action, data){
   return fetch(WEBAPP_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...SUPABASE_HEADERS },
-    body: JSON.stringify({ action, device_token: DEVICE_TOKEN, ...data }), // la clave solo se manda desde las acciones del módulo de productos
-  }).then(r => r.json()).catch(() => ({ ok:false, error:'sin_conexion' }));
+    // clave_entrada viaja siempre (no solo device_token) — ver PANEL_ENTRY_CLAVE más arriba.
+    // "clave" (la del módulo de Menú/borrados) sigue siendo aparte, la manda cada acción que
+    // la necesita a mano.
+    body: JSON.stringify({ action, device_token: DEVICE_TOKEN, clave_entrada: PANEL_ENTRY_CLAVE, ...data }),
+  }).then(r => r.json()).then(res => {
+    if(res && res.error === 'clave_entrada_incorrecta') forzarReloginPanel();
+    return res;
+  }).catch(() => ({ ok:false, error:'sin_conexion' }));
+}
+
+// Igual que fetchGet, pero para las lecturas protegidas (listar pedidos, mesas, caja,
+// dashboard) — suma device_token y clave_entrada, y fuerza el re-login si el backend dice
+// que la clave ya no vale (mismo criterio que postAction).
+function fetchGetProtegido(action, params={}){
+  const qs = new URLSearchParams({ action, device_token: DEVICE_TOKEN, clave_entrada: PANEL_ENTRY_CLAVE, ...params });
+  return fetchGet(`${WEBAPP_URL}?${qs.toString()}`).then(r => r.json()).then(res => {
+    if(res && res.error === 'clave_entrada_incorrecta') forzarReloginPanel();
+    return res;
+  });
 }
 
 function postActionConClave(action, data){
@@ -1489,8 +1524,7 @@ let primeraCarga = true;
 const TITULO_BASE = document.title;
 
 function cargarPedidos(){
-  fetchGet(`${WEBAPP_URL}?action=listarPedidos&device_token=${DEVICE_TOKEN}`)
-    .then(r => r.json())
+  fetchGetProtegido('listarPedidos')
     .then(res => {
       if(!res.ok) return;
 
@@ -1572,8 +1606,7 @@ function setFilter(f){
 function cargarHistorialHoy(){
   renderFilters(); // marca la pestaña activa ya, sin esperar la red
   document.getElementById('ordersList').innerHTML = '<div class="empty-orders">Cargando…</div>';
-  fetchGet(`${WEBAPP_URL}?action=listarCerradosHoy&device_token=${DEVICE_TOKEN}`)
-    .then(r => r.json())
+  fetchGetProtegido('listarCerradosHoy')
     .then(res => { historialHoyData = res.ok ? res.pedidos : []; renderHistorialHoy(); })
     .catch(() => { historialHoyData = []; renderHistorialHoy(); });
 }
@@ -1883,8 +1916,7 @@ const CAJA_MOTIVO_MSG = {
 };
 // { bloqueado:false } si está todo bien, o { bloqueado:true, motivo } si no.
 function chequearEstadoCaja(){
-  return fetchGet(`${WEBAPP_URL}?action=cajaActual&device_token=${DEVICE_TOKEN}`)
-    .then(r => r.json())
+  return fetchGetProtegido('cajaActual')
     .then(res => {
       if(!res.ok) return { bloqueado:false }; // ej. todavía no se corrió crearHojasCaja() — no bloqueamos por eso
       if(!res.abierta) return { bloqueado:true, motivo:'caja_cerrada' };
@@ -2041,8 +2073,7 @@ function abrirMesas(){
     marcarNavActivo('mesasBtn');
     iniciarTimerMesas();
     if(mesasData.length){ renderMesas(); return; }
-    fetchGet(`${WEBAPP_URL}?action=listarMesas&device_token=${DEVICE_TOKEN}`)
-      .then(r => r.json())
+    fetchGetProtegido('listarMesas')
       .then(res => {
         if(!res.ok){ showToast('No se pudo cargar el mapa de mesas'); return; }
         mesasData = res.mesas;
@@ -2133,7 +2164,7 @@ function elegirTipoNuevoPedido(tipo){
   if(tipo === 'mesa'){
     mostrarPasoNuevoPedido('npPasoMesa');
     if(mesasData.length) renderNpMapaMesas();
-    else fetchGet(`${WEBAPP_URL}?action=listarMesas&device_token=${DEVICE_TOKEN}`).then(r => r.json()).then(res => {
+    else fetchGetProtegido('listarMesas').then(res => {
       if(!res.ok){ showToast('No se pudo cargar el mapa de mesas'); return; }
       mesasData = res.mesas;
       renderNpMapaMesas();
@@ -2601,8 +2632,7 @@ let cajaActualData = null;
 function cargarCajaActual(){
   const el = document.getElementById('cajaTurno');
   el.innerHTML = '<div class="empty-orders">Cargando…</div>';
-  fetchGet(`${WEBAPP_URL}?action=cajaActual&device_token=${DEVICE_TOKEN}`)
-    .then(r => r.json())
+  fetchGetProtegido('cajaActual')
     .then(res => {
       if(!res.ok){
         // "faltan_hojas_de_caja" no es un problema de conexión: es que todavía no se
@@ -2733,8 +2763,7 @@ function handleCerrarCaja(){
 
 function cargarCierresCajaHoy(){
   const el = document.getElementById('cajaCierresHoy');
-  fetchGet(`${WEBAPP_URL}?action=cierresCajaHoy&device_token=${DEVICE_TOKEN}`)
-    .then(r => r.json())
+  fetchGetProtegido('cierresCajaHoy')
     .then(res => {
       if(!res.ok){ el.innerHTML = '<div class="empty-orders">No se pudo cargar los cierres de hoy</div>'; return; }
       renderCierresCajaHoy(res.cierres || []);
@@ -2765,8 +2794,7 @@ function cargarCaja(){
   const hasta = document.getElementById('cajaHasta').value;
   if(!desde || !hasta) return;
   document.getElementById('cajaContenido').innerHTML = '<div class="empty-orders">Cargando…</div>';
-  fetchGet(`${WEBAPP_URL}?action=resumenDashboard&desde=${desde}&hasta=${hasta}&device_token=${DEVICE_TOKEN}`)
-    .then(r => r.json())
+  fetchGetProtegido('resumenDashboard', { desde, hasta })
     .then(res => {
       if(!res.ok){ document.getElementById('cajaContenido').innerHTML = '<div class="empty-orders">No se pudo cargar el cierre de caja</div>'; return; }
       renderCaja(res);
