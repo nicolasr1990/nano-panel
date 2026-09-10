@@ -1993,6 +1993,40 @@ function confirmarCierreMesa(metodo){
 /* ======================= IMPRESIÓN ======================= */
 // Reemplazá LOGO_SRC por la ruta real del logo cuando subas panel-local.html junto con logo.png
 const LOGO_SRC = 'logo.png';
+// Precarga el logo apenas carga el panel — así el PRIMER ticket del turno no sale sin logo.
+// El <img> del ticket es un elemento nuevo cada vez (se arma con innerHTML), así que aunque el
+// archivo ya esté en el caché del navegador, igual necesita un instante para pintarse; si
+// window.print() se dispara antes de ese instante, esa vez sale en blanco. Con la imagen
+// precargada, el navegador la sirve del caché al toque, y de yapa esperarLogoYimprimir()
+// más abajo espera a que el <img> esté realmente listo antes de imprimir, por si acaso.
+new Image().src = LOGO_SRC;
+
+// Mismo alias que ya se le muestra al cliente en nanorestobar al elegir transferencia — acá
+// se usa solo para el comprobante final de MESA, que es el único caso donde el cliente paga
+// sin haber visto esa pantalla (retiro/envío ya lo vio en el checkout, no hace falta repetirlo
+// en el ticket).
+const ALIAS_TRANSFERENCIA = 'nanorestobar.mp';
+const TITULAR_TRANSFERENCIA = 'Contin Fernando';
+
+// Espera a que el logo del ticket termine de cargar (o ya esté listo) antes de imprimir —
+// ver la nota de arriba sobre por qué el primer ticket del turno podía salir sin logo.
+function esperarLogoYimprimir(el){
+  const img = el.querySelector('.ticket-logo img');
+  if(!img || img.complete){ window.print(); return; }
+  let disparado = false;
+  // El timeout de seguridad (por si el logo no carga nunca) y el evento de carga pueden
+  // dispararse los dos — sin el flag/clearTimeout, eso imprimía el mismo ticket dos veces.
+  const timeoutId = setTimeout(yaImprimir, 800);
+  function yaImprimir(){
+    if(disparado) return;
+    disparado = true;
+    clearTimeout(timeoutId);
+    img.onload = img.onerror = null;
+    window.print();
+  }
+  img.onload = yaImprimir;
+  img.onerror = yaImprimir;
+}
 
 // Escapa HTML antes de meter texto de terceros en un template de innerHTML. Sin esto,
 // alguien podía escribir su nombre como "<img src=x onerror=...>" en el checkout público
@@ -2040,7 +2074,7 @@ function imprimirComprobanteCocina(o){
       return bloque;
     }).join('')}
   `;
-  window.print();
+  esperarLogoYimprimir(el);
 }
 
 function imprimirComprobanteFinal(cabecera, rondas){
@@ -2052,6 +2086,11 @@ function imprimirComprobanteFinal(cabecera, rondas){
   // hacer el pedido, y antes no quedaba impreso en ningún lado cuál había sido.
   const metodoHtml = cabecera.metodo_pago
     ? `<div class="nota">Pagó por ${METODO_LABEL[cabecera.metodo_pago] || cabecera.metodo_pago}</div>` : '';
+  // Retiro/envío ya vio el alias en el checkout de nanorestobar antes de pagar — repetirlo
+  // en su ticket no suma nada. Mesa nunca pasa por esa pantalla, así que es el único caso
+  // donde el cliente necesita verlo en algún lado si decide pagar por transferencia.
+  const aliasHtml = cabecera.tipo === 'mesa'
+    ? `<div class="sep"></div><div class="nota">Alias para transferencia: ${ALIAS_TRANSFERENCIA} (${TITULAR_TRANSFERENCIA})</div>` : '';
   el.innerHTML = `
     <div class="ticket-logo"><img src="${LOGO_SRC}" alt="Logo"></div>
     <h1>Comprobante</h1>
@@ -2063,10 +2102,11 @@ function imprimirComprobanteFinal(cabecera, rondas){
       ${r.items.map(i => `<div class="linea"><span>${i.cantidad}× ${i.categoria ? i.categoria + ' - ' : ''}${i.nombre}</span><span>${formatPrecio(i.precio_unit*i.cantidad)}</span></div>`).join('')}
     `).join('')}
     <div class="linea total"><span>TOTAL</span><span>${formatPrecio(total)}</span></div>
+    ${aliasHtml}
     <div class="footer">¡Gracias por elegirnos!</div>
     <div class="footer-sub">Te esperamos pronto</div>
   `;
-  window.print();
+  esperarLogoYimprimir(el);
 }
 
 
