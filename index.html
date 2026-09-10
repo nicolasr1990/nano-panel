@@ -2091,10 +2091,14 @@ function imprimirComprobanteFinal(cabecera, rondas){
   // donde el cliente necesita verlo en algún lado si decide pagar por transferencia.
   const aliasHtml = cabecera.tipo === 'mesa'
     ? `<div class="sep"></div><div class="nota">Alias para transferencia: ${ALIAS_TRANSFERENCIA} (${TITULAR_TRANSFERENCIA})</div>` : '';
+  // Solo envío tiene dirección de entrega — retiro y mesa no la usan para nada.
+  const direccionHtml = cabecera.tipo === 'envio' && cabecera.direccion
+    ? `<div class="nota">Dirección: ${esc(cabecera.direccion)}</div>` : '';
   el.innerHTML = `
     <div class="ticket-logo"><img src="${LOGO_SRC}" alt="Logo"></div>
     <h1>Comprobante</h1>
     <div class="nota">${identificador} · ${fechaHoraTicket()}</div>
+    ${direccionHtml}
     ${metodoHtml}
     <div class="sep"></div>
     ${rondas.map((r,idx) => `
