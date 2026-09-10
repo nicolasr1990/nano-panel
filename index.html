@@ -2150,7 +2150,7 @@ function cerrarMesasView(){
 let nuevoPedido = { tipo: null, mesa: null, nombreCliente: '', telefono: '', direccion: '', metodoPago: null, cart: {}, comboCart: [], catActiva: null };
 let menuNuevoPedidoData = { categorias: [], productos: [] };
 let npDocenaState = {};
-const COSTO_ENVIO_NP = 1000; // mismo valor fijo que CONFIG.COSTO_ENVIO en nanorestobar
+const COSTO_ENVIO_NP = 500; // mismo valor fijo que CONFIG.COSTO_ENVIO en nanorestobar
 
 function hayPedidoSinConfirmar(){
   return Object.keys(nuevoPedido.cart).length > 0 || nuevoPedido.comboCart.length > 0;
