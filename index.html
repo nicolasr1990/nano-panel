@@ -644,6 +644,8 @@
   .caja-periodo-montos{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--ink-secondary);font-weight:600}
   .caja-periodo-montos .gasto{color:var(--danger)}
   .caja-periodo-montos .cierre{color:var(--ink);font-weight:800}
+  .caja-periodo-gastos{margin-top:8px;font-size:11.5px;color:var(--ink-secondary);line-height:1.5}
+  .caja-gastos-detalle{margin-top:4px}
   .caja-canal-row{display:flex;align-items:center;justify-content:space-between;background:var(--surface);border:1px solid var(--border-soft);border-radius:var(--radius-md);padding:10px 14px}
   .caja-canal-row .monto{font-family:var(--display);font-weight:700;color:var(--ink)}
 
@@ -682,26 +684,29 @@
     width:72mm;
     padding:3mm 4mm;
     color:#000;background:#fff;
-    font-family:Arial,Helvetica,sans-serif;font-weight:700;
+    font-family:Arial,Helvetica,sans-serif;font-weight:400;
   }
   #comprobante .ticket-logo{text-align:center;margin-bottom:2mm}
   #comprobante .ticket-logo img{width:22mm;height:22mm;object-fit:contain}
+  /* Negrita solo donde realmente ayuda a leer rápido (nombre del local y el total) — todo
+     lo demás iba en 700/800 sin necesidad, y en una térmica eso es más cabezal quemando
+     papel por cada línea, no solo el total de tinta. */
   #comprobante h1{
-    text-align:center;font-size:15px;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;
+    text-align:center;font-size:15px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;
     border-top:2px dashed #000;border-bottom:2px dashed #000;padding:2.2mm 0;margin-bottom:2.5mm;
   }
-  #comprobante .nota{font-size:12px;font-weight:700;text-align:center;color:#000;line-height:1.4}
+  #comprobante .nota{font-size:12px;font-weight:400;text-align:center;color:#000;line-height:1.4}
   #comprobante .sep{border-top:2px dashed #000;margin:2.2mm 0}
-  #comprobante .linea{display:flex;justify-content:space-between;gap:6px;font-size:14px;font-weight:800;padding:1.6mm 0}
-  #comprobante .linea .cant{font-weight:800}
+  #comprobante .linea{display:flex;justify-content:space-between;gap:6px;font-size:14px;font-weight:400;padding:1.6mm 0}
+  #comprobante .linea .cant{font-weight:600}
   /* Líneas de cocina: no hay precio, así que van alineadas a la izquierda (no space-between) */
-  #comprobante .linea-cocina{display:flex;align-items:baseline;gap:7px;font-size:14px;font-weight:800;padding:1.6mm 0}
-  #comprobante .linea-cocina .cant{flex-shrink:0}
-  #comprobante .item-nota{font-size:11px;font-weight:700;color:#333;padding-left:4mm;margin-bottom:1mm}
-  #comprobante .cat-label{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:0.04em;color:#000;margin-top:2mm}
-  #comprobante .total{font-weight:800;font-size:17px;margin-top:2mm;padding-top:2mm;border-top:2px dashed #000}
-  #comprobante .footer{text-align:center;font-size:12px;font-weight:800;color:#000;margin-top:3mm}
-  #comprobante .footer-sub{text-align:center;font-size:10px;font-weight:700;color:#333;margin-top:1mm}
+  #comprobante .linea-cocina{display:flex;align-items:baseline;gap:7px;font-size:14px;font-weight:400;padding:1.6mm 0}
+  #comprobante .linea-cocina .cant{flex-shrink:0;font-weight:600}
+  #comprobante .item-nota{font-size:11px;font-weight:400;color:#333;padding-left:4mm;margin-bottom:1mm}
+  #comprobante .cat-label{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;color:#000;margin-top:2mm}
+  #comprobante .total{font-weight:700;font-size:17px;margin-top:2mm;padding-top:2mm;border-top:2px dashed #000}
+  #comprobante .footer{text-align:center;font-size:12px;font-weight:400;color:#000;margin-top:3mm}
+  #comprobante .footer-sub{text-align:center;font-size:10px;font-weight:400;color:#333;margin-top:1mm}
 
   @media print{
     /* "auto" en el largo es lo que le dice al driver de la térmica que no corte a una
@@ -2052,7 +2057,7 @@ function imprimirComprobanteFinal(cabecera, rondas){
       ${r.items.map(i => `<div class="linea"><span>${i.cantidad}× ${i.categoria ? i.categoria + ' - ' : ''}${i.nombre}</span><span>${formatPrecio(i.precio_unit*i.cantidad)}</span></div>`).join('')}
     `).join('')}
     <div class="linea total"><span>TOTAL</span><span>${formatPrecio(total)}</span></div>
-    <div class="footer">¡Gracias por tu visita!</div>
+    <div class="footer">¡Gracias por elegirnos!</div>
     <div class="footer-sub">Te esperamos pronto</div>
   `;
   window.print();
@@ -2780,11 +2785,17 @@ function renderCierresCajaHoy(cierres){
   el.innerHTML = cierres.map((c, i) => {
     const horaApertura = new Date(c.fecha_apertura).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit',hour12:false});
     const horaCierre = new Date(c.fecha_cierre).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit',hour12:false});
+    // El detalle tal cual lo escribió quien cargó el gasto — no inventamos categorías,
+    // se muestra la descripción libre que ya carga el mozo/cajero.
+    const gastosHtml = (c.gastos && c.gastos.length)
+      ? `<div class="sub caja-gastos-detalle">Gastos: ${c.gastos.map(g => `${esc(g.descripcion)} (${formatPrecio(g.monto)})`).join(' · ')}</div>`
+      : '';
     return `
     <div class="caja-total-card" style="margin-bottom:10px">
       <div class="label">Cierre ${i+1} · ${horaApertura} a ${horaCierre} hs</div>
       <div class="monto">${formatPrecio(c.efectivo_esperado)}</div>
       <div class="sub">Ingresó ${formatPrecio(c.monto_inicial)} inicial + ${formatPrecio(c.total_efectivo_ventas)} en ventas − ${formatPrecio(c.total_gastos)} en gastos · debería haber cerrado con ${formatPrecio(c.efectivo_esperado)}</div>
+      ${gastosHtml}
     </div>`;
   }).join('');
 }
@@ -2835,6 +2846,9 @@ function renderCaja(res){
         const horaCierre = c.fecha_cierre
           ? new Date(c.fecha_cierre).toLocaleString('es-AR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit', hour12:false }) + ' hs'
           : 'sigue abierta';
+        const gastosDetalle = (c.gastos && c.gastos.length)
+          ? `<div class="caja-periodo-gastos">Gastos: ${c.gastos.map(g => `${esc(g.descripcion)} (${formatPrecio(g.monto)})`).join(' · ')}</div>`
+          : '';
         return `
         <div class="caja-periodo-card">
           <div class="caja-periodo-head">
@@ -2846,6 +2860,7 @@ function renderCaja(res){
             <span class="gasto">− ${formatPrecio(c.total_gastos)} gastos</span>
             <span class="cierre">${c.estado === 'cerrada' ? 'Cerró con' : 'Esperado ahora'} ${formatPrecio(c.efectivo_esperado)}</span>
           </div>
+          ${gastosDetalle}
         </div>`;
       }).join('')
     : '<div class="empty-orders">No se abrió ninguna caja en este rango de fechas</div>';
