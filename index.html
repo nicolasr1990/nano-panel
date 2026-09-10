@@ -2047,10 +2047,16 @@ function imprimirComprobanteFinal(cabecera, rondas){
   const el = document.getElementById('comprobante');
   const total = rondas.reduce((s,r) => s + r.total, 0);
   const identificador = cabecera.tipo === 'mesa' ? 'Mesa ' + cabecera.mesa : TIPO_LABEL[cabecera.tipo] + (cabecera.nombre_cliente ? ' — ' + esc(cabecera.nombre_cliente) : '');
+  // Mesa no llega con metodo_pago acá — se imprime la cuenta antes de elegir cómo paga
+  // (ver imprimirCuentaMesa). Retiro/envío sí lo trae, porque el cliente ya lo eligió al
+  // hacer el pedido, y antes no quedaba impreso en ningún lado cuál había sido.
+  const metodoHtml = cabecera.metodo_pago
+    ? `<div class="nota">Pagó por ${METODO_LABEL[cabecera.metodo_pago] || cabecera.metodo_pago}</div>` : '';
   el.innerHTML = `
     <div class="ticket-logo"><img src="${LOGO_SRC}" alt="Logo"></div>
     <h1>Comprobante</h1>
     <div class="nota">${identificador} · ${fechaHoraTicket()}</div>
+    ${metodoHtml}
     <div class="sep"></div>
     ${rondas.map((r,idx) => `
       ${rondas.length>1 ? `<div class="cat-label">Ronda ${idx+1}</div>` : ''}
