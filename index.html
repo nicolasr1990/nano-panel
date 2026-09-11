@@ -931,12 +931,9 @@
         <input class="np-input" id="npNombreInput" placeholder="Nombre y apellido">
         <input class="np-input" id="npTelefonoInput" type="tel" placeholder="Teléfono">
         <input class="np-input" id="npDireccionInput" placeholder="Dirección de entrega" style="display:none">
-        <div class="local-sub" style="margin-top:4px">Cómo va a pagar</div>
-        <div class="np-pago-opciones np-pago-opciones-inline">
-          <button class="np-pago-opt" id="npPagoBtn-efectivo" onclick="elegirMetodoPagoNP('efectivo')">💵 Efectivo</button>
-          <button class="np-pago-opt" id="npPagoBtn-tarjeta" onclick="elegirMetodoPagoNP('tarjeta')">💳 Tarjeta</button>
-          <button class="np-pago-opt" id="npPagoBtn-transferencia" onclick="elegirMetodoPagoNP('transferencia')">📲 Transferencia</button>
-        </div>
+        <!-- Sin método de pago acá a propósito: muchas veces todavía no está confirmado
+             cuando se carga el pedido. Se pregunta recién al cobrar (ver cobrarPedido),
+             mismo criterio que ya se usa para cerrar mesas. -->
         <button class="cerrar-mesa-btn" onclick="continuarNuevoPedidoCliente()">Continuar →</button>
       </div>
 
@@ -1019,9 +1016,9 @@
       <button class="video-close" onclick="cerrarPagoOverlay()">✕</button>
     </div>
     <div class="np-pago-opciones">
-      <button class="np-pago-opt" onclick="confirmarCierreMesa('efectivo')">💵 Efectivo</button>
-      <button class="np-pago-opt" onclick="confirmarCierreMesa('tarjeta')">💳 Tarjeta</button>
-      <button class="np-pago-opt" onclick="confirmarCierreMesa('transferencia')">📲 Transferencia</button>
+      <button class="np-pago-opt" onclick="confirmarPago('efectivo')">💵 Efectivo</button>
+      <button class="np-pago-opt" onclick="confirmarPago('tarjeta')">💳 Tarjeta</button>
+      <button class="np-pago-opt" onclick="confirmarPago('transferencia')">📲 Transferencia</button>
     </div>
   </div>
 </div>
@@ -1779,10 +1776,13 @@ function nextActionButtons(o){
   if(o.estado === 'prep') return `<button class="primary" onclick="marcarListo('${o.id_pedido}', '${o.tipo}')">Marcar listo</button>`;
   // listo:
   if(o.tipo === 'mesa') return `<span style="flex:2;display:flex;align-items:center;justify-content:center;font-size:11.5px;color:var(--ink-muted)">Se cierra junto con la mesa</span>`;
-  // Retiro/envío se cierra solo al marcar listo (ver marcarListo) — en el flujo normal esto
-  // no debería verse nunca. Si el cierre automático falló y quedó trabado en "listo", queda
-  // este botón de rescate para cerrarlo a mano en vez de dejarlo colgado para siempre.
-  return `<button class="primary" onclick="marcarEntregado('${o.id_pedido}', '${o.tipo}')">Marcar entregado (rescate)</button>`;
+  // Si ya se sabía el método de pago (el cliente lo eligió en nanorestobar), el pedido se
+  // cierra solo al marcar listo (ver marcarListo) — esto no debería verse en ese caso. Si el
+  // cierre automático falló y quedó trabado en "listo", queda este botón de rescate.
+  if(o.metodo_pago) return `<button class="primary" onclick="marcarEntregado('${o.id_pedido}', '${o.tipo}')">Marcar entregado (rescate)</button>`;
+  // Cargado desde el panel sin saber todavía cómo iba a pagar: queda "listo" esperando que
+  // se cobre, igual que una mesa.
+  return `<button class="primary" onclick="cobrarPedido('${o.id_pedido}')">Cobrar y cerrar</button>`;
 }
 
 /* ======================= ACCIONES ======================= */
@@ -1823,17 +1823,22 @@ function marcarListo(id, tipo){
         return;
       }
       // Retiro/envío: acá es donde el cliente se entera (aviso por WhatsApp) y se imprime
-      // el comprobante final. La forma de pago ya se sabe desde que el cliente hizo el
-      // pedido (la eligió en nanorestobar), así que no hay nada más que decidir en este
-      // punto — se cierra directo, sin un paso extra de "marcar entregado" a mano.
+      // el comprobante final.
       imprimirComprobanteFinal(o, [o]);
-      return postAction('actualizarEstado', { id_pedido:id, estado:'cerrado' }).then(res2 => {
-        if(!res2.ok){
-          showToast('📲 Aviso enviado, pero no se pudo cerrar solo (' + (res2.error||'') + ') — cerralo a mano.');
-          return;
-        }
-        showToast('📲 Aviso enviado y pedido cerrado');
-      });
+      if(o.metodo_pago){
+        // La forma de pago ya se sabía desde que el cliente hizo el pedido (la eligió en
+        // nanorestobar) — se cierra directo, sin un paso extra a mano.
+        return postAction('actualizarEstado', { id_pedido:id, estado:'cerrado' }).then(res2 => {
+          if(!res2.ok){
+            showToast('📲 Aviso enviado, pero no se pudo cerrar solo (' + (res2.error||'') + ') — cerralo a mano.');
+            return;
+          }
+          showToast('📲 Aviso enviado y pedido cerrado');
+        });
+      }
+      // Se cargó desde el panel sin saber todavía cómo iba a pagar — queda "listo" hasta
+      // que alguien lo cobre (ver cobrarPedido), igual que una mesa.
+      showToast('📲 Aviso enviado — falta cobrar para cerrarlo');
     })
     .then(() => cargarPedidos())
     .finally(unlockUI);
@@ -1893,8 +1898,6 @@ function deshacer(id){
 const METODO_LABEL = { efectivo:'Efectivo', tarjeta:'Tarjeta', transferencia:'Transferencia', sin_especificar:'Sin especificar' };
 const METODO_ICON = { efectivo:'💵', tarjeta:'💳', transferencia:'📲', sin_especificar:'❔' };
 
-let cierreMesaPendiente = null;
-
 // Mesas a las que ya se les imprimió la cuenta (paso 1: imprimir y llevar a la mesa)
 // pero todavía no se cobraron ni se cerraron de verdad (paso 2). Se guarda en localStorage
 // para que sobreviva un refresh de la tablet mientras el cliente todavía está pagando.
@@ -1947,6 +1950,8 @@ function imprimirCuentaMesa(mesa){
   renderStaffOrders();
 }
 
+let cierrePendiente = null; // { modo:'mesa', mesa } | { modo:'pedido', id }
+
 // Paso 2: se aprieta una vez que en la mesa ya pagaron (con la cuenta del paso 1 en mano).
 // Acá sí se pregunta la forma de pago y se cierra de verdad contra la caja.
 function cerrarMesa(mesa, cantRondas){
@@ -1959,35 +1964,66 @@ function cerrarMesa(mesa, cantRondas){
     uiConfirm(`¿Cerrar Mesa ${mesa}? Se van a cerrar sus ${cantRondas} ronda(s) y no se van a poder editar más.`).then(ok => {
       if(!ok) return;
       // Antes de cerrar de verdad, preguntamos cómo pagó — ese dato alimenta el cierre de caja.
-      cierreMesaPendiente = { mesa, rondas: staffOrders.filter(o => o.tipo === 'mesa' && String(o.mesa) === String(mesa)) };
+      cierrePendiente = { modo:'mesa', mesa };
       document.getElementById('pagoTitulo').textContent = `¿Cómo pagó la Mesa ${mesa}?`;
       document.getElementById('pagoOverlay').style.display = 'flex';
     });
   });
 }
 
-function cerrarPagoOverlay(){
-  document.getElementById('pagoOverlay').style.display = 'none';
-  cierreMesaPendiente = null;
+// Mismo selector de método de pago que cerrarMesa, pero para un pedido de retiro/envío
+// cargado desde el panel sin saber todavía cómo iba a pagar (ver marcarListo/npPasoCliente).
+function cobrarPedido(id){
+  if(uiBloqueada) return;
+  const o = staffOrders.find(x => x.id_pedido === id);
+  if(!o) return;
+  chequearCajaDiaAnterior().then(hayCajaVieja => {
+    if(hayCajaVieja){
+      uiAlert('⚠️ Hay una caja de un día anterior sin cerrar. Andá a Caja y cerrala antes de cobrar.');
+      return;
+    }
+    cierrePendiente = { modo:'pedido', id };
+    document.getElementById('pagoTitulo').textContent = `¿Cómo pagó ${o.nombre_cliente || TIPO_LABEL[o.tipo]}?`;
+    document.getElementById('pagoOverlay').style.display = 'flex';
+  });
 }
 
-function confirmarCierreMesa(metodo){
-  if(uiBloqueada || !cierreMesaPendiente) return;
-  const { mesa, rondas } = cierreMesaPendiente;
+function cerrarPagoOverlay(){
+  document.getElementById('pagoOverlay').style.display = 'none';
+  cierrePendiente = null;
+}
+
+function confirmarPago(metodo){
+  if(uiBloqueada || !cierrePendiente) return;
   document.getElementById('pagoOverlay').style.display = 'none';
   lockUI();
-  postAction('cerrarMesa', { mesa, metodo_pago: metodo }).then(res => {
+  if(cierrePendiente.modo === 'mesa'){
+    const { mesa } = cierrePendiente;
+    postAction('cerrarMesa', { mesa, metodo_pago: metodo }).then(res => {
+      if(!res.ok){
+        if(res.error === 'caja_dia_anterior_sin_cerrar'){
+          return showToast('⚠️ Hay una caja de un día anterior sin cerrar. Cerrala antes de cobrar.');
+        }
+        return showToast('No se pudo cerrar la mesa: ' + (res.error||''));
+      }
+      mesasConCuentaImpresa.delete(String(mesa));
+      guardarMesasConCuentaImpresa();
+      showToast(`Mesa ${mesa} cerrada · ${METODO_LABEL[metodo]}`);
+      cargarPedidos();
+    }).finally(() => { unlockUI(); cierrePendiente = null; });
+    return;
+  }
+  const { id } = cierrePendiente;
+  postAction('actualizarEstado', { id_pedido:id, estado:'cerrado', metodo_pago:metodo }).then(res => {
     if(!res.ok){
       if(res.error === 'caja_dia_anterior_sin_cerrar'){
         return showToast('⚠️ Hay una caja de un día anterior sin cerrar. Cerrala antes de cobrar.');
       }
-      return showToast('No se pudo cerrar la mesa: ' + (res.error||''));
+      return showToast('No se pudo cerrar el pedido: ' + (res.error||''));
     }
-    mesasConCuentaImpresa.delete(String(mesa));
-    guardarMesasConCuentaImpresa();
-    showToast(`Mesa ${mesa} cerrada · ${METODO_LABEL[metodo]}`);
+    showToast(`Pedido cerrado · ${METODO_LABEL[metodo]}`);
     cargarPedidos();
-  }).finally(() => { unlockUI(); cierreMesaPendiente = null; });
+  }).finally(() => { unlockUI(); cierrePendiente = null; });
 }
 
 /* ======================= IMPRESIÓN ======================= */
@@ -2232,13 +2268,7 @@ function elegirTipoNuevoPedido(tipo){
   document.getElementById('npDireccionInput').value = '';
   document.getElementById('npDireccionInput').style.display = tipo === 'envio' ? 'block' : 'none';
   nuevoPedido.metodoPago = null;
-  ['efectivo','tarjeta','transferencia'].forEach(m => document.getElementById('npPagoBtn-'+m).classList.remove('active'));
   mostrarPasoNuevoPedido('npPasoCliente');
-}
-
-function elegirMetodoPagoNP(metodo){
-  nuevoPedido.metodoPago = metodo;
-  ['efectivo','tarjeta','transferencia'].forEach(m => document.getElementById('npPagoBtn-'+m).classList.toggle('active', m===metodo));
 }
 
 function continuarNuevoPedidoCliente(){
@@ -2247,7 +2277,6 @@ function continuarNuevoPedidoCliente(){
   const direccion = document.getElementById('npDireccionInput').value.trim();
   if(!nombre || !telefono){ showToast('Falta nombre o teléfono'); return; }
   if(nuevoPedido.tipo === 'envio' && !direccion){ showToast('Falta la dirección de entrega'); return; }
-  if(!nuevoPedido.metodoPago){ showToast('Elegí cómo va a pagar'); return; }
   nuevoPedido.nombreCliente = nombre;
   nuevoPedido.telefono = telefono;
   nuevoPedido.direccion = direccion;
@@ -2648,7 +2677,8 @@ function confirmarNuevoPedido(){
   } else {
     payload.nombre_cliente = nuevoPedido.nombreCliente;
     payload.telefono = nuevoPedido.telefono;
-    payload.metodo_pago = nuevoPedido.metodoPago;
+    // Sin metodo_pago acá a propósito — todavía no se sabe (ver npPasoCliente). Se define
+    // recién al cobrar (cobrarPedido), cuando el pedido pasa a "listo".
     if(nuevoPedido.tipo === 'envio'){
       payload.direccion = nuevoPedido.direccion;
       payload.costo_envio = npCostoEnvio();
