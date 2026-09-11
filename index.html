@@ -2312,6 +2312,17 @@ function cargarMenuNuevoPedido(){
 function npFindProducto(id){ return menuNuevoPedidoData.productos.find(p => p.id === id); }
 function npItemsOf(catId){ return menuNuevoPedidoData.productos.filter(p => p.categoria_id === catId); }
 
+// Mismo criterio que nanorestobar: categorías (o productos puntuales) donde la cocina
+// necesita sí o sí una aclaración para prepararlo, sea que el pedido lo cargue el cliente
+// desde el link o el mozo/encargado desde acá.
+function opcionesRequeridas(catId,nombre){
+  if(catId==='empanadas')return['Al horno','Fritas'];
+  if(catId==='milanesas')return['De carne','De pollo'];
+  if(catId==='pastas')return['Con salsa de estofado de carne','Con salsa bolognesa','Con salsa de crema'];
+  if(catId==='postres'&&/budin/i.test(nombre||''))return['Con crema','Con dulce de leche'];
+  return null;
+}
+
 // Emoji por categoría, solo para que la barra lateral se lea de un vistazo — el backend
 // no manda ícono, así que es un mapeo local por id (con una carita de plato de respaldo).
 const NP_CAT_EMOJI = {
@@ -2384,20 +2395,33 @@ function renderNpStepper(id, qty){
 function renderNpNota(id, entry){
   const holder = document.getElementById('np-nota-' + id); if(!holder) return;
   if(!entry || entry.qty === 0){ holder.innerHTML = ''; return; }
+  const p = npFindProducto(id);
+  const opciones = p ? opcionesRequeridas(p.categoria_id, p.nombre) : null;
+  const opcionHtml = opciones ? `<select class="np-nota-input" onchange="npGuardarOpcion('${id}',this.value)">
+      <option value="" disabled ${entry.opcion?'':'selected'}>Elegí una opción (obligatorio)</option>
+      ${opciones.map(o=>`<option value="${o}" ${entry.opcion===o?'selected':''}>${o}</option>`).join('')}
+    </select>` : '';
+  let notaHtml;
   if(entry.showInput){
-    holder.innerHTML = `<input class="np-nota-input" placeholder="Ej: sin cebolla, bien cocido..." value="${entry.note||''}" onblur="npGuardarNota('${id}',this.value)">`;
-    setTimeout(() => { const inp = holder.querySelector('input'); if(inp) inp.focus(); }, 0);
+    notaHtml = `<input class="np-nota-input" placeholder="Ej: sin cebolla, bien cocido..." value="${entry.note||''}" onblur="npGuardarNota('${id}',this.value)">`;
   } else if(entry.note){
-    holder.innerHTML = `<span class="np-nota-chip">📝 ${entry.note}</span> <button class="np-nota-link" onclick="npToggleNota('${id}')">editar</button>`;
+    notaHtml = `<span class="np-nota-chip">📝 ${entry.note}</span> <button class="np-nota-link" onclick="npToggleNota('${id}')">editar</button>`;
   } else {
-    holder.innerHTML = `<button class="np-nota-link" onclick="npToggleNota('${id}')">＋ agregar aclaración</button>`;
+    notaHtml = `<button class="np-nota-link" onclick="npToggleNota('${id}')">＋ agregar aclaración</button>`;
   }
+  holder.innerHTML = opcionHtml + notaHtml;
+  if(entry.showInput) setTimeout(() => { const inp = holder.querySelector('input'); if(inp) inp.focus(); }, 0);
 }
 function npToggleNota(id){ nuevoPedido.cart[id].showInput = true; renderNpNota(id, nuevoPedido.cart[id]); }
 function npGuardarNota(id, val){
   if(!nuevoPedido.cart[id]) return;
   nuevoPedido.cart[id].note = val.trim();
   nuevoPedido.cart[id].showInput = false;
+  renderNpNota(id, nuevoPedido.cart[id]);
+}
+function npGuardarOpcion(id, val){
+  if(!nuevoPedido.cart[id]) return;
+  nuevoPedido.cart[id].opcion = val;
   renderNpNota(id, nuevoPedido.cart[id]);
 }
 
@@ -2457,7 +2481,8 @@ function npAddHalf(catId){
 function npRenderDocenaCard(cat){
   const opts = npItemsOf(cat.id);
   if(!opts.length) return '';
-  npDocenaState[cat.id] = { tamano:'docena', mitad:false };
+  const opciones = opcionesRequeridas(cat.id, '');
+  npDocenaState[cat.id] = { tamano:'docena', mitad:false, opcion:'' };
   return `<div class="np-combo-card">
     <h4>🥟 Armá tu pedido</h4>
     <p>Los precios de la lista son por docena. Elegí el tamaño y, si querés, combiná dos sabores.</p>
@@ -2475,12 +2500,19 @@ function npRenderDocenaCard(cat){
     <div class="np-combo-row" id="npDocBWrap-${cat.id}" style="display:none;">
       <select id="npDocB-${cat.id}" onchange="npUpdateDocenaPrice('${cat.id}')">${opts.map((o,i)=>`<option value="${o.id}" ${i===1?'selected':''}>${o.nombre}</option>`).join('')}</select>
     </div>
+    ${opciones ? `<div class="np-combo-row">
+      <select id="npDocOpcion-${cat.id}" onchange="npSetDocenaOpcion('${cat.id}',this.value)">
+        <option value="" selected disabled>¿Al horno o fritas? (obligatorio)</option>
+        ${opciones.map(o=>`<option value="${o}">${o}</option>`).join('')}
+      </select>
+    </div>` : ''}
     <div class="np-combo-foot">
       <b id="npDocPrice-${cat.id}">${formatPrecio(opts[0].precio)}</b>
       <button class="np-add-btn" style="width:auto;padding:0 18px;border-radius:var(--radius-md);height:38px" onclick="npAddDocena('${cat.id}')">Agregar</button>
     </div>
   </div>`;
 }
+function npSetDocenaOpcion(catId, val){ npDocenaState[catId].opcion = val; }
 
 function npSetActiveBtn(activeId, allIds){ allIds.forEach(id => { const el = document.getElementById(id); if(el) el.classList.toggle('active', id===activeId); }); }
 
@@ -2512,6 +2544,7 @@ function npUpdateDocenaPrice(catId){
 function npAddDocena(catId){
   const st = npDocenaState[catId];
   const cat = menuNuevoPedidoData.categorias.find(c => c.id === catId);
+  if(opcionesRequeridas(catId, '') && !st.opcion){ showToast('Elegí si las querés al horno o fritas'); return; }
   const a = npFindProducto(document.getElementById('npDocA-'+catId).value);
   let base = Number(a.precio), nombre = a.nombre;
   if(st.mitad){
@@ -2524,10 +2557,10 @@ function npAddDocena(catId){
   const price = esMedia ? base / 2 : base;
   const label = (esMedia ? 'Media docena de ' : 'Docena de ') + nombre;
   const bId = st.mitad ? document.getElementById('npDocB-'+catId).value : '';
-  const key = 'docena-' + catId + '-' + a.id + '-' + bId + '-' + st.tamano;
+  const key = 'docena-' + catId + '-' + a.id + '-' + bId + '-' + st.tamano + '-' + (st.opcion||'');
   const existing = nuevoPedido.comboCart.find(c => c.key === key);
   if(existing) existing.qty += 1;
-  else nuevoPedido.comboCart.push({ key, aId:a.id, bId, esMediaDocena:esMedia, name:label, price, qty:1, catName: cat?cat.nombre:'' });
+  else nuevoPedido.comboCart.push({ key, aId:a.id, bId, esMediaDocena:esMedia, name:label, price, qty:1, catName: cat?cat.nombre:'', desc: st.opcion||'' });
   updateNpCartbar();
   showToast('Agregado al pedido');
 }
@@ -2537,7 +2570,9 @@ function npAllCartLines(){
   const regular = Object.entries(nuevoPedido.cart).map(([id, entry]) => {
     const item = npFindProducto(id);
     const cat = menuNuevoPedidoData.categorias.find(c => c.id === item.categoria_id);
-    return { key:id, name:item.nombre, desc:entry.note||'', price:Number(item.precio), qty:entry.qty, catName: cat?cat.nombre:'' };
+    const opciones = opcionesRequeridas(item.categoria_id, item.nombre);
+    const desc = [entry.opcion, entry.note].filter(Boolean).join(' · ');
+    return { key:id, name:item.nombre, desc, price:Number(item.precio), qty:entry.qty, catName: cat?cat.nombre:'', faltaOpcion: !!opciones && !entry.opcion };
   });
   return [...regular, ...nuevoPedido.comboCart];
 }
@@ -2563,7 +2598,7 @@ function abrirRevisionPedido(){
   let html = lines.length === 0
     ? '<div class="empty-orders">Todavía no agregaste nada</div>'
     : lines.map(l => `<div class="np-review-item">
-        <span class="nom">${l.qty}× ${l.catName ? `<span style="color:var(--ink-muted);font-weight:600">${l.catName}</span> - ` : ''}${l.name}${l.desc?`<span class="nota">📝 ${l.desc}</span>`:''}</span>
+        <span class="nom">${l.qty}× ${l.catName ? `<span style="color:var(--ink-muted);font-weight:600">${l.catName}</span> - ` : ''}${l.name}${l.desc?`<span class="nota">📝 ${l.desc}</span>`:''}${l.faltaOpcion?`<span class="nota" style="color:#c0392b">⚠ Falta elegir una opción — volvé a la lista y seleccionala</span>`:''}</span>
         <span style="display:flex;align-items:center;gap:8px">${formatPrecio(l.price*l.qty)}<button class="del" onclick="npRemoveLine('${l.key}')">✕</button></span>
       </div>`).join('');
   if(lines.length > 0 && nuevoPedido.tipo === 'envio'){
@@ -2571,7 +2606,9 @@ function abrirRevisionPedido(){
   }
   el.innerHTML = html;
   document.getElementById('npRevisionTotal').textContent = formatPrecio(npTotalConEnvio(lines));
-  document.getElementById('npConfirmarBtn').style.display = lines.length === 0 ? 'none' : 'block';
+  const btnConfirmar = document.getElementById('npConfirmarBtn');
+  btnConfirmar.style.display = lines.length === 0 ? 'none' : 'block';
+  btnConfirmar.disabled = lines.some(l => l.faltaOpcion);
   document.getElementById('npRevisionOverlay').style.display = 'flex';
 }
 
@@ -2590,7 +2627,7 @@ function npRemoveLine(key){
 function npBuildItemsForApi(lines){
   return lines.map(l => {
     if(l.aId){
-      return { producto_id:l.aId, cantidad:l.qty, nota:'', es_mitad_y_mitad:!!l.bId, combinado_con:l.bId||'', es_media_docena:!!l.esMediaDocena };
+      return { producto_id:l.aId, cantidad:l.qty, nota:l.desc||'', es_mitad_y_mitad:!!l.bId, combinado_con:l.bId||'', es_media_docena:!!l.esMediaDocena };
     }
     return { producto_id:l.key, cantidad:l.qty, nota:l.desc||'', es_mitad_y_mitad:false, combinado_con:'', es_media_docena:false };
   });
@@ -2600,6 +2637,7 @@ function confirmarNuevoPedido(){
   if(uiBloqueada) return;
   const lines = npAllCartLines();
   if(lines.length === 0) return;
+  if(lines.some(l => l.faltaOpcion)){ showToast('Falta elegir una opción obligatoria en algún ítem'); return; }
   lockUI();
   const btn = document.getElementById('npConfirmarBtn');
   btn.textContent = 'Enviando...';
