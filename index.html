@@ -2346,11 +2346,25 @@ function npItemsOf(catId){ return menuNuevoPedidoData.productos.filter(p => p.ca
 // Mismo criterio que nanorestobar: categorías (o productos puntuales) donde la cocina
 // necesita sí o sí una aclaración para prepararlo, sea que el pedido lo cargue el cliente
 // desde el link o el mozo/encargado desde acá.
+// Devuelve un array de grupos {label, opciones} (uno por cada pregunta obligatoria) o null si
+// el producto no necesita ninguna. La mayoría tiene un solo grupo; "por unidad" es el único
+// con dos (sabor + cocción), porque a diferencia de los demás productos de la categoría no
+// trae el sabor puesto en el nombre.
 function opcionesRequeridas(catId,nombre){
-  if(catId==='empanadas')return['Al horno','Fritas'];
-  if(catId==='milanesas')return['De carne','De pollo'];
-  if(catId==='pastas')return['Con salsa de estofado de carne','Con salsa bolognesa','Con salsa de crema'];
-  if(catId==='postres'&&/budin/i.test(nombre||''))return['Con crema','Con dulce de leche'];
+  if(catId==='empanadas'){
+    const grupos=[{label:'¿Al horno o fritas?',opciones:['Al horno','Fritas']}];
+    if(/por unidad/i.test(nombre||'')){
+      // El sabor se toma de los propios productos "EMPANADAS DE ___" de la categoría (no una
+      // lista fija a mano) — así si mañana se agrega o saca un sabor del menú, el selector de
+      // "por unidad" se actualiza solo.
+      const sabores=npItemsOf(catId).filter(p=>!/por unidad/i.test(p.nombre)).map(p=>p.nombre);
+      grupos.unshift({label:'Sabor',opciones:sabores});
+    }
+    return grupos;
+  }
+  if(catId==='milanesas')return[{label:'¿De carne o de pollo?',opciones:['De carne','De pollo']}];
+  if(catId==='pastas')return[{label:'Salsa',opciones:['Con salsa de estofado de carne','Con salsa bolognesa','Con salsa de crema']}];
+  if(catId==='postres'&&/budin/i.test(nombre||''))return[{label:'¿Con crema o con dulce de leche?',opciones:['Con crema','Con dulce de leche']}];
   return null;
 }
 
@@ -2427,11 +2441,12 @@ function renderNpNota(id, entry){
   const holder = document.getElementById('np-nota-' + id); if(!holder) return;
   if(!entry || entry.qty === 0){ holder.innerHTML = ''; return; }
   const p = npFindProducto(id);
-  const opciones = p ? opcionesRequeridas(p.categoria_id, p.nombre) : null;
-  const opcionHtml = opciones ? `<select class="np-nota-input" onchange="npGuardarOpcion('${id}',this.value)">
-      <option value="" disabled ${entry.opcion?'':'selected'}>Elegí una opción (obligatorio)</option>
-      ${opciones.map(o=>`<option value="${o}" ${entry.opcion===o?'selected':''}>${o}</option>`).join('')}
-    </select>` : '';
+  const grupos = p ? opcionesRequeridas(p.categoria_id, p.nombre) : null;
+  const opciones = entry.opciones || [];
+  const opcionesHtml = grupos ? grupos.map((g,i) => `<select class="np-nota-input" onchange="npGuardarOpcion('${id}',${i},this.value)">
+      <option value="" disabled ${opciones[i]?'':'selected'}>${g.label} (obligatorio)</option>
+      ${g.opciones.map(o=>`<option value="${o}" ${opciones[i]===o?'selected':''}>${o}</option>`).join('')}
+    </select>`).join('') : '';
   let notaHtml;
   if(entry.showInput){
     notaHtml = `<input class="np-nota-input" placeholder="Ej: sin cebolla, bien cocido..." value="${entry.note||''}" onblur="npGuardarNota('${id}',this.value)">`;
@@ -2440,7 +2455,7 @@ function renderNpNota(id, entry){
   } else {
     notaHtml = `<button class="np-nota-link" onclick="npToggleNota('${id}')">＋ agregar aclaración</button>`;
   }
-  holder.innerHTML = opcionHtml + notaHtml;
+  holder.innerHTML = opcionesHtml + notaHtml;
   if(entry.showInput) setTimeout(() => { const inp = holder.querySelector('input'); if(inp) inp.focus(); }, 0);
 }
 function npToggleNota(id){ nuevoPedido.cart[id].showInput = true; renderNpNota(id, nuevoPedido.cart[id]); }
@@ -2450,9 +2465,11 @@ function npGuardarNota(id, val){
   nuevoPedido.cart[id].showInput = false;
   renderNpNota(id, nuevoPedido.cart[id]);
 }
-function npGuardarOpcion(id, val){
+function npGuardarOpcion(id, grupoIdx, val){
   if(!nuevoPedido.cart[id]) return;
-  nuevoPedido.cart[id].opcion = val;
+  const opciones = (nuevoPedido.cart[id].opciones || []).slice();
+  opciones[grupoIdx] = val;
+  nuevoPedido.cart[id].opciones = opciones;
   renderNpNota(id, nuevoPedido.cart[id]);
 }
 
@@ -2515,7 +2532,9 @@ function npRenderDocenaCard(cat){
   // por unidad, mal. Se carga por su cuenta desde la lista de arriba, no desde esta tarjeta.
   const opts = npItemsOf(cat.id).filter(p => !/por unidad/i.test(p.nombre));
   if(!opts.length) return '';
-  const opciones = opcionesRequeridas(cat.id, '');
+  // El sabor ya se elige con el desplegable de acá abajo, así que de opcionesRequeridas solo
+  // interesa el grupo de cocción (el de "por unidad" con dos grupos no pasa por acá).
+  const grupoCoccion = opcionesRequeridas(cat.id, '')?.[0] || null;
   npDocenaState[cat.id] = { tamano:'docena', mitad:false, opcion:'' };
   return `<div class="np-combo-card">
     <h4>🥟 Armá tu pedido</h4>
@@ -2534,10 +2553,10 @@ function npRenderDocenaCard(cat){
     <div class="np-combo-row" id="npDocBWrap-${cat.id}" style="display:none;">
       <select id="npDocB-${cat.id}" onchange="npUpdateDocenaPrice('${cat.id}')">${opts.map((o,i)=>`<option value="${o.id}" ${i===1?'selected':''}>${o.nombre}</option>`).join('')}</select>
     </div>
-    ${opciones ? `<div class="np-combo-row">
+    ${grupoCoccion ? `<div class="np-combo-row">
       <select id="npDocOpcion-${cat.id}" onchange="npSetDocenaOpcion('${cat.id}',this.value)">
-        <option value="" selected disabled>¿Al horno o fritas? (obligatorio)</option>
-        ${opciones.map(o=>`<option value="${o}">${o}</option>`).join('')}
+        <option value="" selected disabled>${grupoCoccion.label} (obligatorio)</option>
+        ${grupoCoccion.opciones.map(o=>`<option value="${o}">${o}</option>`).join('')}
       </select>
     </div>` : ''}
     <div class="np-combo-foot">
@@ -2604,9 +2623,11 @@ function npAllCartLines(){
   const regular = Object.entries(nuevoPedido.cart).map(([id, entry]) => {
     const item = npFindProducto(id);
     const cat = menuNuevoPedidoData.categorias.find(c => c.id === item.categoria_id);
-    const opciones = opcionesRequeridas(item.categoria_id, item.nombre);
-    const desc = [entry.opcion, entry.note].filter(Boolean).join(' · ');
-    return { key:id, name:item.nombre, desc, price:Number(item.precio), qty:entry.qty, catName: cat?cat.nombre:'', faltaOpcion: !!opciones && !entry.opcion };
+    const grupos = opcionesRequeridas(item.categoria_id, item.nombre);
+    const opciones = entry.opciones || [];
+    const desc = [...opciones, entry.note].filter(Boolean).join(' · ');
+    const faltaOpcion = !!grupos && grupos.some((g,i) => !opciones[i]);
+    return { key:id, name:item.nombre, desc, price:Number(item.precio), qty:entry.qty, catName: cat?cat.nombre:'', faltaOpcion };
   });
   return [...regular, ...nuevoPedido.comboCart];
 }
