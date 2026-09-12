@@ -702,7 +702,9 @@
   /* Líneas de cocina: no hay precio, así que van alineadas a la izquierda (no space-between) */
   #comprobante .linea-cocina{display:flex;align-items:baseline;gap:7px;font-size:14px;font-weight:400;padding:1.6mm 0}
   #comprobante .linea-cocina .cant{flex-shrink:0;font-weight:600}
-  #comprobante .item-nota{font-size:11px;font-weight:400;color:#333;padding-left:4mm;margin-bottom:1mm}
+  /* Esta es la línea que más le importa a cocina (carne/pollo, tipo de guarnición, etc.) —
+     va bien negra y en negrita a propósito, aunque el resto del ticket ahorre tinta. */
+  #comprobante .item-nota{font-size:12.5px;font-weight:700;color:#000;padding-left:4mm;margin-bottom:1mm}
   #comprobante .cat-label{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;color:#000;margin-top:2mm}
   #comprobante .total{font-weight:700;font-size:17px;margin-top:2mm;padding-top:2mm;border-top:2px dashed #000}
   #comprobante .footer{text-align:center;font-size:12px;font-weight:400;color:#000;margin-top:3mm}
@@ -2105,7 +2107,7 @@ function imprimirComprobanteCocina(o){
     <div class="nota">${o.tipo === 'mesa' ? 'MESA ' + o.mesa : TIPO_LABEL[o.tipo].toUpperCase() + (o.nombre_cliente ? ' — ' + esc(o.nombre_cliente) : '')} · #${o.id_pedido.slice(-4)} · ${horaTicket()}</div>
     <div class="sep"></div>
     ${itemsCocina.map(i => {
-      let bloque = `<div class="linea-cocina"><span class="cant">${i.cantidad}×</span><span>${i.categoria ? i.categoria + ' - ' : ''}${i.nombre}</span></div>`;
+      let bloque = `<div class="linea-cocina"><span class="cant">${i.cantidad}×</span><span>${i.nombre}</span></div>`;
       if(i.nota) bloque += `<div class="item-nota">↳ ${esc(i.nota)}</div>`;
       return bloque;
     }).join('')}
@@ -2139,7 +2141,7 @@ function imprimirComprobanteFinal(cabecera, rondas){
     <div class="sep"></div>
     ${rondas.map((r,idx) => `
       ${rondas.length>1 ? `<div class="cat-label">Ronda ${idx+1}</div>` : ''}
-      ${r.items.map(i => `<div class="linea"><span>${i.cantidad}× ${i.categoria ? i.categoria + ' - ' : ''}${i.nombre}</span><span>${formatPrecio(i.precio_unit*i.cantidad)}</span></div>`).join('')}
+      ${r.items.map(i => `<div class="linea"><span>${i.cantidad}× ${i.nombre}</span><span>${formatPrecio(i.precio_unit*i.cantidad)}</span></div>`).join('')}
     `).join('')}
     <div class="linea total"><span>TOTAL</span><span>${formatPrecio(total)}</span></div>
     ${aliasHtml}
