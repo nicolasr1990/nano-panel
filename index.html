@@ -2510,7 +2510,10 @@ function npAddHalf(catId){
 }
 
 function npRenderDocenaCard(cat){
-  const opts = npItemsOf(cat.id);
+  // El producto "por unidad" de la categoría (ej. "EMPANADA POR UNIDAD") no es un sabor para
+  // armar una docena — si se cuela acá, el precio de la docena sale calculado con el precio
+  // por unidad, mal. Se carga por su cuenta desde la lista de arriba, no desde esta tarjeta.
+  const opts = npItemsOf(cat.id).filter(p => !/por unidad/i.test(p.nombre));
   if(!opts.length) return '';
   const opciones = opcionesRequeridas(cat.id, '');
   npDocenaState[cat.id] = { tamano:'docena', mitad:false, opcion:'' };
