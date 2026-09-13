@@ -1913,12 +1913,22 @@ function guardarMesasConCuentaImpresa(){
 // contra la caja vieja (por rango de fecha/hora) y la caja de hoy, cuando se abra, no la
 // va a ver — quedó "perdida" entre medio. Mismo criterio si directamente no hay ninguna
 // caja abierta: esa venta tampoco la va a contar ninguna caja futura. El backend es quien
-// realmente lo bloquea en cada acción (ver Code.gs); esto de acá es solo para avisar
+// realmente lo bloquea en cada acción (ver index.ts); esto de acá es solo para avisar
 // ANTES de mostrar el paso de cobro o el de tomar el pedido, no después.
+//
+// "Día de negocio": mismo criterio que diaDeNegocioStr en el backend (index.ts) — corre el
+// corte de medianoche a las 6 AM, para que una caja abierta a la noche no se marque como "de
+// un día anterior" apenas el reloj cruza las 00:00. Si esto no coincide con el backend, el
+// panel avisa/bloquea con un criterio y el servidor decide con otro — pasó justo eso: se
+// arregló el backend pero no esta copia, y siguió bloqueando en el navegador igual que antes.
+function fechaArtStr(fecha){
+  return fecha.toLocaleDateString('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' });
+}
+function diaDeNegocioStr(fecha){
+  return fechaArtStr(new Date(fecha.getTime() - 6 * 60 * 60 * 1000));
+}
 function fechaEsHoy(fechaStr){
-  const d = new Date(fechaStr);
-  const hoy = new Date();
-  return d.getFullYear() === hoy.getFullYear() && d.getMonth() === hoy.getMonth() && d.getDate() === hoy.getDate();
+  return diaDeNegocioStr(new Date(fechaStr)) === diaDeNegocioStr(new Date());
 }
 const CAJA_MOTIVO_MSG = {
   caja_cerrada: '⚠️ La caja está cerrada. Abrila (menú Caja) antes de tomar pedidos.',
