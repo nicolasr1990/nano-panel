@@ -2585,33 +2585,55 @@ function npRenderDocenaCard(cat){
   // El sabor ya se elige con el desplegable de acá abajo, así que de opcionesRequeridas solo
   // interesa el grupo de cocción (el de "por unidad" con dos grupos no pasa por acá).
   const grupoCoccion = opcionesRequeridas(cat.id, '')?.[0] || null;
-  npDocenaState[cat.id] = { tamano:'docena', mitad:false, opcion:'' };
+  npDocenaState[cat.id] = { tamano:'docena', modo:'sabor', opcion:'', variedad:[] };
   return `<div class="np-combo-card">
     <h4>🥟 Armá tu pedido</h4>
-    <p>Los precios de la lista son por docena. Elegí el tamaño y, si querés, combiná dos sabores.</p>
+    <p>Los precios de la lista son por docena. Elegí el tamaño y, si querés, combiná sabores.</p>
     <div class="np-combo-toggle">
       <button class="active" id="npDocSize-docena-${cat.id}" onclick="npSetDocenaSize('${cat.id}','docena')">Docena</button>
       <button id="npDocSize-media-${cat.id}" onclick="npSetDocenaSize('${cat.id}','media')">Media docena</button>
     </div>
-    <div class="np-combo-row">
-      <select id="npDocA-${cat.id}" onchange="npUpdateDocenaPrice('${cat.id}')">${opts.map(o=>`<option value="${o.id}">${o.nombre}</option>`).join('')}</select>
-    </div>
     <div class="np-combo-toggle">
-      <button class="active" id="npDocMitad-off-${cat.id}" onclick="npSetDocenaMitad('${cat.id}',false)">Un solo sabor</button>
-      <button id="npDocMitad-on-${cat.id}" onclick="npSetDocenaMitad('${cat.id}',true)">Mitad y mitad</button>
+      <button class="active" id="npDocModo-sabor-${cat.id}" onclick="npSetDocenaModo('${cat.id}','sabor')">Un solo sabor</button>
+      <button id="npDocModo-mitad-${cat.id}" onclick="npSetDocenaModo('${cat.id}','mitad')">Mitad y mitad</button>
+      <button id="npDocModo-variedad-${cat.id}" onclick="npSetDocenaModo('${cat.id}','variedad')">Combinar variedad</button>
+    </div>
+    <div class="np-combo-row" id="npDocSaborWrap-${cat.id}">
+      <select id="npDocA-${cat.id}" onchange="npUpdateDocenaPrice('${cat.id}')">${opts.map(o=>`<option value="${o.id}">${o.nombre}</option>`).join('')}</select>
     </div>
     <div class="np-combo-row" id="npDocBWrap-${cat.id}" style="display:none;">
       <select id="npDocB-${cat.id}" onchange="npUpdateDocenaPrice('${cat.id}')">${opts.map((o,i)=>`<option value="${o.id}" ${i===1?'selected':''}>${o.nombre}</option>`).join('')}</select>
     </div>
-    ${grupoCoccion ? `<div class="np-combo-row">
+    ${grupoCoccion ? `<div class="np-combo-row" id="npDocOpcionWrap-${cat.id}">
       <select id="npDocOpcion-${cat.id}" onchange="npSetDocenaOpcion('${cat.id}',this.value)">
         <option value="" selected disabled>${grupoCoccion.label} (obligatorio)</option>
         ${grupoCoccion.opciones.map(o=>`<option value="${o}">${o}</option>`).join('')}
       </select>
     </div>` : ''}
+    <!-- "Combinar variedad": arma UNA sola línea de pedido (misma docena/media docena, mismo
+         precio fijo) con el detalle real de la mezcla en la aclaración de cocina — no manda
+         un producto/precio por cada sabor, sería facturar de más o de menos según cómo
+         combinen. Ver npAddDocena. -->
+    <div id="npDocVariedadWrap-${cat.id}" style="display:none;">
+      <div class="np-combo-row">
+        <select id="npVarSabor-${cat.id}">${opts.map(o=>`<option value="${o.id}">${o.nombre}</option>`).join('')}</select>
+      </div>
+      ${grupoCoccion ? `<div class="np-combo-row">
+        <select id="npVarOpcion-${cat.id}">
+          <option value="" selected disabled>${grupoCoccion.label}</option>
+          ${grupoCoccion.opciones.map(o=>`<option value="${o}">${o}</option>`).join('')}
+        </select>
+      </div>` : ''}
+      <div class="np-combo-row">
+        <input type="number" id="npVarCantidad-${cat.id}" min="1" step="1" placeholder="Cantidad" style="width:100%">
+      </div>
+      <button class="editar-menu-btn" style="width:100%;margin-bottom:8px" onclick="npAgregarLineaVariedad('${cat.id}')">+ Agregar línea</button>
+      <div id="npVarLista-${cat.id}"></div>
+      <div id="npVarContador-${cat.id}" style="font-size:12.5px;color:var(--ink-muted);margin:2px 0 10px"></div>
+    </div>
     <div class="np-combo-foot">
       <b id="npDocPrice-${cat.id}">${formatPrecio(opts[0].precio)}</b>
-      <button class="np-add-btn" style="width:auto;padding:0 18px;border-radius:var(--radius-md);height:38px" onclick="npAddDocena('${cat.id}')">Agregar</button>
+      <button class="np-add-btn" id="npDocAddBtn-${cat.id}" style="width:auto;padding:0 18px;border-radius:var(--radius-md);height:38px" onclick="npAddDocena('${cat.id}')">Agregar</button>
     </div>
   </div>`;
 }
@@ -2623,43 +2645,119 @@ function npSetDocenaSize(catId, tamano){
   npDocenaState[catId].tamano = tamano;
   npSetActiveBtn('npDocSize-'+tamano+'-'+catId, ['npDocSize-docena-'+catId,'npDocSize-media-'+catId]);
   npUpdateDocenaPrice(catId);
+  npRenderVariedadLista(catId);
 }
 
-function npSetDocenaMitad(catId, on){
-  npDocenaState[catId].mitad = on;
-  npSetActiveBtn('npDocMitad-'+(on?'on':'off')+'-'+catId, ['npDocMitad-off-'+catId,'npDocMitad-on-'+catId]);
-  document.getElementById('npDocBWrap-'+catId).style.display = on ? 'flex' : 'none';
+function npSetDocenaModo(catId, modo){
+  npDocenaState[catId].modo = modo;
+  npSetActiveBtn('npDocModo-'+modo+'-'+catId, ['npDocModo-sabor-'+catId,'npDocModo-mitad-'+catId,'npDocModo-variedad-'+catId]);
+  document.getElementById('npDocSaborWrap-'+catId).style.display = modo === 'variedad' ? 'none' : 'flex';
+  document.getElementById('npDocBWrap-'+catId).style.display = modo === 'mitad' ? 'flex' : 'none';
+  const opcionWrap = document.getElementById('npDocOpcionWrap-'+catId);
+  if(opcionWrap) opcionWrap.style.display = modo === 'variedad' ? 'none' : 'flex';
+  document.getElementById('npDocVariedadWrap-'+catId).style.display = modo === 'variedad' ? 'block' : 'none';
   npUpdateDocenaPrice(catId);
+  npRenderVariedadLista(catId);
 }
 
 function npUpdateDocenaPrice(catId){
   const st = npDocenaState[catId];
   const a = npFindProducto(document.getElementById('npDocA-'+catId).value);
   let base = Number(a.precio);
-  if(st.mitad){
+  if(st.modo === 'mitad'){
     const b = npFindProducto(document.getElementById('npDocB-'+catId).value);
     base = (Number(a.precio) + Number(b.precio)) / 2;
   }
+  // Modo "variedad": todos los sabores de una misma categoría por docena cuestan lo mismo, así
+  // que el precio de la docena/media docena no cambia según cómo se combine adentro.
   const price = st.tamano === 'media' ? base / 2 : base;
   document.getElementById('npDocPrice-'+catId).textContent = formatPrecio(price);
+}
+
+// Suma las cantidades ya agregadas al combo de variedad, actualiza el contador y habilita
+// "Agregar" solo cuando completa justo la docena/media docena (ni de más ni de menos).
+function npRenderVariedadLista(catId){
+  const st = npDocenaState[catId];
+  const capacidad = st.tamano === 'media' ? 6 : 12;
+  const total = st.variedad.reduce((s,l) => s + l.cantidad, 0);
+  const lista = document.getElementById('npVarLista-'+catId);
+  if(lista){
+    lista.innerHTML = st.variedad.map((l,i) => `<div class="np-review-item" style="padding:6px 0">
+        <span class="nom">${l.cantidad}× ${esc(l.nombre)}${l.opcion?` (${esc(l.opcion)})`:''}</span>
+        <button class="del" onclick="npQuitarLineaVariedad('${catId}',${i})">✕</button>
+      </div>`).join('');
+  }
+  const contador = document.getElementById('npVarContador-'+catId);
+  if(contador){
+    contador.textContent = st.modo === 'variedad'
+      ? `${total}/${capacidad} agregadas` + (total > capacidad ? ' — te pasaste, sacá alguna línea' : '')
+      : '';
+  }
+  const addBtn = document.getElementById('npDocAddBtn-'+catId);
+  if(addBtn) addBtn.disabled = st.modo === 'variedad' && total !== capacidad;
+}
+
+function npAgregarLineaVariedad(catId){
+  const st = npDocenaState[catId];
+  const productoId = document.getElementById('npVarSabor-'+catId).value;
+  const producto = npFindProducto(productoId);
+  const grupoCoccion = opcionesRequeridas(catId, '')?.[0] || null;
+  let opcion = '';
+  if(grupoCoccion){
+    opcion = document.getElementById('npVarOpcion-'+catId).value;
+    if(!opcion){ showToast('Elegí si esa parte va al horno o frita'); return; }
+  }
+  const cantidadInput = document.getElementById('npVarCantidad-'+catId);
+  const cantidad = parseInt(cantidadInput.value, 10);
+  if(!Number.isInteger(cantidad) || cantidad <= 0){ showToast('Ingresá una cantidad válida'); return; }
+  st.variedad.push({ productoId, nombre: producto.nombre, cantidad, opcion });
+  cantidadInput.value = '';
+  if(grupoCoccion) document.getElementById('npVarOpcion-'+catId).value = '';
+  npRenderVariedadLista(catId);
+}
+
+function npQuitarLineaVariedad(catId, idx){
+  npDocenaState[catId].variedad.splice(idx, 1);
+  npRenderVariedadLista(catId);
 }
 
 function npAddDocena(catId){
   const st = npDocenaState[catId];
   const cat = menuNuevoPedidoData.categorias.find(c => c.id === catId);
+  const esMedia = st.tamano === 'media';
+
+  if(st.modo === 'variedad'){
+    const capacidad = esMedia ? 6 : 12;
+    const total = st.variedad.reduce((s,l) => s + l.cantidad, 0);
+    if(st.variedad.length === 0){ showToast('Agregá al menos una línea'); return; }
+    if(total !== capacidad){ showToast(`Tenés que completar ${capacidad} — llevás ${total}`); return; }
+    const base = npFindProducto(st.variedad[0].productoId);
+    const price = esMedia ? Number(base.precio) / 2 : Number(base.precio);
+    const label = (esMedia ? 'Media docena de ' : 'Docena de ') + base.nombre;
+    // El detalle real de la mezcla queda en la aclaración de cocina (ver desc más abajo, se
+    // imprime en negrita) — el "nombre" de arriba es solo una etiqueta, no describe la mezcla.
+    const desc = st.variedad.map(l => `${l.cantidad}× ${l.nombre}${l.opcion?` (${l.opcion})`:''}`).join(' · ');
+    const key = 'docena-variedad-' + catId + '-' + crypto.randomUUID().slice(0,8);
+    nuevoPedido.comboCart.push({ key, aId:base.id, bId:'', esMediaDocena:esMedia, name:label, price, qty:1, catName: cat?cat.nombre:'', desc });
+    updateNpCartbar();
+    showToast('Agregado al pedido');
+    st.variedad = [];
+    npRenderVariedadLista(catId);
+    return;
+  }
+
   if(opcionesRequeridas(catId, '') && !st.opcion){ showToast('Elegí si las querés al horno o fritas'); return; }
   const a = npFindProducto(document.getElementById('npDocA-'+catId).value);
   let base = Number(a.precio), nombre = a.nombre;
-  if(st.mitad){
+  if(st.modo === 'mitad'){
     const b = npFindProducto(document.getElementById('npDocB-'+catId).value);
     if(a.id === b.id){ showToast('Elegí dos sabores distintos'); return; }
     base = (Number(a.precio) + Number(b.precio)) / 2;
     nombre = `Mitad ${a.nombre} / mitad ${b.nombre}`;
   }
-  const esMedia = st.tamano === 'media';
   const price = esMedia ? base / 2 : base;
   const label = (esMedia ? 'Media docena de ' : 'Docena de ') + nombre;
-  const bId = st.mitad ? document.getElementById('npDocB-'+catId).value : '';
+  const bId = st.modo === 'mitad' ? document.getElementById('npDocB-'+catId).value : '';
   const key = 'docena-' + catId + '-' + a.id + '-' + bId + '-' + st.tamano + '-' + (st.opcion||'');
   const existing = nuevoPedido.comboCart.find(c => c.key === key);
   if(existing) existing.qty += 1;
