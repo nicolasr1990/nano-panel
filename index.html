@@ -2734,12 +2734,13 @@ function npAddDocena(catId){
     if(total !== capacidad){ showToast(`Tenés que completar ${capacidad} — llevás ${total}`); return; }
     const base = npFindProducto(st.variedad[0].productoId);
     const price = esMedia ? Number(base.precio) / 2 : Number(base.precio);
-    const label = (esMedia ? 'Media docena de ' : 'Docena de ') + base.nombre;
-    // El detalle real de la mezcla queda en la aclaración de cocina (ver desc más abajo, se
-    // imprime en negrita) — el "nombre" de arriba es solo una etiqueta, no describe la mezcla.
+    // Sin nombrar un sabor puntual: sería engañoso, ya que en realidad lleva varios. El
+    // detalle real de la mezcla queda en la aclaración de cocina (ver desc más abajo, se
+    // imprime en negrita, bien visible).
+    const label = esMedia ? 'Media docena' : 'Docena';
     const desc = st.variedad.map(l => `${l.cantidad}× ${l.nombre}${l.opcion?` (${l.opcion})`:''}`).join(' · ');
     const key = 'docena-variedad-' + catId + '-' + crypto.randomUUID().slice(0,8);
-    nuevoPedido.comboCart.push({ key, aId:base.id, bId:'', esMediaDocena:esMedia, name:label, price, qty:1, catName: cat?cat.nombre:'', desc });
+    nuevoPedido.comboCart.push({ key, aId:base.id, bId:'', esMediaDocena:esMedia, esVariedad:true, name:label, price, qty:1, catName: cat?cat.nombre:'', desc });
     updateNpCartbar();
     showToast('Agregado al pedido');
     st.variedad = [];
@@ -2831,7 +2832,7 @@ function npRemoveLine(key){
 function npBuildItemsForApi(lines){
   return lines.map(l => {
     if(l.aId){
-      return { producto_id:l.aId, cantidad:l.qty, nota:l.desc||'', es_mitad_y_mitad:!!l.bId, combinado_con:l.bId||'', es_media_docena:!!l.esMediaDocena };
+      return { producto_id:l.aId, cantidad:l.qty, nota:l.desc||'', es_mitad_y_mitad:!!l.bId, combinado_con:l.bId||'', es_media_docena:!!l.esMediaDocena, es_variedad:!!l.esVariedad };
     }
     return { producto_id:l.key, cantidad:l.qty, nota:l.desc||'', es_mitad_y_mitad:false, combinado_con:'', es_media_docena:false };
   });
