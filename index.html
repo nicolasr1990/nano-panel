@@ -1689,7 +1689,7 @@ function historialItemHtml(o){
         <span class="cat-chevron">▾</span>
       </summary>
       <div class="ronda-detalle">
-        <ul>${o.items.map(i => `<li><span class="line">${i.cantidad}× ${i.categoria ? `<span style="color:var(--ink-muted);font-weight:600">${i.categoria}</span> - ` : ''}${i.nombre}${i.nota?`<span class="note">📝 ${esc(i.nota)}</span>`:''}</span></li>`).join('')}</ul>
+        <ul>${o.items.map(i => `<li><span class="line">${i.cantidad}× ${i.nombre}${i.nota?`<span class="note">📝 ${esc(i.nota)}</span>`:''}</span></li>`).join('')}</ul>
         <div class="order-actions">
           <button class="deshacer" onclick="deshacerDesdeHistorial('${o.id_pedido}')">Deshacer cierre</button>
           <button class="deshacer" onclick="eliminarPedidoHistorial('${o.id_pedido}')">Eliminar</button>
@@ -1780,7 +1780,7 @@ function rondaMinimizadaHtml(o){
         <span class="cat-chevron">▾</span>
       </summary>
       <div class="ronda-detalle">
-        <ul>${o.items.map(i => `<li><span class="line">${i.cantidad}× ${i.categoria ? `<span style="color:var(--ink-muted);font-weight:600">${i.categoria}</span> - ` : ''}${i.nombre}${i.nota?`<span class="note">📝 ${esc(i.nota)}</span>`:''}</span></li>`).join('')}</ul>
+        <ul>${o.items.map(i => `<li><span class="line">${i.cantidad}× ${i.nombre}${i.nota?`<span class="note">📝 ${esc(i.nota)}</span>`:''}</span></li>`).join('')}</ul>
         <div class="order-actions"><button class="deshacer" onclick="deshacer('${o.id_pedido}')">Deshacer</button></div>
       </div>
     </details>`;
@@ -1802,7 +1802,7 @@ function orderCardHtml(o){
         <span class="status-pill ${o.estado}">${statusLabel(o.estado)}</span>
       </div>
       <ul>
-        ${o.items.map(i => `<li><span class="line">${i.cantidad}× ${i.categoria ? `<span style="color:var(--ink-muted);font-weight:600">${i.categoria}</span> - ` : ''}${i.nombre}${i.nota?`<span class="note">📝 ${esc(i.nota)}</span>`:''}</span></li>`).join('')}
+        ${o.items.map(i => `<li><span class="line">${i.cantidad}× ${i.nombre}${i.nota?`<span class="note">📝 ${esc(i.nota)}</span>`:''}</span></li>`).join('')}
       </ul>
       <div class="order-actions">
         ${nextActionButtons(o)}
@@ -2703,7 +2703,7 @@ function abrirRevisionPedido(){
   let html = lines.length === 0
     ? '<div class="empty-orders">Todavía no agregaste nada</div>'
     : lines.map(l => `<div class="np-review-item">
-        <span class="nom">${l.qty}× ${l.catName ? `<span style="color:var(--ink-muted);font-weight:600">${l.catName}</span> - ` : ''}${l.name}${l.desc?`<span class="nota">📝 ${l.desc}</span>`:''}${l.faltaOpcion?`<span class="nota" style="color:#c0392b">⚠ Falta elegir una opción — volvé a la lista y seleccionala</span>`:''}</span>
+        <span class="nom">${l.qty}× ${l.name}${l.desc?`<span class="nota">📝 ${l.desc}</span>`:''}${l.faltaOpcion?`<span class="nota" style="color:#c0392b">⚠ Falta elegir una opción — volvé a la lista y seleccionala</span>`:''}</span>
         <span style="display:flex;align-items:center;gap:8px">${formatPrecio(l.price*l.qty)}<button class="del" onclick="npRemoveLine('${l.key}')">✕</button></span>
       </div>`).join('');
   if(lines.length > 0 && nuevoPedido.tipo === 'envio'){
