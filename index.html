@@ -902,7 +902,11 @@
         <div class="local-h"><a href="#" onclick="cerrarProductos();return false;">← Volver a pedidos</a></div>
       </div>
       <div class="local-sub" id="productosSub"></div>
-      <button class="editar-menu-btn" style="margin-bottom:12px" onclick="abrirFormNuevoProducto()">+ Nuevo producto</button>
+      <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+        <button class="editar-menu-btn" onclick="abrirFormNuevoProducto()">+ Nuevo producto</button>
+        <button class="editar-menu-btn" onclick="abrirFormNuevaCategoria()">+ Nueva categoría</button>
+      </div>
+      <div id="nuevaCategoriaForm"></div>
       <div id="nuevoProductoForm"></div>
       <div id="listaProductos"></div>
       <button class="cerrar-mesa-btn" style="margin-top:6px" onclick="guardarCambiosProductos()">Guardar cambios</button>
@@ -1021,6 +1025,7 @@
       <button class="np-pago-opt" onclick="confirmarPago('efectivo')">💵 Efectivo</button>
       <button class="np-pago-opt" onclick="confirmarPago('tarjeta')">💳 Tarjeta</button>
       <button class="np-pago-opt" onclick="confirmarPago('transferencia')">📲 Transferencia</button>
+      <button class="np-pago-opt" onclick="confirmarPago('cuenta_corriente')">📒 Cuenta corriente</button>
     </div>
   </div>
 </div>
@@ -1412,6 +1417,41 @@ function handleCrearProducto(){
     // con su ID real generado por el backend — no alcanza con pushearlo a mano acá.
     return postActionConClave('listarProductos', {}).then(res2 => {
       if(res2.ok){ productosData = res2.productos; renderProductos(); }
+    });
+  }).finally(unlockUI);
+}
+
+function abrirFormNuevaCategoria(){
+  document.getElementById('nuevaCategoriaForm').innerHTML = `
+    <div class="caja-apertura-box caja-form-gasto">
+      <div class="local-sub" style="margin-bottom:8px">Nueva categoría</div>
+      <input type="text" id="nuevaCatNombre" class="np-input" placeholder="Nombre de la categoría (ej. Tacos)">
+      <input type="text" id="nuevaCatEmoji" class="np-input" placeholder="Emoji (mantené apretada la tecla espacio en el teclado del celular para abrir los emojis, o pegá uno)" maxlength="8">
+      <div class="caja-acciones">
+        <button class="editar-menu-btn" onclick="document.getElementById('nuevaCategoriaForm').innerHTML=''">Cancelar</button>
+        <button class="cerrar-mesa-btn" onclick="handleCrearCategoria()">Crear categoría</button>
+      </div>
+    </div>`;
+  document.getElementById('nuevaCategoriaForm').scrollIntoView({ behavior:'smooth', block:'nearest' });
+}
+
+function handleCrearCategoria(){
+  if(uiBloqueada) return;
+  const nombre = document.getElementById('nuevaCatNombre').value.trim();
+  const emoji = document.getElementById('nuevaCatEmoji').value.trim();
+  if(!nombre){ showToast('Ingresá el nombre de la categoría'); return; }
+  if(!emoji){ showToast('Elegí un emoji para la categoría'); return; }
+
+  lockUI();
+  postActionConClave('crearCategoria', { nombre, emoji }).then(res => {
+    if(!res.ok){ showToast('No se pudo crear la categoría: ' + (res.error||'')); return; }
+    showToast(`Categoría "${nombre}" creada — avisale a Nico para ponerle la foto de portada en el link`);
+    document.getElementById('nuevaCategoriaForm').innerHTML = '';
+    // categoriasData se cachea (ver cargarCategoriasYRenderProductos) — hay que refrescarla a
+    // mano para que la categoría nueva aparezca sin recargar toda la página.
+    return fetchGet(`${WEBAPP_URL}?action=menu&canal=mesa`).then(r => r.json()).then(res2 => {
+      categoriasData = res2.categorias || [];
+      renderProductos();
     });
   }).finally(unlockUI);
 }
@@ -1897,8 +1937,8 @@ function deshacer(id){
   }).finally(unlockUI);
 }
 
-const METODO_LABEL = { efectivo:'Efectivo', tarjeta:'Tarjeta', transferencia:'Transferencia', sin_especificar:'Sin especificar' };
-const METODO_ICON = { efectivo:'💵', tarjeta:'💳', transferencia:'📲', sin_especificar:'❔' };
+const METODO_LABEL = { efectivo:'Efectivo', tarjeta:'Tarjeta', transferencia:'Transferencia', cuenta_corriente:'Cuenta corriente', sin_especificar:'Sin especificar' };
+const METODO_ICON = { efectivo:'💵', tarjeta:'💳', transferencia:'📲', cuenta_corriente:'📒', sin_especificar:'❔' };
 
 // Mesas a las que ya se les imprimió la cuenta (paso 1: imprimir y llevar a la mesa)
 // pero todavía no se cobraron ni se cerraron de verdad (paso 2). Se guarda en localStorage
@@ -2832,6 +2872,10 @@ function renderCajaTurno(){
       <div class="label">Efectivo esperado en caja</div>
       <div class="monto">${formatPrecio(t.efectivo_esperado)}</div>
       <div class="sub">${formatPrecio(t.monto_inicial)} inicial + ${formatPrecio(t.total_efectivo_ventas)} en ventas (${t.cantidad_pedidos_efectivo}) − ${formatPrecio(t.total_gastos)} en gastos</div>
+    </div>
+    <div class="caja-total-card" style="margin-top:10px">
+      <div class="label">Cuenta Corriente</div>
+      <div class="monto">${formatPrecio(t.total_cuenta_corriente)}</div>
     </div>
     <div class="caja-gastos-lista">
       ${t.gastos.length === 0 ? '<div class="empty-orders">Todavía no se cargó ningún gasto</div>' : t.gastos.map(g => `
