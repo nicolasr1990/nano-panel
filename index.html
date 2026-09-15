@@ -612,6 +612,20 @@
     font-size:12px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;
   }
   .gasto-borrar-btn:hover{background:var(--danger);color:#fff}
+  /* Mismo patrón que el gasto (fila teñida entera), en verde: que se lea "entró plata" de
+     un vistazo igual de rápido que "salió plata". */
+  .caja-ingreso-row{display:flex;justify-content:space-between;align-items:center;background:var(--success-bg);border:1px solid var(--success-border);border-radius:var(--radius-md);padding:11px 15px;font-size:13px}
+  .caja-ingreso-row .desc{color:var(--ink);font-weight:600}
+  .caja-ingreso-row .hora{display:block;font-size:10.5px;color:var(--ink-muted);font-weight:500;margin-top:1px}
+  .caja-ingreso-row .forma-pago{display:block;font-size:10.5px;color:var(--ink-secondary);font-weight:600;margin-top:1px;text-transform:uppercase;letter-spacing:0.02em}
+  .caja-ingreso-row .monto{font-family:var(--display);font-weight:800;color:var(--success)}
+  .ingreso-borrar-btn{
+    width:22px;height:22px;border-radius:50%;border:none;background:rgba(0,0,0,0.08);color:var(--success);
+    font-size:12px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  }
+  .ingreso-borrar-btn:hover{background:var(--success);color:#fff}
+  .caja-form-ingreso{margin-top:14px;text-align:left}
+  .caja-form-ingreso .caja-acciones button{min-width:120px}
   .caja-acciones{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px}
   .caja-acciones button{flex:1;min-width:170px;margin-top:0}
   .caja-form-gasto{margin-top:14px;text-align:left}
@@ -644,6 +658,7 @@
   .caja-periodo-head{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12.5px;font-weight:700;color:var(--ink);flex-wrap:wrap;margin-bottom:8px}
   .caja-periodo-montos{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--ink-secondary);font-weight:600}
   .caja-periodo-montos .gasto{color:var(--danger)}
+  .caja-periodo-montos .ingreso{color:var(--success)}
   .caja-periodo-montos .cierre{color:var(--ink);font-weight:800}
   .caja-periodo-gastos{margin-top:8px;font-size:11.5px;color:var(--ink-secondary);line-height:1.5}
   .caja-gastos-detalle{margin-top:4px}
@@ -2971,11 +2986,21 @@ function renderCajaTurno(){
     <div class="caja-total-card">
       <div class="label">Efectivo esperado en caja</div>
       <div class="monto">${formatPrecio(t.efectivo_esperado)}</div>
-      <div class="sub">${formatPrecio(t.monto_inicial)} inicial + ${formatPrecio(t.total_efectivo_ventas)} en ventas (${t.cantidad_pedidos_efectivo}) − ${formatPrecio(t.total_gastos)} en gastos</div>
+      <div class="sub">${formatPrecio(t.monto_inicial)} inicial + ${formatPrecio(t.total_efectivo_ventas)} en ventas (${t.cantidad_pedidos_efectivo}) + ${formatPrecio(t.total_ingresos_efectivo)} en ingresos − ${formatPrecio(t.total_gastos)} en gastos</div>
     </div>
     <div class="caja-total-card" style="margin-top:10px">
       <div class="label">Cuenta Corriente</div>
       <div class="monto">${formatPrecio(t.total_cuenta_corriente)}</div>
+    </div>
+    <div class="caja-gastos-lista">
+      ${t.ingresos.length === 0 ? '<div class="empty-orders">Todavía no se cargó ningún ingreso</div>' : t.ingresos.map(i => `
+        <div class="caja-ingreso-row">
+          <span class="desc">${esc(i.descripcion)}<span class="hora">${new Date(i.fecha_hora).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit',hour12:false})} hs</span><span class="forma-pago">${FORMA_PAGO_INGRESO_LABEL[i.forma_pago] || i.forma_pago}</span></span>
+          <span style="display:flex;align-items:center;gap:10px">
+            <span class="monto">+ ${formatPrecio(i.monto)}</span>
+            <button class="ingreso-borrar-btn" onclick="eliminarIngreso(${i.id}, '${esc(i.descripcion).replace(/'/g,"&#39;")}')" title="Eliminar ingreso">✕</button>
+          </span>
+        </div>`).join('')}
     </div>
     <div class="caja-gastos-lista">
       ${t.gastos.length === 0 ? '<div class="empty-orders">Todavía no se cargó ningún gasto</div>' : t.gastos.map(g => `
@@ -2988,11 +3013,36 @@ function renderCajaTurno(){
         </div>`).join('')}
     </div>
     <div class="caja-acciones">
+      <button class="editar-menu-btn" onclick="abrirFormIngreso()">+ Agregar ingreso</button>
       <button class="editar-menu-btn" onclick="abrirFormGasto()">+ Agregar gasto</button>
       <button class="cerrar-mesa-btn" onclick="handleCerrarCaja()">Cerrar caja</button>
     </div>
+    <div id="cajaFormIngreso"></div>
     <div id="cajaFormGasto"></div>
   `;
+}
+
+// Mismas 3 formas de pago que ya usa el checkout de nanorestobar/nano-panel al cobrar un
+// pedido — un ingreso libre (ej. el dueño repone caja, un cobro que no pasó por un pedido)
+// necesita elegir la misma forma para saber si mueve el cajón físico o no.
+const FORMA_PAGO_INGRESO_LABEL = { efectivo: 'Efectivo', transferencia: 'Transferencia', tarjeta: 'Tarjeta' };
+
+function abrirFormIngreso(){
+  document.getElementById('cajaFormIngreso').innerHTML = `
+    <div class="caja-apertura-box caja-form-ingreso">
+      <div class="local-sub" style="margin-bottom:8px">Nuevo ingreso</div>
+      <input type="text" id="ingresoDescripcion" class="np-input" placeholder="Motivo (ej. reposición de caja, cobro suelto)">
+      <input type="number" id="ingresoMonto" class="np-input" placeholder="Monto" min="0" step="50">
+      <select id="ingresoFormaPago" class="np-input">
+        <option value="efectivo">Efectivo</option>
+        <option value="transferencia">Transferencia</option>
+        <option value="tarjeta">Tarjeta</option>
+      </select>
+      <div class="caja-acciones">
+        <button class="editar-menu-btn" onclick="document.getElementById('cajaFormIngreso').innerHTML=''">Cancelar</button>
+        <button class="cerrar-mesa-btn" onclick="handleRegistrarIngreso()">Guardar ingreso</button>
+      </div>
+    </div>`;
 }
 
 function abrirFormGasto(){
@@ -3049,6 +3099,35 @@ function eliminarGasto(id, descripcion){
   });
 }
 
+function handleRegistrarIngreso(){
+  if(uiBloqueada) return;
+  const descripcion = document.getElementById('ingresoDescripcion').value.trim();
+  const monto = Number(document.getElementById('ingresoMonto').value);
+  const forma_pago = document.getElementById('ingresoFormaPago').value;
+  if(!descripcion){ showToast('Falta el motivo del ingreso'); return; }
+  if(isNaN(monto) || monto <= 0){ showToast('Ingresá un monto válido'); return; }
+  lockUI();
+  postAction('registrarIngresoCaja', { monto, descripcion, forma_pago }).then(res => {
+    if(!res.ok){ showToast('No se pudo cargar el ingreso: ' + (res.error||'')); return; }
+    showToast('Ingreso cargado');
+    cargarCajaActual();
+    cargarCaja(); // el resumen por fecha también muestra los ingresos del período, hay que refrescarlo
+  }).finally(unlockUI);
+}
+
+function eliminarIngreso(id, descripcion){
+  pedirClaveYEliminar(`¿Eliminar el ingreso "${descripcion}"? No se puede deshacer. Ingresá la clave del panel para confirmar.`, (clave) => {
+    if(uiBloqueada) return;
+    lockUI();
+    postAction('eliminarIngresoCaja', { id, clave }).then(res => {
+      if(!res.ok){ showToast(res.error === 'clave_incorrecta' ? 'Clave incorrecta' : 'No se pudo eliminar: ' + (res.error||'')); return; }
+      showToast('Ingreso eliminado');
+      cargarCajaActual();
+      cargarCaja();
+    }).finally(unlockUI);
+  });
+}
+
 function handleCerrarCaja(){
   if(uiBloqueada) return;
   uiConfirm('¿Cerrar la caja? Después hace falta abrir una nueva para seguir registrando efectivo.').then(ok => {
@@ -3083,16 +3162,20 @@ function renderCierresCajaHoy(cierres){
   el.innerHTML = cierres.map((c, i) => {
     const horaApertura = new Date(c.fecha_apertura).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit',hour12:false});
     const horaCierre = new Date(c.fecha_cierre).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit',hour12:false});
-    // El detalle tal cual lo escribió quien cargó el gasto — no inventamos categorías,
-    // se muestra la descripción libre que ya carga el mozo/cajero.
+    // El detalle tal cual lo escribió quien cargó el gasto/ingreso — no inventamos
+    // categorías, se muestra la descripción libre que ya carga el mozo/cajero.
     const gastosHtml = (c.gastos && c.gastos.length)
       ? `<div class="sub caja-gastos-detalle">Gastos: ${c.gastos.map(g => `${esc(g.descripcion)} (${formatPrecio(g.monto)})`).join(' · ')}</div>`
+      : '';
+    const ingresosHtml = (c.ingresos && c.ingresos.length)
+      ? `<div class="sub caja-gastos-detalle">Ingresos: ${c.ingresos.map(g => `${esc(g.descripcion)} (${formatPrecio(g.monto)} · ${FORMA_PAGO_INGRESO_LABEL[g.forma_pago] || g.forma_pago})`).join(' · ')}</div>`
       : '';
     return `
     <div class="caja-total-card" style="margin-bottom:10px">
       <div class="label">Cierre ${i+1} · ${horaApertura} a ${horaCierre} hs</div>
       <div class="monto">${formatPrecio(c.efectivo_esperado)}</div>
-      <div class="sub">Ingresó ${formatPrecio(c.monto_inicial)} inicial + ${formatPrecio(c.total_efectivo_ventas)} en ventas − ${formatPrecio(c.total_gastos)} en gastos · debería haber cerrado con ${formatPrecio(c.efectivo_esperado)}</div>
+      <div class="sub">Ingresó ${formatPrecio(c.monto_inicial)} inicial + ${formatPrecio(c.total_efectivo_ventas)} en ventas + ${formatPrecio(c.total_ingresos)} en ingresos − ${formatPrecio(c.total_gastos)} en gastos · debería haber cerrado con ${formatPrecio(c.efectivo_esperado)}</div>
+      ${ingresosHtml}
       ${gastosHtml}
     </div>`;
   }).join('');
@@ -3147,6 +3230,9 @@ function renderCaja(res){
         const gastosDetalle = (c.gastos && c.gastos.length)
           ? `<div class="caja-periodo-gastos">Gastos: ${c.gastos.map(g => `${esc(g.descripcion)} (${formatPrecio(g.monto)})`).join(' · ')}</div>`
           : '';
+        const ingresosDetalle = (c.ingresos && c.ingresos.length)
+          ? `<div class="caja-periodo-gastos">Ingresos: ${c.ingresos.map(g => `${esc(g.descripcion)} (${formatPrecio(g.monto)} · ${FORMA_PAGO_INGRESO_LABEL[g.forma_pago] || g.forma_pago})`).join(' · ')}</div>`
+          : '';
         return `
         <div class="caja-periodo-card">
           <div class="caja-periodo-head">
@@ -3155,9 +3241,11 @@ function renderCaja(res){
           </div>
           <div class="caja-periodo-montos">
             <span>Inicial ${formatPrecio(c.monto_inicial)}</span>
+            <span class="ingreso">+ ${formatPrecio(c.total_ingresos)} ingresos</span>
             <span class="gasto">− ${formatPrecio(c.total_gastos)} gastos</span>
             <span class="cierre">${c.estado === 'cerrada' ? 'Cerró con' : 'Esperado ahora'} ${formatPrecio(c.efectivo_esperado)}</span>
           </div>
+          ${ingresosDetalle}
           ${gastosDetalle}
         </div>`;
       }).join('')
@@ -3167,7 +3255,7 @@ function renderCaja(res){
     <div class="caja-total-card recaudado">
       <div class="label">Total recaudado</div>
       <div class="monto">${formatPrecio(res.recaudacionTotal)}</div>
-      <div class="sub">${res.cantidadPedidos} pedido${res.cantidadPedidos===1?'':'s'} cerrado${res.cantidadPedidos===1?'':'s'}${res.totalGastosCaja ? ` · ${formatPrecio(res.totalGastosCaja)} en gastos de caja` : ''}</div>
+      <div class="sub">${res.cantidadPedidos} pedido${res.cantidadPedidos===1?'':'s'} cerrado${res.cantidadPedidos===1?'':'s'}${res.totalIngresosCaja ? ` · ${formatPrecio(res.totalIngresosCaja)} en ingresos de caja` : ''}${res.totalGastosCaja ? ` · ${formatPrecio(res.totalGastosCaja)} en gastos de caja` : ''}</div>
     </div>
     <div class="caja-metodos">${metodosHtml}</div>
     <div class="caja-canales">${canalesHtml}</div>
