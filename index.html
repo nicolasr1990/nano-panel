@@ -2596,20 +2596,22 @@ function npRenderDocenaCard(cat){
   // El producto "por unidad" de la categoría (ej. "EMPANADA POR UNIDAD") no es un sabor para
   // armar una docena — si se cuela acá, el precio de la docena sale calculado con el precio
   // por unidad, mal. Se carga por su cuenta desde la lista de arriba, no desde esta tarjeta.
+  const porUnidadProducto = npItemsOf(cat.id).find(o => /por unidad/i.test(o.nombre));
   const opts = npItemsOf(cat.id).filter(p => !/por unidad/i.test(p.nombre));
   if(!opts.length) return '';
   // El sabor ya se elige con el desplegable de acá abajo, así que de opcionesRequeridas solo
   // interesa el grupo de cocción (el de "por unidad" con dos grupos no pasa por acá).
   const grupoCoccion = opcionesRequeridas(cat.id, '')?.[0] || null;
-  npDocenaState[cat.id] = { tamano:'docena', modo:'sabor', opcion:'', variedad:[] };
+  npDocenaState[cat.id] = { tamano:'docena', modo:'sabor', opcion:'', variedad:[], porUnidad:[] };
   return `<div class="np-combo-card">
     <h4>🥟 Armá tu pedido</h4>
     <p>Los precios de la lista son por docena. Elegí el tamaño y, si querés, combiná sabores.</p>
     <div class="np-combo-toggle">
       <button class="active" id="npDocSize-docena-${cat.id}" onclick="npSetDocenaSize('${cat.id}','docena')">Docena</button>
       <button id="npDocSize-media-${cat.id}" onclick="npSetDocenaSize('${cat.id}','media')">Media docena</button>
+      ${porUnidadProducto ? `<button id="npDocSize-unidad-${cat.id}" onclick="npSetDocenaSize('${cat.id}','unidad')">Por unidad</button>` : ''}
     </div>
-    <div class="np-combo-toggle">
+    <div class="np-combo-toggle" id="npDocModoToggle-${cat.id}">
       <button class="active" id="npDocModo-sabor-${cat.id}" onclick="npSetDocenaModo('${cat.id}','sabor')">Un solo sabor</button>
       <button id="npDocModo-mitad-${cat.id}" onclick="npSetDocenaModo('${cat.id}','mitad')">Mitad y mitad</button>
       <button id="npDocModo-variedad-${cat.id}" onclick="npSetDocenaModo('${cat.id}','variedad')">Combinar variedad</button>
@@ -2647,6 +2649,27 @@ function npRenderDocenaCard(cat){
       <div id="npVarLista-${cat.id}"></div>
       <div id="npVarContador-${cat.id}" style="font-size:12.5px;color:var(--ink-muted);margin:2px 0 10px"></div>
     </div>
+    <!-- "Por unidad": cada línea es un sabor+cocción+cantidad suelta, sin empaquetar en
+         docena/media docena y sin tope — el pedido final manda un solo ítem con la cantidad
+         TOTAL de unidades (para que el comprobante de cocina diga "8× Empanadas") y el
+         desglose real en la aclaración, igual que "Combinar variedad". Ver npAddDocena. -->
+    <div id="npUnidadWrap-${cat.id}" style="display:none;">
+      <div class="np-combo-row">
+        <select id="npUnidadSabor-${cat.id}">${opts.map(o=>`<option value="${o.id}">${o.nombre}</option>`).join('')}</select>
+      </div>
+      ${grupoCoccion ? `<div class="np-combo-row">
+        <select id="npUnidadOpcion-${cat.id}">
+          <option value="" selected disabled>${grupoCoccion.label}</option>
+          ${grupoCoccion.opciones.map(o=>`<option value="${o}">${o}</option>`).join('')}
+        </select>
+      </div>` : ''}
+      <div class="np-combo-row">
+        <input type="number" id="npUnidadCantidad-${cat.id}" min="1" step="1" placeholder="Cantidad" style="width:100%">
+      </div>
+      <button class="editar-menu-btn" style="width:100%;margin-bottom:8px" onclick="npAgregarLineaUnidad('${cat.id}')">+ Agregar línea</button>
+      <div id="npUnidadLista-${cat.id}"></div>
+      <div id="npUnidadContador-${cat.id}" style="font-size:12.5px;color:var(--ink-muted);margin:2px 0 10px"></div>
+    </div>
     <div class="np-combo-foot">
       <b id="npDocPrice-${cat.id}">${formatPrecio(opts[0].precio)}</b>
       <button class="np-add-btn" id="npDocAddBtn-${cat.id}" style="width:auto;padding:0 18px;border-radius:var(--radius-md);height:38px" onclick="npAddDocena('${cat.id}')">Agregar</button>
@@ -2659,9 +2682,27 @@ function npSetActiveBtn(activeId, allIds){ allIds.forEach(id => { const el = doc
 
 function npSetDocenaSize(catId, tamano){
   npDocenaState[catId].tamano = tamano;
-  npSetActiveBtn('npDocSize-'+tamano+'-'+catId, ['npDocSize-docena-'+catId,'npDocSize-media-'+catId]);
-  npUpdateDocenaPrice(catId);
-  npRenderVariedadLista(catId);
+  npSetActiveBtn('npDocSize-'+tamano+'-'+catId, ['npDocSize-docena-'+catId,'npDocSize-media-'+catId,'npDocSize-unidad-'+catId]);
+
+  const esUnidad = tamano === 'unidad';
+  const modoToggle = document.getElementById('npDocModoToggle-'+catId);
+  if(modoToggle) modoToggle.style.display = esUnidad ? 'none' : 'flex';
+  document.getElementById('npUnidadWrap-'+catId).style.display = esUnidad ? 'block' : 'none';
+
+  if(esUnidad){
+    // "Por unidad" no usa ninguna de las filas de sabor/mitad/variedad de arriba — son de las
+    // otras dos modalidades (empaquetadas por docena).
+    document.getElementById('npDocSaborWrap-'+catId).style.display = 'none';
+    document.getElementById('npDocBWrap-'+catId).style.display = 'none';
+    const opcionWrap = document.getElementById('npDocOpcionWrap-'+catId);
+    if(opcionWrap) opcionWrap.style.display = 'none';
+    document.getElementById('npDocVariedadWrap-'+catId).style.display = 'none';
+    npRenderUnidadLista(catId);
+  } else {
+    // Volver a Docena/Media docena: restaurar la visibilidad según el modo (sabor/mitad/
+    // variedad) que ya estaba elegido antes de pasar por "Por unidad".
+    npSetDocenaModo(catId, npDocenaState[catId].modo);
+  }
 }
 
 function npSetDocenaModo(catId, modo){
@@ -2737,10 +2778,81 @@ function npQuitarLineaVariedad(catId, idx){
   npRenderVariedadLista(catId);
 }
 
+// "Por unidad": sin empaquetar en docena/media docena y sin tope de cantidad — cada línea es
+// un sabor+cocción sueltos, el total de unidades se cobra al precio de "EMPANADA POR UNIDAD"
+// (no al precio por docena). Ver npAddDocena para cómo se arma el ítem final.
+function npRenderUnidadLista(catId){
+  const st = npDocenaState[catId];
+  const porUnidadProducto = npItemsOf(catId).find(o => /por unidad/i.test(o.nombre));
+  const precioUnidad = porUnidadProducto ? Number(porUnidadProducto.precio) : 0;
+  const totalUnidades = st.porUnidad.reduce((s,l) => s + l.cantidad, 0);
+
+  const lista = document.getElementById('npUnidadLista-'+catId);
+  if(lista){
+    lista.innerHTML = st.porUnidad.map((l,i) => `<div class="np-review-item" style="padding:6px 0">
+        <span class="nom">${l.cantidad}× ${esc(l.nombre)}${l.opcion?` (${esc(l.opcion)})`:''}</span>
+        <button class="del" onclick="npQuitarLineaUnidad('${catId}',${i})">✕</button>
+      </div>`).join('');
+  }
+  const contador = document.getElementById('npUnidadContador-'+catId);
+  if(contador) contador.textContent = totalUnidades > 0 ? `${totalUnidades} unidad${totalUnidades===1?'':'es'} agregadas` : '';
+
+  const precioEl = document.getElementById('npDocPrice-'+catId);
+  if(precioEl) precioEl.textContent = formatPrecio(totalUnidades * precioUnidad);
+  const addBtn = document.getElementById('npDocAddBtn-'+catId);
+  if(addBtn) addBtn.disabled = st.porUnidad.length === 0;
+}
+
+function npAgregarLineaUnidad(catId){
+  const st = npDocenaState[catId];
+  const productoId = document.getElementById('npUnidadSabor-'+catId).value;
+  const producto = npFindProducto(productoId);
+  const grupoCoccion = opcionesRequeridas(catId, '')?.[0] || null;
+  let opcion = '';
+  if(grupoCoccion){
+    opcion = document.getElementById('npUnidadOpcion-'+catId).value;
+    if(!opcion){ showToast('Elegí si esa parte va al horno o frita'); return; }
+  }
+  const cantidadInput = document.getElementById('npUnidadCantidad-'+catId);
+  const cantidad = parseInt(cantidadInput.value, 10);
+  if(!Number.isInteger(cantidad) || cantidad <= 0){ showToast('Ingresá una cantidad válida'); return; }
+  st.porUnidad.push({ productoId, nombre: producto.nombre, cantidad, opcion });
+  cantidadInput.value = '';
+  if(grupoCoccion) document.getElementById('npUnidadOpcion-'+catId).value = '';
+  npRenderUnidadLista(catId);
+}
+
+function npQuitarLineaUnidad(catId, idx){
+  npDocenaState[catId].porUnidad.splice(idx, 1);
+  npRenderUnidadLista(catId);
+}
+
 function npAddDocena(catId){
   const st = npDocenaState[catId];
   const cat = menuNuevoPedidoData.categorias.find(c => c.id === catId);
   const esMedia = st.tamano === 'media';
+
+  if(st.tamano === 'unidad'){
+    if(st.porUnidad.length === 0){ showToast('Agregá al menos una línea'); return; }
+    const porUnidadProducto = npItemsOf(catId).find(o => /por unidad/i.test(o.nombre));
+    if(!porUnidadProducto){ showToast('No hay un producto "por unidad" cargado para esta categoría'); return; }
+    const totalUnidades = st.porUnidad.reduce((s,l) => s + l.cantidad, 0);
+    // qty = la cantidad TOTAL de unidades (no 1 como en las otras modalidades) — así el
+    // comprobante de cocina imprime "8× Empanadas" solo, con el desglose real (sabor y
+    // cocción de cada una) en la aclaración de abajo, bien visible.
+    const desc = st.porUnidad.map(l => `${l.cantidad}× ${l.nombre}${l.opcion?` (${l.opcion})`:''}`).join(' · ');
+    const key = 'porunidad-' + catId + '-' + crypto.randomUUID().slice(0,8);
+    nuevoPedido.comboCart.push({
+      key, aId: porUnidadProducto.id, bId:'', esPorUnidadPanel:true,
+      name: cat ? cat.nombre : 'Unidades', price: Number(porUnidadProducto.precio), qty: totalUnidades,
+      catName: cat?cat.nombre:'', desc,
+    });
+    updateNpCartbar();
+    showToast('Agregado al pedido');
+    st.porUnidad = [];
+    npRenderUnidadLista(catId);
+    return;
+  }
 
   if(st.modo === 'variedad'){
     const capacidad = esMedia ? 6 : 12;
@@ -2847,7 +2959,7 @@ function npRemoveLine(key){
 function npBuildItemsForApi(lines){
   return lines.map(l => {
     if(l.aId){
-      return { producto_id:l.aId, cantidad:l.qty, nota:l.desc||'', es_mitad_y_mitad:!!l.bId, combinado_con:l.bId||'', es_media_docena:!!l.esMediaDocena, es_variedad:!!l.esVariedad };
+      return { producto_id:l.aId, cantidad:l.qty, nota:l.desc||'', es_mitad_y_mitad:!!l.bId, combinado_con:l.bId||'', es_media_docena:!!l.esMediaDocena, es_variedad:!!l.esVariedad, es_por_unidad_panel:!!l.esPorUnidadPanel };
     }
     return { producto_id:l.key, cantidad:l.qty, nota:l.desc||'', es_mitad_y_mitad:false, combinado_con:'', es_media_docena:false };
   });
