@@ -454,6 +454,13 @@
   .np-pago-opciones-inline .np-pago-opt{flex:1;text-align:center}
   .np-pago-opt.active{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
 
+  .np-pago-comb-total{font-size:13.5px;color:var(--ink);font-weight:700;margin-bottom:10px}
+  .np-pago-comb-restante{display:block;font-size:12px;font-weight:600;color:var(--ink-secondary);margin-top:2px}
+  .np-pago-comb-restante.ok{color:var(--success)}
+  .np-pago-comb-lista{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
+  .np-pago-comb-row{display:flex;justify-content:space-between;align-items:center;background:var(--surface-alt);border:1px solid var(--border);border-radius:var(--radius-md);padding:9px 13px;font-size:13px}
+  .np-pago-comb-row .monto{font-family:var(--display);font-weight:800;color:var(--ink)}
+
   .np-mesa-actual{
     display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px;padding:10px 14px;
     background:var(--tipo-mesa-bg);border:1.5px solid var(--tipo-mesa-border);border-radius:var(--radius-md);
@@ -1037,11 +1044,30 @@
       <span id="pagoTitulo">¿Cómo pagó la mesa?</span>
       <button class="video-close" onclick="cerrarPagoOverlay()">✕</button>
     </div>
-    <div class="np-pago-opciones">
+    <div class="np-pago-opciones" id="pagoOpcionesSimple">
       <button class="np-pago-opt" onclick="confirmarPago('efectivo')">💵 Efectivo</button>
       <button class="np-pago-opt" onclick="confirmarPago('tarjeta')">💳 Tarjeta</button>
       <button class="np-pago-opt" onclick="confirmarPago('transferencia')">📲 Transferencia</button>
       <button class="np-pago-opt" onclick="confirmarPago('cuenta_corriente')">📒 Cuenta corriente</button>
+      <button class="np-pago-opt" onclick="abrirCobroCombinado()">🔀 Cobro combinado</button>
+    </div>
+    <!-- Cobro combinado: se reparte el mismo total entre dos o más formas de pago (ej. una
+         parte efectivo, otra transferencia). En envío/retiro solo se puede combinar
+         efectivo/transferencia (mismo criterio que ya se usa para esos dos canales); en mesa
+         entra cualquiera de las 4 (FORMAS_PAGO_MESA/FORMAS_PAGO_PEDIDO más abajo). -->
+    <div id="pagoCombinadoView" style="display:none;padding:18px">
+      <div class="np-pago-comb-total">
+        Total a cobrar: <b id="pagoCombTotal">$0</b>
+        <span id="pagoCombRestante" class="np-pago-comb-restante"></span>
+      </div>
+      <div id="pagoCombLista" class="np-pago-comb-lista"></div>
+      <select id="pagoCombForma" class="np-input"></select>
+      <input type="number" id="pagoCombMonto" class="np-input" placeholder="Monto" min="0" step="50">
+      <button class="editar-menu-btn" style="width:100%;margin-bottom:10px" onclick="agregarPagoCombinadoLinea()">+ Agregar forma de pago</button>
+      <div class="caja-acciones">
+        <button class="editar-menu-btn" onclick="volverAPagoSimple()">← Volver</button>
+        <button class="cerrar-mesa-btn" id="pagoCombConfirmarBtn" onclick="confirmarPagoCombinado()" disabled>Confirmar cobro</button>
+      </div>
     </div>
   </div>
 </div>
@@ -1953,8 +1979,8 @@ function deshacer(id){
   }).finally(unlockUI);
 }
 
-const METODO_LABEL = { efectivo:'Efectivo', tarjeta:'Tarjeta', transferencia:'Transferencia', cuenta_corriente:'Cuenta corriente', sin_especificar:'Sin especificar' };
-const METODO_ICON = { efectivo:'💵', tarjeta:'💳', transferencia:'📲', cuenta_corriente:'📒', sin_especificar:'❔' };
+const METODO_LABEL = { efectivo:'Efectivo', tarjeta:'Tarjeta', transferencia:'Transferencia', cuenta_corriente:'Cuenta corriente', combinado:'Combinado', sin_especificar:'Sin especificar' };
+const METODO_ICON = { efectivo:'💵', tarjeta:'💳', transferencia:'📲', cuenta_corriente:'📒', combinado:'🔀', sin_especificar:'❔' };
 
 // Mesas a las que ya se les imprimió la cuenta (paso 1: imprimir y llevar a la mesa)
 // pero todavía no se cobraron ni se cerraron de verdad (paso 2). Se guarda en localStorage
@@ -2032,7 +2058,9 @@ function cerrarMesa(mesa, cantRondas){
     uiConfirm(`¿Cerrar Mesa ${mesa}? Se van a cerrar sus ${cantRondas} ronda(s) y no se van a poder editar más.`).then(ok => {
       if(!ok) return;
       // Antes de cerrar de verdad, preguntamos cómo pagó — ese dato alimenta el cierre de caja.
-      cierrePendiente = { modo:'mesa', mesa };
+      // En mesa entran las 4 formas de pago, incluso combinadas entre sí.
+      const total = staffOrders.filter(o => o.tipo === 'mesa' && String(o.mesa) === String(mesa)).reduce((s,o) => s + o.total, 0);
+      cierrePendiente = { modo:'mesa', mesa, total, formas: FORMAS_PAGO_MESA };
       document.getElementById('pagoTitulo').textContent = `¿Cómo pagó la Mesa ${mesa}?`;
       document.getElementById('pagoOverlay').style.display = 'flex';
     });
@@ -2050,7 +2078,9 @@ function cobrarPedido(id){
       uiAlert('⚠️ Hay una caja de un día anterior sin cerrar. Andá a Caja y cerrala antes de cobrar.');
       return;
     }
-    cierrePendiente = { modo:'pedido', id };
+    // Retiro/envío combinado solo entre efectivo/transferencia — tarjeta y cuenta corriente
+    // no aplican para estos dos canales (mismo criterio que ya se usaba antes de esto).
+    cierrePendiente = { modo:'pedido', id, total: o.total, formas: FORMAS_PAGO_PEDIDO };
     document.getElementById('pagoTitulo').textContent = `¿Cómo pagó ${o.nombre_cliente || TIPO_LABEL[o.tipo]}?`;
     document.getElementById('pagoOverlay').style.display = 'flex';
   });
@@ -2058,6 +2088,7 @@ function cobrarPedido(id){
 
 function cerrarPagoOverlay(){
   document.getElementById('pagoOverlay').style.display = 'none';
+  volverAPagoSimple();
   cierrePendiente = null;
 }
 
@@ -2092,6 +2123,106 @@ function confirmarPago(metodo){
     showToast(`Pedido cerrado · ${METODO_LABEL[metodo]}`);
     cargarPedidos();
   }).finally(() => { unlockUI(); cierrePendiente = null; });
+}
+
+/* ---------- Cobro combinado: repartir el mismo total entre 2+ formas de pago ---------- */
+const FORMAS_PAGO_MESA = ['efectivo', 'tarjeta', 'transferencia', 'cuenta_corriente'];
+const FORMAS_PAGO_PEDIDO = ['efectivo', 'transferencia'];
+let pagoCombinadoLineas = [];
+
+function abrirCobroCombinado(){
+  if(!cierrePendiente) return;
+  pagoCombinadoLineas = [];
+  document.getElementById('pagoOpcionesSimple').style.display = 'none';
+  document.getElementById('pagoCombinadoView').style.display = 'block';
+  document.getElementById('pagoCombTotal').textContent = formatPrecio(cierrePendiente.total);
+  const select = document.getElementById('pagoCombForma');
+  select.innerHTML = cierrePendiente.formas.map(f => `<option value="${f}">${METODO_ICON[f]||''} ${METODO_LABEL[f]}</option>`).join('');
+  document.getElementById('pagoCombMonto').value = '';
+  renderPagoCombinadoLista();
+}
+
+function volverAPagoSimple(){
+  pagoCombinadoLineas = [];
+  const simple = document.getElementById('pagoOpcionesSimple');
+  const combinado = document.getElementById('pagoCombinadoView');
+  if(simple) simple.style.display = 'flex';
+  if(combinado) combinado.style.display = 'none';
+}
+
+function renderPagoCombinadoLista(){
+  const lista = document.getElementById('pagoCombLista');
+  lista.innerHTML = pagoCombinadoLineas.map((l,i) => `<div class="np-pago-comb-row">
+      <span>${METODO_ICON[l.forma_pago]||''} ${METODO_LABEL[l.forma_pago]}</span>
+      <span style="display:flex;align-items:center;gap:10px">
+        <span class="monto">${formatPrecio(l.monto)}</span>
+        <button class="gasto-borrar-btn" onclick="quitarPagoCombinadoLinea(${i})" title="Quitar">✕</button>
+      </span>
+    </div>`).join('');
+
+  const total = cierrePendiente ? cierrePendiente.total : 0;
+  const acumulado = pagoCombinadoLineas.reduce((s,l) => s + l.monto, 0);
+  const restante = total - acumulado;
+  const restanteEl = document.getElementById('pagoCombRestante');
+  restanteEl.textContent = restante === 0 ? '✓ Cubre el total exacto' : `Falta ${formatPrecio(restante)}`;
+  restanteEl.classList.toggle('ok', restante === 0);
+
+  const confirmarBtn = document.getElementById('pagoCombConfirmarBtn');
+  // Exige que sume EXACTO el total — una diferencia (de más o de menos) sería plata que no
+  // cierra contra la caja al final del turno, y el panel no tiene forma de "vueltear" sola.
+  confirmarBtn.disabled = pagoCombinadoLineas.length < 2 || restante !== 0;
+}
+
+function agregarPagoCombinadoLinea(){
+  const forma_pago = document.getElementById('pagoCombForma').value;
+  const montoInput = document.getElementById('pagoCombMonto');
+  const monto = Number(montoInput.value);
+  if(!(monto > 0)){ showToast('Ingresá un monto válido'); return; }
+  const existente = pagoCombinadoLineas.find(l => l.forma_pago === forma_pago);
+  if(existente) existente.monto += monto;
+  else pagoCombinadoLineas.push({ forma_pago, monto });
+  montoInput.value = '';
+  renderPagoCombinadoLista();
+}
+
+function quitarPagoCombinadoLinea(idx){
+  pagoCombinadoLineas.splice(idx, 1);
+  renderPagoCombinadoLista();
+}
+
+function confirmarPagoCombinado(){
+  if(uiBloqueada || !cierrePendiente) return;
+  if(pagoCombinadoLineas.length < 2) return;
+  document.getElementById('pagoOverlay').style.display = 'none';
+  lockUI();
+  const resumen = pagoCombinadoLineas.map(l => `${METODO_LABEL[l.forma_pago]} ${formatPrecio(l.monto)}`).join(' + ');
+  if(cierrePendiente.modo === 'mesa'){
+    const { mesa } = cierrePendiente;
+    postAction('cerrarMesa', { mesa, pagos: pagoCombinadoLineas }).then(res => {
+      if(!res.ok){
+        if(res.error === 'caja_dia_anterior_sin_cerrar'){
+          return showToast('⚠️ Hay una caja de un día anterior sin cerrar. Cerrala antes de cobrar.');
+        }
+        return showToast('No se pudo cerrar la mesa: ' + (res.error||''));
+      }
+      mesasConCuentaImpresa.delete(String(mesa));
+      guardarMesasConCuentaImpresa();
+      showToast(`Mesa ${mesa} cerrada · ${resumen}`);
+      cargarPedidos();
+    }).finally(() => { unlockUI(); cierrePendiente = null; volverAPagoSimple(); });
+    return;
+  }
+  const { id } = cierrePendiente;
+  postAction('actualizarEstado', { id_pedido:id, estado:'cerrado', pagos: pagoCombinadoLineas }).then(res => {
+    if(!res.ok){
+      if(res.error === 'caja_dia_anterior_sin_cerrar'){
+        return showToast('⚠️ Hay una caja de un día anterior sin cerrar. Cerrala antes de cobrar.');
+      }
+      return showToast('No se pudo cerrar el pedido: ' + (res.error||''));
+    }
+    showToast(`Pedido cerrado · ${resumen}`);
+    cargarPedidos();
+  }).finally(() => { unlockUI(); cierrePendiente = null; volverAPagoSimple(); });
 }
 
 /* ======================= IMPRESIÓN ======================= */
