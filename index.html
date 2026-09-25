@@ -2691,13 +2691,13 @@ function npRenderHalfCard(cat){
   if(opts.length < 2) return '';
   return `<div class="np-combo-card">
     <h4>🍕 Mitad y mitad</h4>
-    <p>Elegí dos sabores para combinar. El precio es el promedio.</p>
+    <p>Elegí dos sabores para combinar. Se cobra el precio del sabor más caro.</p>
     <div class="np-combo-row">
       <select id="npHalfA-${cat.id}" onchange="npUpdateHalfPrice('${cat.id}')">${opts.map(o=>`<option value="${o.id}">${o.nombre}</option>`).join('')}</select>
       <select id="npHalfB-${cat.id}" onchange="npUpdateHalfPrice('${cat.id}')">${opts.map((o,i)=>`<option value="${o.id}" ${i===1?'selected':''}>${o.nombre}</option>`).join('')}</select>
     </div>
     <div class="np-combo-foot">
-      <b id="npHalfPrice-${cat.id}">${formatPrecio((Number(opts[0].precio)+Number(opts[1].precio))/2)}</b>
+      <b id="npHalfPrice-${cat.id}">${formatPrecio(Math.max(Number(opts[0].precio),Number(opts[1].precio)))}</b>
       <button class="np-add-btn" style="width:auto;padding:0 18px;border-radius:var(--radius-md);height:38px" onclick="npAddHalf('${cat.id}')">Agregar</button>
     </div>
   </div>`;
@@ -2706,14 +2706,15 @@ function npRenderHalfCard(cat){
 function npUpdateHalfPrice(catId){
   const a = npFindProducto(document.getElementById('npHalfA-'+catId).value);
   const b = npFindProducto(document.getElementById('npHalfB-'+catId).value);
-  document.getElementById('npHalfPrice-'+catId).textContent = formatPrecio((Number(a.precio)+Number(b.precio))/2);
+  document.getElementById('npHalfPrice-'+catId).textContent = formatPrecio(Math.max(Number(a.precio),Number(b.precio)));
 }
 
 function npAddHalf(catId){
   const a = npFindProducto(document.getElementById('npHalfA-'+catId).value);
   const b = npFindProducto(document.getElementById('npHalfB-'+catId).value);
   if(a.id === b.id){ showToast('Elegí dos sabores distintos'); return; }
-  const price = (Number(a.precio) + Number(b.precio)) / 2;
+  // Se cobra el sabor más caro de los dos, no el promedio.
+  const price = Math.max(Number(a.precio), Number(b.precio));
   const cat = menuNuevoPedidoData.categorias.find(c => c.id === catId);
   const key = 'combo-' + a.id + '-' + b.id;
   const existing = nuevoPedido.comboCart.find(c => c.key === key);
