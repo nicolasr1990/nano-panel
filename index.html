@@ -2538,7 +2538,10 @@ function cargarMenuNuevoPedido(){
 }
 
 function npFindProducto(id){ return menuNuevoPedidoData.productos.find(p => p.id === id); }
-function npItemsOf(catId){ return menuNuevoPedidoData.productos.filter(p => p.categoria_id === catId); }
+// Alfabético (no el orden en que vienen del backend) — así la lista para armar el pedido no
+// salta de lugar cada vez que se agrega un producto nuevo al menú. Alimenta la grilla y todos
+// los selects de las tarjetas de combo (docena, mitad y mitad, por unidad), todos parten de acá.
+function npItemsOf(catId){ return menuNuevoPedidoData.productos.filter(p => p.categoria_id === catId).sort((a,b) => a.nombre.localeCompare(b.nombre, 'es')); }
 
 // Mismo criterio que nanorestobar: categorías (o productos puntuales) donde la cocina
 // necesita sí o sí una aclaración para prepararlo, sea que el pedido lo cargue el cliente
