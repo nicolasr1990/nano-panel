@@ -409,6 +409,15 @@
   .cat-drag-handle{cursor:grab;color:var(--ink-muted);font-size:12px;letter-spacing:-2px;flex-shrink:0}
   .cat-drag-handle:active{cursor:grabbing}
   .cat-block summary::-webkit-details-marker{display:none}
+  /* Interruptor "Mostrar en la carta" en el encabezado de cada categoría del módulo Menú. */
+  .cat-visible{margin-left:auto;display:inline-flex;align-items:center;gap:7px;padding:5px 11px 5px 6px;border-radius:999px;border:1.5px solid var(--success-border);background:var(--success-bg);color:var(--success);font-family:var(--body);font-size:11.5px;font-weight:700;cursor:pointer;white-space:nowrap}
+  .cat-visible .perilla{width:26px;height:15px;border-radius:999px;background:var(--success);position:relative;flex-shrink:0;transition:background-color .2s}
+  .cat-visible .perilla::after{content:'';position:absolute;top:2px;left:13px;width:11px;height:11px;border-radius:50%;background:#fff;transition:left .2s cubic-bezier(0.23,1,0.32,1)}
+  .cat-visible.off{border-color:var(--danger-border);background:var(--danger-bg);color:var(--danger)}
+  .cat-visible.off .perilla{background:var(--ink-muted)}
+  .cat-visible.off .perilla::after{left:2px}
+  .cat-visible + .cat-count{margin-left:10px}
+  .cat-block.cat-oculta summary .cat-titulo-text{opacity:0.5;text-decoration:line-through}
   .cat-block summary::marker{content:''}
   .cat-block summary .cat-titulo-text{text-transform:uppercase;letter-spacing:0.04em;font-size:12.5px;color:var(--accent)}
   .cat-block summary .cat-count{color:var(--ink-muted);font-family:var(--body);font-weight:500;font-size:11.5px;margin-right:auto;margin-left:6px}
@@ -1427,7 +1436,7 @@ function intentarLoginProductos(){
 
 function cargarCategoriasYRenderProductos(){
   if(categoriasData.length){ renderProductos(); return; }
-  fetchGet(`${WEBAPP_URL}?action=menu&canal=mesa`)
+  fetchGet(`${WEBAPP_URL}?action=menu&canal=mesa&todas=1`)
     .then(r => r.json())
     .then(res => { categoriasData = res.categorias || []; renderProductos(); });
 }
@@ -1438,9 +1447,10 @@ function cerrarProductos(){
     document.getElementById('vistaPedidos').style.display = 'block';
     document.getElementById('editarMenuBtn').disabled = false;
     categoriasOrdenCambiado = false;
+    if(Object.keys(categoriasVisibilidadCambiada).length){ categoriasVisibilidadCambiada = {}; categoriasData = []; }
     marcarNavActivo('navPedidosBtn');
   };
-  if(!(Object.keys(cambiosProductos).length || categoriasOrdenCambiado)) return seguir();
+  if(!(Object.keys(cambiosProductos).length || categoriasOrdenCambiado || Object.keys(categoriasVisibilidadCambiada).length)) return seguir();
   uiConfirm('Tenés cambios sin guardar, ¿salir igual y perderlos?').then(ok => { if(ok) seguir(); });
 }
 
@@ -1459,12 +1469,16 @@ function renderProductos(){
 
   const el = document.getElementById('listaProductos');
   el.innerHTML = categoriasData.map(cat => { const items = porCategoria[cat.id] || []; return `
-    <details class="cat-block" draggable="true" data-cat-id="${cat.id}"
+    <details class="cat-block ${cat.visible === false ? 'cat-oculta' : ''}" draggable="true" data-cat-id="${cat.id}"
       ondragstart="catDragStart(event,'${cat.id}')" ondragover="catDragOver(event)"
       ondragleave="catDragLeave(event)" ondrop="catDrop(event,'${cat.id}')" ondragend="catDragEnd(event)">
       <summary>
         <span class="cat-drag-handle" title="Arrastrar para reordenar">⠿⠿</span>
         <span class="cat-titulo-text">${cat.nombre}</span>
+        <button type="button" class="cat-visible ${cat.visible === false ? 'off' : ''}" title="Mostrar u ocultar esta categoría en la carta"
+          onclick="event.preventDefault();event.stopPropagation();toggleVisibilidadCategoria('${cat.id}')">
+          <span class="perilla"></span>${cat.visible === false ? 'Oculta en la carta' : 'En la carta'}
+        </button>
         <span class="cat-count">${items.length} producto${items.length===1?'':'s'}</span>
         <span class="cat-chevron">▾</span>
       </summary>
@@ -1555,7 +1569,7 @@ function handleCrearCategoria(){
     document.getElementById('nuevaCategoriaForm').innerHTML = '';
     // categoriasData se cachea (ver cargarCategoriasYRenderProductos) — hay que refrescarla a
     // mano para que la categoría nueva aparezca sin recargar toda la página.
-    return fetchGet(`${WEBAPP_URL}?action=menu&canal=mesa`).then(r => r.json()).then(res2 => {
+    return fetchGet(`${WEBAPP_URL}?action=menu&canal=mesa&todas=1`).then(r => r.json()).then(res2 => {
       categoriasData = res2.categorias || [];
       renderProductos();
     });
@@ -1615,6 +1629,18 @@ function editarProducto(id, campo, valor){
 
 /* ---------- Reordenar categorías arrastrando (drag and drop nativo) ---------- */
 let categoriasOrdenCambiado = false;
+let categoriasVisibilidadCambiada = {}; // { id: true|false } pendientes de guardar
+
+// Se guarda junto con el resto al tocar "Guardar cambios", igual que los switches de productos.
+function toggleVisibilidadCategoria(id){
+  const cat = categoriasData.find(c => c.id === id);
+  if(!cat) return;
+  cat.visible = cat.visible === false;
+  categoriasVisibilidadCambiada[id] = cat.visible;
+  const abierta = document.querySelector(`.cat-block[data-cat-id="${CSS.escape(id)}"]`)?.open;
+  renderProductos();
+  if(abierta){ const d = document.querySelector(`.cat-block[data-cat-id="${CSS.escape(id)}"]`); if(d) d.open = true; }
+}
 let dragCatId = null;
 
 function catDragStart(e, catId){
@@ -1653,12 +1679,19 @@ function catDrop(e, catIdDestino){
 function guardarCambiosProductos(){
   if(uiBloqueada) return;
   const cambiosProds = Object.values(cambiosProductos);
-  if(!cambiosProds.length && !categoriasOrdenCambiado){ showToast('No hay cambios para guardar'); return; }
+  const hayVisibilidad = Object.keys(categoriasVisibilidadCambiada).length > 0;
+  if(!cambiosProds.length && !categoriasOrdenCambiado && !hayVisibilidad){ showToast('No hay cambios para guardar'); return; }
   lockUI();
 
   const pedidos = [];
   if(cambiosProds.length) pedidos.push(postActionConClave('guardarProductos', { productos: cambiosProds }));
-  if(categoriasOrdenCambiado) pedidos.push(postActionConClave('guardarCategorias', { categorias: categoriasData.map((c,i) => ({ id:c.id, orden:i+1 })) }));
+  if(categoriasOrdenCambiado || hayVisibilidad){
+    // Orden (si se arrastró) y "Mostrar en la carta" (si se tocó) van en el mismo pedido.
+    const categorias = categoriasOrdenCambiado
+      ? categoriasData.map((c,i) => ({ id:c.id, orden:i+1, ...(c.id in categoriasVisibilidadCambiada ? { visible:categoriasVisibilidadCambiada[c.id] } : {}) }))
+      : Object.entries(categoriasVisibilidadCambiada).map(([id, visible]) => ({ id, visible }));
+    pedidos.push(postActionConClave('guardarCategorias', { categorias }));
+  }
 
   Promise.all(pedidos).then(resultados => {
     const fallo = resultados.find(r => !r.ok);
@@ -1666,6 +1699,7 @@ function guardarCambiosProductos(){
     showToast('Cambios guardados');
     cambiosProductos = {};
     categoriasOrdenCambiado = false;
+    categoriasVisibilidadCambiada = {};
   }).finally(unlockUI);
 }
 
