@@ -569,6 +569,29 @@
   .np-review-box .cerrar-mesa-btn{margin:0 18px 18px;width:auto}
 
   .np-pago-box{max-width:340px}
+  /* Cobro de mesa: el detalle de rondas va arriba de las formas de pago, así quien cobra ve
+     exactamente qué se está cerrando (hora, productos y monto de cada ronda) antes de elegir. */
+  .np-pago-box.con-detalle{max-width:400px;max-height:calc(100vh - 32px);display:flex;flex-direction:column}
+  .np-pago-box.con-detalle{max-width:460px}
+  .np-pago-box.con-detalle .np-pago-opciones{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px 18px 18px;border-top:1px solid var(--border-soft);flex-shrink:0}
+  .np-pago-box.con-detalle .np-pago-opt{padding:12px 14px;font-size:13.5px}
+  .np-pago-box.con-detalle .np-pago-opt:last-child{grid-column:1 / -1}
+  .pago-detalle{padding:16px 18px 6px;overflow-y:auto;flex:1 1 auto;min-height:0}
+  .pago-detalle:empty{display:none}
+  .pago-detalle-sub{font-size:12px;color:var(--ink-secondary);font-weight:600;margin-bottom:10px}
+  .pago-ronda{background:var(--surface-alt);border:1px solid var(--border);border-radius:var(--radius-md);padding:10px 12px;margin-bottom:8px}
+  .pago-ronda-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;font-size:12.5px;font-weight:700;color:var(--ink)}
+  .pago-ronda-head .hora{color:var(--ink-secondary);font-weight:600}
+  .pago-ronda-head .monto{font-family:var(--display);font-weight:800;font-size:15px}
+  .pago-ronda-items{margin-top:4px;font-size:12px;color:var(--ink-secondary);line-height:1.5}
+  .pago-ronda-aviso{display:inline-block;margin-top:6px;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--tipo-mesa-bg);border:1px solid var(--tipo-mesa-border);color:var(--tipo-mesa-ink)}
+  .pago-ronda-pie{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:6px}
+  .pago-ronda-pie .pago-ronda-aviso{margin-top:0}
+  .pago-ronda-sacar{margin-left:auto;background:none;border:1px solid var(--border-strong);border-radius:999px;padding:4px 12px;font-family:var(--body);font-size:11.5px;font-weight:700;color:var(--ink-secondary);cursor:pointer;transition:var(--transition)}
+  .pago-ronda-sacar:hover{border-color:var(--danger);color:var(--danger);background:var(--danger-bg)}
+  .pago-ronda-aviso.viejo{background:var(--danger-bg);border-color:var(--danger-border);color:var(--danger)}
+  .pago-detalle-total{display:flex;justify-content:space-between;align-items:baseline;padding:10px 2px 4px;border-top:1px solid var(--border-soft);margin-top:4px;font-family:var(--display);font-weight:800;font-size:17px;color:var(--ink)}
+  .pago-detalle-nota{font-size:11.5px;color:var(--ink-muted);margin-top:4px}
   .np-confirm-box{max-width:360px}
   .np-confirm-msg{padding:18px;font-size:14px;line-height:1.5;color:var(--ink)}
   .np-confirm-acciones{display:flex;gap:10px;padding:0 18px 18px}
@@ -1044,6 +1067,7 @@
       <span id="pagoTitulo">¿Cómo pagó la mesa?</span>
       <button class="video-close" onclick="cerrarPagoOverlay()">✕</button>
     </div>
+    <div class="pago-detalle" id="pagoDetalle"></div>
     <div class="np-pago-opciones" id="pagoOpcionesSimple">
       <button class="np-pago-opt" onclick="confirmarPago('efectivo')">💵 Efectivo</button>
       <button class="np-pago-opt" onclick="confirmarPago('tarjeta')">💳 Tarjeta</button>
@@ -1096,7 +1120,7 @@
     <input type="password" id="borrarConClaveInput" class="np-input" placeholder="Clave del panel" autocomplete="off" style="margin:0 18px 14px;width:calc(100% - 36px)">
     <div class="np-confirm-acciones">
       <button class="ui-confirm-btn ui-confirm-btn-cancel" onclick="cerrarBorrarConClave()">Cancelar</button>
-      <button class="ui-confirm-btn ui-confirm-btn-danger" onclick="confirmarBorrarConClave()">Eliminar</button>
+      <button class="ui-confirm-btn ui-confirm-btn-danger" id="borrarConClaveBtn" onclick="confirmarBorrarConClave()">Eliminar</button>
     </div>
   </div>
 </div>
@@ -1210,8 +1234,9 @@ function uiAlert(mensaje){
 // "Eliminar" — la validación de si la clave es correcta la hace el backend, esto solo la
 // pide y la manda.
 let borrarConClaveCallback = null;
-function pedirClaveYEliminar(mensaje, callback){
+function pedirClaveYEliminar(mensaje, callback, textoBoton = 'Eliminar'){
   document.getElementById('borrarConClaveMsg').textContent = mensaje;
+  document.getElementById('borrarConClaveBtn').textContent = textoBoton;
   document.getElementById('borrarConClaveInput').value = '';
   borrarConClaveCallback = callback;
   document.getElementById('borrarConClaveOverlay').style.display = 'flex';
@@ -1793,7 +1818,7 @@ function renderStaffOrders(){
     html += `
       <div class="mesa-group" id="mesa-grupo-${mesaNum}">
         <div class="mesa-group-head">
-          <span class="titulo">${tipoChip('mesa')} Mesa ${mesaNum} · ${rondas.length} ronda${rondas.length===1?'':'s'}</span>
+          <span class="titulo">${tipoChip('mesa')} Mesa ${mesaNum} · ${rondas.length} pedido${rondas.length===1?'':'s'}</span>
           <span class="total">${formatPrecio(total)}</span>
         </div>
         ${rondas.map(o => o.estado === 'listo' ? rondaMinimizadaHtml(o) : orderCardHtml(o)).join('')}
@@ -2055,21 +2080,76 @@ function cerrarMesa(mesa, cantRondas){
       uiAlert('⚠️ Hay una caja de un día anterior sin cerrar. Andá a Caja y cerrala antes de cobrar mesas.');
       return;
     }
-    uiConfirm(`¿Cerrar Mesa ${mesa}? Se van a cerrar sus ${cantRondas} ronda(s) y no se van a poder editar más.`).then(ok => {
-      if(!ok) return;
-      // Antes de cerrar de verdad, preguntamos cómo pagó — ese dato alimenta el cierre de caja.
-      // En mesa entran las 4 formas de pago, incluso combinadas entre sí.
-      // Se guardan los id de las rondas que se ven y se suman ACÁ: el backend cierra solo esas,
-      // así lo que queda cobrado en el sistema es exactamente el total que vio el cajero (antes
-      // el backend cerraba toda ronda no cerrada de la mesa, incluidas canceladas u olvidadas
-      // de otro día, y esa plata entraba a la caja sin haberse cobrado).
-      const rondasMesa = staffOrders.filter(o => o.tipo === 'mesa' && String(o.mesa) === String(mesa));
-      const total = rondasMesa.reduce((s,o) => s + o.total, 0);
-      cierrePendiente = { modo:'mesa', mesa, total, ids: rondasMesa.map(o => o.id_pedido), formas: FORMAS_PAGO_MESA };
-      document.getElementById('pagoTitulo').textContent = `¿Cómo pagó la Mesa ${mesa}?`;
-      document.getElementById('pagoOverlay').style.display = 'flex';
-    });
+    // Antes de cerrar de verdad, preguntamos cómo pagó — ese dato alimenta el cierre de caja.
+    // En mesa entran las 4 formas de pago, incluso combinadas entre sí.
+    // Se guardan los id de las rondas que se ven y se suman ACÁ: el backend cierra solo esas,
+    // así lo que queda cobrado en el sistema es exactamente el total que vio el cajero (antes
+    // el backend cerraba toda ronda no cerrada de la mesa, incluidas canceladas u olvidadas
+    // de otro día, y esa plata entraba a la caja sin haberse cobrado).
+    // Reemplaza al "¿Cerrar Mesa X? Se van a cerrar sus N ronda(s)" de antes: en el mismo paso
+    // se ve el detalle de cada ronda y se elige cómo pagó.
+    const rondasMesa = staffOrders.filter(o => o.tipo === 'mesa' && String(o.mesa) === String(mesa))
+      .sort((a,b) => new Date(a.fecha) - new Date(b.fecha));
+    if(rondasMesa.length === 0) return;
+    const total = rondasMesa.reduce((s,o) => s + o.total, 0);
+    cierrePendiente = { modo:'mesa', mesa, total, ids: rondasMesa.map(o => o.id_pedido), formas: FORMAS_PAGO_MESA };
+    document.getElementById('pagoTitulo').textContent = `Cobrar Mesa ${mesa}`;
+    renderDetalleCobroMesa(rondasMesa, total);
+    document.getElementById('pagoOverlay').style.display = 'flex';
   });
+}
+
+// Detalle de lo que se va a cobrar: una tarjeta por ronda (hora, productos, monto) + total.
+// Marca las rondas que nunca pasaron por cocina o que son de otro día — las dos señales de
+// que algo puede estar de más (una ronda cargada dos veces, una olvidada de otro turno).
+function renderDetalleCobroMesa(rondas, total){
+  const hora = f => new Date(f).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit',hour12:false});
+  const dia = f => new Date(f).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit'});
+  const el = document.getElementById('pagoDetalle');
+  el.innerHTML = `<div class="pago-detalle-sub">${rondas.length === 1 ? '1 pedido' : rondas.length + ' pedidos'} · revisá antes de cobrar</div>`
+    + rondas.map((o,i) => {
+      const avisos = [];
+      if(o.fecha && !fechaEsHoy(o.fecha)) avisos.push(`<span class="pago-ronda-aviso viejo">Es del ${dia(o.fecha)}</span>`);
+      if(o.estado === 'nuevo') avisos.push(`<span class="pago-ronda-aviso">No pasó por cocina</span>`);
+      const items = (o.items||[]).map(it => `${it.cantidad}× ${esc(it.nombre)}`).join('<br>');
+      return `<div class="pago-ronda">
+        <div class="pago-ronda-head"><span>Pedido ${o.fecha ? (fechaEsHoy(o.fecha) ? 'de las ' + hora(o.fecha) : 'del ' + dia(o.fecha) + ' · ' + hora(o.fecha)) + ' hs' : ''}</span><span class="monto">${formatPrecio(o.total)}</span></div>
+        ${items ? `<div class="pago-ronda-items">${items}</div>` : ''}
+        <div class="pago-ronda-pie">${avisos.join(' ')}<button class="pago-ronda-sacar" onclick="sacarPedidoDelCobro('${o.id_pedido}')">Sacar</button></div>
+      </div>`;
+    }).join('')
+    + `<div class="pago-detalle-total"><span>Total a cobrar</span><span>${formatPrecio(total)}</span></div>
+       <div class="pago-detalle-nota">Al elegir la forma de pago, la mesa se cierra y no se puede editar más.</div>`;
+  document.querySelector('#pagoOverlay .np-pago-box').classList.add('con-detalle');
+}
+// "Sacar" en la pantalla de cobro: para un pedido que se cargó dos veces o que es de otro
+// turno y no corresponde cobrar. Pide la clave del panel (saca plata de la cuenta) y lo
+// cancela en el momento, esté en el estado que esté; después recalcula el total sin salir de
+// esta pantalla. Si era el último pedido de la mesa, la pantalla se cierra.
+function sacarPedidoDelCobro(id){
+  if(!cierrePendiente || cierrePendiente.modo !== 'mesa') return;
+  const o = staffOrders.find(x => x.id_pedido === id);
+  if(!o) return;
+  pedirClaveYEliminar(`Vas a sacar el pedido de ${formatPrecio(o.total)} de la Mesa ${cierrePendiente.mesa}. No se va a cobrar ni a contar en la caja. Ingresá la clave del panel para confirmar.`, (clave) => {
+    if(uiBloqueada) return;
+    lockUI();
+    postAction('sacarPedidoMesa', { id_pedido:id, clave }).then(res => {
+      if(!res.ok){ showToast(res.error === 'clave_incorrecta' ? 'Clave incorrecta' : 'No se pudo sacar: ' + (res.error||'')); return; }
+      staffOrders = staffOrders.filter(x => x.id_pedido !== id);
+      const quedan = staffOrders.filter(x => x.tipo === 'mesa' && String(x.mesa) === String(cierrePendiente.mesa))
+        .sort((a,b) => new Date(a.fecha) - new Date(b.fecha));
+      showToast('Pedido sacado de la cuenta');
+      if(quedan.length === 0){ cerrarPagoOverlay(); cargarPedidos(); return; }
+      cierrePendiente.ids = quedan.map(x => x.id_pedido);
+      cierrePendiente.total = quedan.reduce((s,x) => s + x.total, 0);
+      renderDetalleCobroMesa(quedan, cierrePendiente.total);
+      cargarPedidos();
+    }).finally(unlockUI);
+  }, 'Sacar pedido');
+}
+function limpiarDetalleCobro(){
+  document.getElementById('pagoDetalle').innerHTML = '';
+  document.querySelector('#pagoOverlay .np-pago-box').classList.remove('con-detalle');
 }
 
 // Mismo selector de método de pago que cerrarMesa, pero para un pedido de retiro/envío
@@ -2086,6 +2166,7 @@ function cobrarPedido(id){
     // Retiro/envío combinado solo entre efectivo/transferencia — tarjeta y cuenta corriente
     // no aplican para estos dos canales (mismo criterio que ya se usaba antes de esto).
     cierrePendiente = { modo:'pedido', id, total: o.total, formas: FORMAS_PAGO_PEDIDO };
+    limpiarDetalleCobro();
     document.getElementById('pagoTitulo').textContent = `¿Cómo pagó ${o.nombre_cliente || TIPO_LABEL[o.tipo]}?`;
     document.getElementById('pagoOverlay').style.display = 'flex';
   });
@@ -2093,6 +2174,7 @@ function cobrarPedido(id){
 
 function cerrarPagoOverlay(){
   document.getElementById('pagoOverlay').style.display = 'none';
+  limpiarDetalleCobro();
   volverAPagoSimple();
   cierrePendiente = null;
 }
@@ -2139,6 +2221,7 @@ function abrirCobroCombinado(){
   if(!cierrePendiente) return;
   pagoCombinadoLineas = [];
   document.getElementById('pagoOpcionesSimple').style.display = 'none';
+  document.getElementById('pagoDetalle').style.display = 'none';
   document.getElementById('pagoCombinadoView').style.display = 'block';
   document.getElementById('pagoCombTotal').textContent = formatPrecio(cierrePendiente.total);
   const select = document.getElementById('pagoCombForma');
@@ -2151,8 +2234,10 @@ function volverAPagoSimple(){
   pagoCombinadoLineas = [];
   const simple = document.getElementById('pagoOpcionesSimple');
   const combinado = document.getElementById('pagoCombinadoView');
-  if(simple) simple.style.display = 'flex';
+  if(simple) simple.style.display = '';
   if(combinado) combinado.style.display = 'none';
+  const detalle = document.getElementById('pagoDetalle');
+  if(detalle) detalle.style.display = '';
 }
 
 function renderPagoCombinadoLista(){
@@ -2317,6 +2402,21 @@ function imprimirComprobanteCocina(o){
   esperarLogoYimprimir(el);
 }
 
+// Todo lo que se cargó en la mesa en una sola lista, sumando lo repetido (mismo producto al
+// mismo precio): el cliente ve "2× GASEOSA" en vez de una gaseosa en cada carga. Internamente
+// cada carga sigue siendo un pedido aparte (cocina las recibe por separado), pero en la
+// cuenta no hace falta mostrar en qué momento se pidió cada cosa.
+function itemsUnificados(pedidos){
+  const porClave = new Map();
+  pedidos.forEach(p => (p.items||[]).forEach(i => {
+    const clave = i.nombre + '|' + i.precio_unit;
+    const ya = porClave.get(clave);
+    if(ya) ya.cantidad += Number(i.cantidad)||0;
+    else porClave.set(clave, { nombre:i.nombre, precio_unit:i.precio_unit, cantidad:Number(i.cantidad)||0 });
+  }));
+  return [...porClave.values()];
+}
+
 function imprimirComprobanteFinal(cabecera, rondas){
   const el = document.getElementById('comprobante');
   const total = rondas.reduce((s,r) => s + r.total, 0);
@@ -2341,10 +2441,7 @@ function imprimirComprobanteFinal(cabecera, rondas){
     ${direccionHtml}
     ${metodoHtml}
     <div class="sep"></div>
-    ${rondas.map((r,idx) => `
-      ${rondas.length>1 ? `<div class="cat-label">Ronda ${idx+1}</div>` : ''}
-      ${r.items.map(i => `<div class="linea"><span>${i.cantidad}× ${i.nombre}</span><span>${formatPrecio(i.precio_unit*i.cantidad)}</span></div>`).join('')}
-    `).join('')}
+    ${itemsUnificados(rondas).map(i => `<div class="linea"><span>${i.cantidad}× ${i.nombre}</span><span>${formatPrecio(i.precio_unit*i.cantidad)}</span></div>`).join('')}
     <div class="linea total"><span>TOTAL</span><span>${formatPrecio(total)}</span></div>
     ${aliasHtml}
     <div class="footer">¡Gracias por elegirnos!</div>
