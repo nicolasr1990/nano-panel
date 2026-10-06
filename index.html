@@ -2059,8 +2059,13 @@ function cerrarMesa(mesa, cantRondas){
       if(!ok) return;
       // Antes de cerrar de verdad, preguntamos cómo pagó — ese dato alimenta el cierre de caja.
       // En mesa entran las 4 formas de pago, incluso combinadas entre sí.
-      const total = staffOrders.filter(o => o.tipo === 'mesa' && String(o.mesa) === String(mesa)).reduce((s,o) => s + o.total, 0);
-      cierrePendiente = { modo:'mesa', mesa, total, formas: FORMAS_PAGO_MESA };
+      // Se guardan los id de las rondas que se ven y se suman ACÁ: el backend cierra solo esas,
+      // así lo que queda cobrado en el sistema es exactamente el total que vio el cajero (antes
+      // el backend cerraba toda ronda no cerrada de la mesa, incluidas canceladas u olvidadas
+      // de otro día, y esa plata entraba a la caja sin haberse cobrado).
+      const rondasMesa = staffOrders.filter(o => o.tipo === 'mesa' && String(o.mesa) === String(mesa));
+      const total = rondasMesa.reduce((s,o) => s + o.total, 0);
+      cierrePendiente = { modo:'mesa', mesa, total, ids: rondasMesa.map(o => o.id_pedido), formas: FORMAS_PAGO_MESA };
       document.getElementById('pagoTitulo').textContent = `¿Cómo pagó la Mesa ${mesa}?`;
       document.getElementById('pagoOverlay').style.display = 'flex';
     });
@@ -2097,8 +2102,8 @@ function confirmarPago(metodo){
   document.getElementById('pagoOverlay').style.display = 'none';
   lockUI();
   if(cierrePendiente.modo === 'mesa'){
-    const { mesa } = cierrePendiente;
-    postAction('cerrarMesa', { mesa, metodo_pago: metodo }).then(res => {
+    const { mesa, ids } = cierrePendiente;
+    postAction('cerrarMesa', { mesa, ids, metodo_pago: metodo }).then(res => {
       if(!res.ok){
         if(res.error === 'caja_dia_anterior_sin_cerrar'){
           return showToast('⚠️ Hay una caja de un día anterior sin cerrar. Cerrala antes de cobrar.');
@@ -2197,8 +2202,8 @@ function confirmarPagoCombinado(){
   lockUI();
   const resumen = pagoCombinadoLineas.map(l => `${METODO_LABEL[l.forma_pago]} ${formatPrecio(l.monto)}`).join(' + ');
   if(cierrePendiente.modo === 'mesa'){
-    const { mesa } = cierrePendiente;
-    postAction('cerrarMesa', { mesa, pagos: pagoCombinadoLineas }).then(res => {
+    const { mesa, ids } = cierrePendiente;
+    postAction('cerrarMesa', { mesa, ids, pagos: pagoCombinadoLineas }).then(res => {
       if(!res.ok){
         if(res.error === 'caja_dia_anterior_sin_cerrar'){
           return showToast('⚠️ Hay una caja de un día anterior sin cerrar. Cerrala antes de cobrar.');
