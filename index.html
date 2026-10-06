@@ -227,6 +227,45 @@
 
   /* Ronda de mesa ya lista: chip angosto en vez de la tarjeta completa — se puede
      abrir para ver el detalle sin volver a ocupar todo el espacio. */
+  /* ===== Historial hoy: resumen arriba + una lista de cobros, del más reciente al más viejo ===== */
+  .hist-wrap{grid-column:1 / -1;display:flex;flex-direction:column;gap:12px}
+  .hist-resumen{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius-lg);padding:14px 16px;box-shadow:var(--shadow-sm)}
+  .hist-resumen .total{display:flex;flex-direction:column;margin-right:8px}
+  .hist-resumen .total small{font-size:11px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:var(--ink-secondary)}
+  .hist-resumen .total b{font-family:var(--display);font-size:24px;font-weight:800;color:var(--ink);line-height:1.1}
+  .hist-metodo{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:999px;background:var(--surface-alt);border:1px solid var(--border);font-size:12.5px;font-weight:600;color:var(--ink-secondary)}
+  .hist-metodo b{font-family:var(--display);font-weight:800;color:var(--ink)}
+  .hist-actualizar{margin-left:auto;background:var(--surface-alt);border:1.5px solid var(--border-strong);border-radius:var(--radius-md);padding:9px 14px;font-family:var(--body);font-size:12.5px;font-weight:700;color:var(--ink);cursor:pointer}
+  .hist-lista{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;box-shadow:var(--shadow-sm)}
+  .hist-fila{border-bottom:1px solid var(--border-soft)}
+  .hist-fila:last-child{border-bottom:none}
+  .hist-fila summary{list-style:none;cursor:pointer;display:grid;grid-template-columns:58px 92px minmax(0,1fr) 150px 96px 22px;align-items:center;gap:10px;padding:11px 16px}
+  .hist-fila summary::-webkit-details-marker{display:none}
+  .hist-fila summary:hover{background:var(--surface-alt)}
+  .hist-fila[open] summary{background:var(--surface-alt)}
+  .hist-hora{font-family:var(--display);font-weight:700;font-size:13.5px;color:var(--ink-secondary);font-variant-numeric:tabular-nums}
+  .hist-quien{min-width:0;font-weight:700;font-size:13.5px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .hist-quien small{font-weight:600;color:var(--ink-muted);font-size:12px}
+  .hist-fila .metodo-pago-chip{justify-self:start}
+  .hist-monto{font-family:var(--display);font-weight:800;font-size:15px;color:var(--ink);text-align:right;font-variant-numeric:tabular-nums}
+  .hist-fila .cat-chevron{justify-self:end;transition:transform .2s}
+  .hist-fila[open] .cat-chevron{transform:rotate(180deg)}
+  .hist-detalle{padding:4px 16px 14px 84px;display:flex;flex-direction:column;gap:10px}
+  .hist-pedido{border:1px solid var(--border);border-radius:var(--radius-md);padding:10px 12px;background:var(--surface)}
+  .hist-pedido-head{display:flex;justify-content:space-between;font-size:12px;font-weight:700;color:var(--ink-secondary);margin-bottom:4px}
+  .hist-pedido ul{list-style:none;padding:0;margin:0 0 8px;font-size:13px;color:var(--ink)}
+  .hist-pedido li{padding:3px 0}
+  .hist-pedido .order-actions{margin-top:4px}
+  @media (max-width:760px){
+    .hist-fila summary{grid-template-columns:48px minmax(0,1fr) auto 18px;grid-template-areas:"hora quien monto chev" "hora tipo pago chev";row-gap:6px}
+    .hist-fila summary .hist-hora{grid-area:hora}
+    .hist-fila summary .tipo-chip{grid-area:tipo;justify-self:start}
+    .hist-fila summary .hist-quien{grid-area:quien}
+    .hist-fila summary .metodo-pago-chip{grid-area:pago;justify-self:end}
+    .hist-fila summary .hist-monto{grid-area:monto}
+    .hist-fila summary .cat-chevron{grid-area:chev}
+    .hist-detalle{padding-left:16px}
+  }
   .ronda-minimizada{
     border:1.5px solid var(--success-border);background:var(--success-bg);border-radius:var(--radius-md);
     margin-bottom:10px;overflow:hidden;transition:var(--transition);
@@ -1731,10 +1770,75 @@ function renderHistorialHoy(){
     el.innerHTML = '<div class="empty-orders">Todavía no se cerró ningún pedido hoy</div>';
     return;
   }
+  // Al tocar "Actualizar" se mantienen abiertos los cobros que se estaban mirando.
+  const abiertos = new Set([...el.querySelectorAll('.hist-fila[open]')].map(d => d.dataset.key));
+  const cobros = agruparCobrosHistorial(historialHoyData);
+  const total = cobros.reduce((s,c) => s + c.total, 0);
+  // Resumen por forma de pago, en el mismo orden que el selector de cobro.
+  const porMetodo = {};
+  cobros.forEach(c => { const m = c.metodo_pago || 'sin_especificar'; (porMetodo[m] ||= { monto:0, cant:0 }); porMetodo[m].monto += c.total; porMetodo[m].cant++; });
+  const orden = ['efectivo','transferencia','tarjeta','cuenta_corriente','combinado','sin_especificar'];
+  const metodosHtml = orden.filter(m => porMetodo[m]).map(m =>
+    `<span class="hist-metodo">${METODO_ICON[m]||''} ${METODO_LABEL[m]||m} <b>${formatPrecio(porMetodo[m].monto)}</b></span>`).join('');
   el.innerHTML = `
-    <button class="imprimir-cuenta-btn" style="margin-bottom:12px" onclick="cargarHistorialHoy()">🔄 Actualizar</button>
-    ${historialHoyData.map(historialItemHtml).join('')}
-  `;
+    <div class="hist-wrap">
+      <div class="hist-resumen">
+        <div class="total"><small>Cobrado hoy · ${cobros.length} cobro${cobros.length===1?'':'s'}</small><b>${formatPrecio(total)}</b></div>
+        ${metodosHtml}
+        <button class="hist-actualizar" onclick="cargarHistorialHoy()">🔄 Actualizar</button>
+      </div>
+      <div class="hist-lista">${cobros.map(historialCobroHtml).join('')}</div>
+    </div>`;
+  el.querySelectorAll('.hist-fila').forEach(d => { if(abiertos.has(d.dataset.key)) d.open = true; });
+  document.getElementById('countLine').textContent = `${cobros.length} cobro${cobros.length===1?'':'s'} hoy`;
+}
+
+// Un "cobro" es lo que se cobró de una vez: un retiro/envío, o todos los pedidos de una mesa
+// que se cerraron juntos (cerrarMesa les pone a todos la misma fecha_cierre). Así la Mesa 1
+// cobrada con 3 pedidos es una sola fila, igual que en la cuenta que se le dio al cliente.
+// Orden: del cobro más reciente al más viejo (por cuándo se cobró, no por cuándo se cargó).
+function agruparCobrosHistorial(pedidos){
+  const grupos = new Map();
+  pedidos.forEach(o => {
+    const cuando = o.fecha_cierre || o.fecha;
+    const clave = o.tipo === 'mesa' && o.fecha_cierre ? `mesa|${o.mesa}|${o.fecha_cierre}` : o.id_pedido;
+    if(!grupos.has(clave)) grupos.set(clave, { tipo:o.tipo, mesa:o.mesa, nombre_cliente:o.nombre_cliente, metodo_pago:o.metodo_pago, cuando, total:0, pedidos:[] });
+    const g = grupos.get(clave);
+    g.total += o.total; g.pedidos.push(o);
+  });
+  const lista = [...grupos.values()];
+  lista.forEach(g => g.pedidos.sort((a,b) => new Date(a.fecha) - new Date(b.fecha)));
+  return lista.sort((a,b) => new Date(b.cuando) - new Date(a.cuando));
+}
+
+function historialCobroHtml(c){
+  const hora = f => f ? new Date(f).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit',hour12:false}) : '';
+  const quien = c.tipo === 'mesa' ? `Mesa ${esc(c.mesa)}` : (esc(c.nombre_cliente) || 'Sin nombre');
+  const extra = c.pedidos.length > 1 ? ` <small>· ${c.pedidos.length} pedidos</small>` : ` <small>· #${c.pedidos[0].id_pedido.slice(-4)}</small>`;
+  const metodo = c.metodo_pago
+    ? `<span class="metodo-pago-chip">${METODO_ICON[c.metodo_pago]||''} ${METODO_LABEL[c.metodo_pago]||c.metodo_pago}</span>` : '<span></span>';
+  return `
+    <details class="hist-fila" data-key="${c.pedidos[0].id_pedido}">
+      <summary>
+        <span class="hist-hora">${hora(c.cuando)}</span>
+        ${tipoChip(c.tipo)}
+        <span class="hist-quien">${quien}${extra}</span>
+        ${metodo}
+        <span class="hist-monto">${formatPrecio(c.total)}</span>
+        <span class="cat-chevron">▾</span>
+      </summary>
+      <div class="hist-detalle">
+        ${c.pedidos.map(o => `
+          <div class="hist-pedido">
+            <div class="hist-pedido-head"><span>#${o.id_pedido.slice(-4)} · cargado ${hora(o.fecha)} hs</span><span>${formatPrecio(o.total)}</span></div>
+            <ul>${o.items.map(i => `<li>${i.cantidad}× ${i.nombre}${i.nota?`<span class="note">📝 ${esc(i.nota)}</span>`:''}</li>`).join('')}</ul>
+            <div class="order-actions">
+              <button class="deshacer" onclick="deshacerDesdeHistorial('${o.id_pedido}')">Deshacer cierre</button>
+              <button class="deshacer" onclick="eliminarPedidoHistorial('${o.id_pedido}')">Eliminar</button>
+            </div>
+          </div>`).join('')}
+      </div>
+    </details>`;
 }
 
 // Cada fila del historial: minimizada por defecto (mismo patrón que una ronda de mesa
@@ -1785,7 +1889,11 @@ function deshacerDesdeHistorial(id){
 /* ======================= RENDER PRINCIPAL ======================= */
 function renderStaffOrders(){
   renderFilters();
-  if(filter === 'historial'){ renderHistorialHoy(); return; }
+  // En "Historial hoy" el sondeo de cada 8s sigue corriendo (así siguen sonando los avisos de
+  // pedidos nuevos), pero NO redibuja la lista: el historial no cambió y redibujarlo cerraba
+  // el detalle que se estaba mirando. El historial se recarga al entrar a la pestaña o con
+  // "Actualizar".
+  if(filter === 'historial') return;
 
   document.getElementById('countLine').textContent =
     `${staffOrders.length} pedido${staffOrders.length===1?'':'s'} activo${staffOrders.length===1?'':'s'}`;
