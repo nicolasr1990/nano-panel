@@ -2375,13 +2375,17 @@ function fechaHoraTicket(){
   return `${f} · ${horaTicket()}`;
 }
 
+const CATEGORIAS_BEBIDA = ['bebida', 'cerveza', 'vino', 'espumante'];
+function esCategoriaBebida(categoria){
+  return !!categoria && CATEGORIAS_BEBIDA.some(k => String(categoria).toLowerCase().includes(k));
+}
+
 function imprimirComprobanteCocina(o){
   const el = document.getElementById('comprobante');
   // La cocina no sirve bebidas — eso lo hace el mozo, así que no tiene sentido en la comanda.
   // Cubre las 3 categorías de bebidas (antes era una sola "Bebidas"; ahora Bebidas sin Alcohol,
   // Cervezas y Vinos y Espumantes no comparten esa palabra, así que hay que buscar cada una).
-  const CATEGORIAS_BEBIDA = ['bebida', 'cerveza', 'vino', 'espumante'];
-  const itemsCocina = o.items.filter(i => !(i.categoria && CATEGORIAS_BEBIDA.some(k => i.categoria.toLowerCase().includes(k))));
+  const itemsCocina = o.items.filter(i => !esCategoriaBebida(i.categoria));
 
   if(itemsCocina.length === 0){
     showToast('Pedido solo de bebidas — no hace falta comanda para cocina');
@@ -3231,20 +3235,30 @@ function confirmarNuevoPedido(){
       return showToast('No se pudo crear el pedido: ' + (res.error||''));
     }
     const etiqueta = npPedidoLabel();
-    // Mesa: se toma con la tablet en la mesa, pero la impresora está conectada por USB a la
-    // notebook — no a la tablet. Así que acá solo confirmamos y el pedido queda "nuevo" en
-    // el módulo de Pedidos; el "Tomar pedido" (y la impresión) se hace desde ahí, en la
-    // máquina que sí tiene la impresora.
-    if(nuevoPedido.tipo === 'mesa'){
-      showToast(`Pedido confirmado — ${etiqueta}`);
+    // El servidor reconoció el mismo pedido enviado dos veces seguidas (anti-duplicado): ya
+    // se creó y se mandó a cocina con el primer envío, no hay que tomarlo ni imprimirlo de nuevo.
+    if(res.duplicado){
+      showToast(`Pedido ya enviado — ${etiqueta}`);
       cerrarRevisionPedido();
       cerrarNuevoPedido();
       cargarPedidos();
       return;
     }
-    // Retiro/envío cargado a mano en el panel: quien lo carga ya está frente a la
-    // impresora, así que lo mandamos a cocina en el mismo momento — no hace falta el paso
-    // extra de "Tomar pedido" que sí necesitan los pedidos que llegan solos.
+    // Todo pedido cargado desde el panel (mesa, retiro o envío) se toma en el momento: el panel
+    // se usa en la notebook que tiene la impresora, y las mozas cargan las mesas desde su
+    // propia app (nano-mozo), cuyos pedidos sí siguen llegando como "Nuevo" para "Tomar
+    // pedido". (Del 31/08 al 05/10 los de mesa quedaban en "Nuevo", de cuando se cargaban
+    // desde una tablet en la mesa, sin impresora.)
+    // Mesa con solo bebidas: no hay nada que mandar a cocina; queda directo como "Listo",
+    // sumado a la cuenta de la mesa, sin comanda ni "Tomar pedido".
+    if(nuevoPedido.tipo === 'mesa' && lines.every(l => esCategoriaBebida(l.catName))){
+      return postAction('actualizarEstado', { id_pedido: res.id_pedido, estado:'listo' }).then(() => {
+        showToast(`Bebidas sumadas — ${etiqueta}`);
+        cerrarRevisionPedido();
+        cerrarNuevoPedido();
+        cargarPedidos();
+      });
+    }
     const pedidoParaImprimir = {
       id_pedido: res.id_pedido, tipo: nuevoPedido.tipo, mesa: nuevoPedido.mesa, nombre_cliente: nuevoPedido.nombreCliente,
       items: lines.map(l => ({ categoria:l.catName, cantidad:l.qty, nombre:l.name, nota:l.desc||'' })),
