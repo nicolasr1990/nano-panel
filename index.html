@@ -109,6 +109,30 @@
   @keyframes navPillIn{0%{transform:scale(0.8)}60%{transform:scale(1.08)}100%{transform:scale(1)}}
   .side-nav-item:active{transform:scale(0.92)}
   .side-nav-item:disabled{opacity:0.3;pointer-events:none}
+  /* ===== Efecto del botón activo del menú lateral (opciones a elegir: body.nav-ef-N) =====
+     1, 3 y 4 usan una sola "placa" (.side-nav-indicador) que viaja de un botón al otro en
+     vez de aparecer de golpe en el nuevo; por eso ahí se apaga el ::before de cada botón. */
+  .side-nav-indicador{position:absolute;left:8px;top:0;width:76px;height:60px;background:var(--bg);border-radius:18px 0 0 18px;pointer-events:none;opacity:0;z-index:0}
+  body.nav-ef-1 .side-nav-item.active,body.nav-ef-2 .side-nav-item.active,body.nav-ef-3 .side-nav-item.active,body.nav-ef-4 .side-nav-item.active{animation:none}
+  body.nav-ef-1 .side-nav-item.active::before,body.nav-ef-3 .side-nav-item.active::before,body.nav-ef-4 .side-nav-item.active::before{display:none}
+  body.nav-ef-1 .side-nav-indicador,body.nav-ef-4 .side-nav-indicador{opacity:1}
+  /* 1: la placa se desliza */
+  body.nav-ef-1 .side-nav-indicador{transition:transform 0.38s cubic-bezier(0.32,0.72,0,1)}
+  /* 2: aparece con un fundido y el ícono sube apenas, sin rebote */
+  body.nav-ef-2 .side-nav-item.active::before{animation:navFundido 0.22s cubic-bezier(0.23,1,0.32,1)}
+  body.nav-ef-2 .side-nav-item.active .side-nav-ico{animation:navIcoSube 0.32s cubic-bezier(0.23,1,0.32,1)}
+  @keyframes navFundido{from{opacity:0}}
+  @keyframes navIcoSube{from{transform:translateY(4px)}}
+  /* 3: sin placa — una rayita dorada al costado que se desliza y el ícono se agranda */
+  body.nav-ef-3 .side-nav-indicador{opacity:1;left:2px;width:4px;height:32px;margin-top:14px;border-radius:4px;background:var(--accent);transition:transform 0.38s cubic-bezier(0.32,0.72,0,1)}
+  body.nav-ef-3 .side-nav-item.active{color:#fff;background:rgba(255,255,255,0.08)}
+  body.nav-ef-3 .side-nav-item .side-nav-ico{transition:transform 0.25s cubic-bezier(0.23,1,0.32,1)}
+  body.nav-ef-3 .side-nav-item.active .side-nav-ico{transform:scale(1.15)}
+  /* 4 a 9: variantes de la "gota" — ver moverIndicadorNav */
+  body.nav-placa .side-nav-item.active{animation:none}
+  body.nav-placa .side-nav-item.active::before{display:none}
+  body.nav-placa .side-nav-indicador{opacity:1}
+  @media (prefers-reduced-motion: reduce){.side-nav-indicador{transition:none!important}.side-nav-item .side-nav-ico{animation:none!important}}
 
   #app-local{
     flex:1;min-width:0;min-height:100vh;position:relative;padding:20px 20px 100px;
@@ -710,6 +734,40 @@
   .caja-form-gasto .caja-acciones button{min-width:120px}
 
   .caja-filtros{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-bottom:18px}
+  /* ===== Ranking de platos ===== */
+  .rk-atajos{display:flex;gap:6px;flex-wrap:wrap;margin:-6px 0 16px}
+  .rk-chip{padding:7px 12px;border-radius:999px;border:1.5px solid var(--border);background:var(--surface);font:600 12.5px var(--body);color:var(--ink-secondary);cursor:pointer;transition:transform 0.16s cubic-bezier(0.23,1,0.32,1),background 0.16s,border-color 0.16s,color 0.16s}
+  .rk-chip:active{transform:scale(0.97)}
+  .rk-chip.on{background:var(--ink);border-color:var(--ink);color:#fff}
+  .rk-controles{display:flex;gap:10px 18px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+  .rk-seg{display:inline-flex;background:var(--surface-tint);border-radius:999px;padding:3px}
+  .rk-seg button{border:0;background:transparent;padding:7px 14px;border-radius:999px;font:700 12.5px var(--body);color:var(--ink-secondary);cursor:pointer;transition:background 0.18s cubic-bezier(0.23,1,0.32,1),color 0.18s}
+  .rk-seg button.on{background:var(--surface);color:var(--ink);box-shadow:var(--shadow-sm)}
+  .rk-grupo-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:var(--ink-muted);margin-right:6px}
+  .rk-resumen{font-size:13px;color:var(--ink-secondary);margin:0 0 12px}
+  .rk-resumen b{color:var(--ink)}
+  .rk-lista{display:flex;flex-direction:column;gap:8px}
+  .rk-fila{display:grid;grid-template-columns:38px 1fr auto;gap:4px 12px;align-items:center;background:var(--surface);border:1.5px solid var(--border-soft);border-radius:var(--radius-md);padding:12px 14px;box-shadow:var(--shadow-sm);animation:rkEntrar 0.32s cubic-bezier(0.23,1,0.32,1) both}
+  @keyframes rkEntrar{from{opacity:0;transform:translateY(6px)}}
+  .rk-pos{grid-row:span 2;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font:800 14px var(--display);background:var(--surface-tint);color:var(--ink-secondary)}
+  .rk-fila.top1 .rk-pos{background:#E8BE5C;color:#4a3405}
+  .rk-fila.top2 .rk-pos{background:#D5D2CB;color:#3d3a33}
+  .rk-fila.top3 .rk-pos{background:#DDB08A;color:#4d2c12}
+  .rk-nombre{font-weight:700;font-size:14px;color:var(--ink);line-height:1.25;min-width:0}
+  .rk-nombre small{display:block;font-weight:500;font-size:11.5px;color:var(--ink-muted);margin-top:1px}
+  .rk-num{text-align:right;white-space:nowrap}
+  .rk-num b{display:block;font:800 16px var(--display);color:var(--ink)}
+  .rk-num span{font-size:12px;color:var(--ink-secondary)}
+  .rk-barra{grid-column:2 / 4;display:flex;height:7px;border-radius:999px;background:var(--surface-tint);overflow:hidden;margin-top:4px}
+  .rk-barra i{display:block;height:100%;transform-origin:left;animation:rkBarra 0.5s cubic-bezier(0.23,1,0.32,1) both}
+  @keyframes rkBarra{from{transform:scaleX(0)}}
+  .rk-barra i.mesa{background:var(--tipo-mesa)} .rk-barra i.retiro{background:var(--tipo-retiro)} .rk-barra i.envio{background:var(--tipo-envio)} .rk-barra i.uno{background:var(--accent)}
+  .rk-leyenda{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--ink-secondary);margin:0 0 12px}
+  .rk-leyenda span{display:inline-flex;align-items:center;gap:6px}
+  .rk-leyenda i{width:10px;height:10px;border-radius:3px;display:inline-block}
+  .rk-canales{grid-column:2 / 4;font-size:11.5px;color:var(--ink-muted);margin-top:2px}
+  .rk-ver-todos{margin:14px auto 0;display:block}
+  @media (prefers-reduced-motion: reduce){.rk-fila,.rk-barra i{animation:none}}
   .caja-filtros label{display:flex;flex-direction:column;gap:4px;font-size:11px;color:var(--ink-secondary);font-weight:700;text-transform:uppercase;letter-spacing:0.03em}
   .caja-filtros input{padding:9px 10px;border-radius:var(--radius-sm);border:1.5px solid var(--border);font-family:var(--body);font-size:13px;color:var(--ink);background:var(--surface)}
   .caja-total-card{
@@ -947,6 +1005,7 @@
 <div class="wrap">
   <nav class="side-nav">
     <div class="side-nav-sticky">
+      <div class="side-nav-indicador" id="navIndicador" aria-hidden="true"></div>
       <div class="side-nav-logo"><img src="logo.png" alt="Nano Resto Bar"></div>
       <button class="side-nav-item active" id="navPedidosBtn" onclick="irAVistaPedidos()" aria-label="Pedidos">
         <span class="side-nav-ico">🧾</span>
@@ -963,6 +1022,10 @@
       <button class="side-nav-item" id="cajaBtn" onclick="abrirCaja()" aria-label="Caja">
         <span class="side-nav-ico">💰</span>
         <span class="side-nav-label">Caja</span>
+      </button>
+      <button class="side-nav-item" id="rankingBtn" onclick="abrirRanking()" aria-label="Ranking de platos">
+        <span class="side-nav-ico">🏆</span>
+        <span class="side-nav-label">Ranking</span>
       </button>
       <button class="side-nav-item" id="editarMenuBtn" onclick="abrirProductos()" aria-label="Editar menú">
         <span class="side-nav-ico">✎</span>
@@ -1050,6 +1113,46 @@
           </div>
         </div>
       </div>
+    </div>
+
+    <div id="vistaRanking" style="display:none">
+      <div class="local-top" style="margin-bottom:6px">
+        <div class="local-title" style="margin:0">Platos más pedidos</div>
+        <div class="local-h"><a href="#" onclick="cerrarRanking();return false;">← Volver a pedidos</a></div>
+      </div>
+      <div class="local-sub">Solo pedidos cobrados. Las empanadas se cuentan en docenas; una pizza mitad y mitad suma media a cada sabor.</div>
+      <div class="caja-filtros" style="margin-top:14px">
+        <label>Desde<input type="date" id="rankingDesde"></label>
+        <label>Hasta<input type="date" id="rankingHasta"></label>
+        <button class="editar-menu-btn" onclick="rankingAtajo(null);cargarRanking()">Actualizar</button>
+      </div>
+      <div class="rk-atajos" id="rankingAtajos">
+        <button class="rk-chip" data-atajo="hoy" onclick="rankingAtajo('hoy')">Hoy</button>
+        <button class="rk-chip" data-atajo="7" onclick="rankingAtajo('7')">Últimos 7 días</button>
+        <button class="rk-chip" data-atajo="mes" onclick="rankingAtajo('mes')">Este mes</button>
+        <button class="rk-chip" data-atajo="mesPasado" onclick="rankingAtajo('mesPasado')">Mes pasado</button>
+      </div>
+      <div class="rk-controles">
+        <div class="rk-seg" id="rankingGrupo">
+          <button data-v="comidas" class="on" onclick="rankingSet('grupo','comidas')">Comidas</button>
+          <button data-v="bebidas" onclick="rankingSet('grupo','bebidas')">Bebidas</button>
+        </div>
+        <div><span class="rk-grupo-label">Canal</span>
+          <div class="rk-seg" id="rankingCanal">
+            <button data-v="todos" class="on" onclick="rankingSet('canal','todos')">Todos</button>
+            <button data-v="mesa" onclick="rankingSet('canal','mesa')">Mesa</button>
+            <button data-v="retiro" onclick="rankingSet('canal','retiro')">Retiro</button>
+            <button data-v="envio" onclick="rankingSet('canal','envio')">Envío</button>
+          </div>
+        </div>
+        <div><span class="rk-grupo-label">Ordenar por</span>
+          <div class="rk-seg" id="rankingOrden">
+            <button data-v="cantidad" class="on" onclick="rankingSet('orden','cantidad')">Cantidad</button>
+            <button data-v="monto" onclick="rankingSet('orden','monto')">Plata</button>
+          </div>
+        </div>
+      </div>
+      <div id="rankingContenido"><div class="empty-orders">Cargando…</div></div>
     </div>
 
     <div id="vistaCaja" style="display:none">
@@ -1359,11 +1462,76 @@ let categoriasData = [];
 let cambiosProductos = {}; // { id: {precio, activo, disponible_mesa, disponible_retiro, disponible_envio} }
 
 // Resalta en la barra lateral en qué pantalla está parado, para que siempre quede
+// Efecto del botón activo (ver body.nav-ef-N en el CSS). La placa/rayita es un solo
+// elemento que se mueve con transform hasta el botón nuevo.
+let NAV_EFECTO = '9';
+document.body.classList.add('nav-ef-' + NAV_EFECTO);
+const NAV_CON_PLACA = ['1','4','5','6','7','8','9'];
+document.body.classList.toggle('nav-placa', NAV_CON_PLACA.includes(NAV_EFECTO));
+const NAV_CURVA = 'cubic-bezier(0.32,0.72,0,1)';
+function moverIndicadorNav(el){
+  const ind = document.getElementById('navIndicador');
+  if(!ind || !el) return;
+  const destino = el.offsetTop;
+  const desde = ind._y == null ? destino : ind._y;
+  ind._y = destino;
+  ind.style.transform = `translateY(${destino}px)`;
+  ind.style.backgroundColor = '';
+  if(!ind.animate || desde === destino || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  if(ind._anims) ind._anims.forEach(a => a.cancel());
+  ind._anims = [];
+  const anim = (frames, opts) => { const a = ind.animate(frames, opts); ind._anims.push(a); return a; };
+  const ty = y => `translateY(${y}px)`;
+  const arriba = Math.min(desde, destino), estirada = (Math.abs(destino - desde) + 60) / 60;
+  // Gota básica: se estira hasta tocar el botón nuevo y después la cola la alcanza.
+  const gota = (punto = 0.45, ms = 420) => anim([
+    { transform: `${ty(desde)} scaleY(1)`, transformOrigin: 'top' },
+    { transform: `${ty(arriba)} scaleY(${estirada})`, transformOrigin: 'top', offset: punto },
+    { transform: `${ty(destino)} scaleY(1)`, transformOrigin: 'top' },
+  ], { duration: ms, easing: NAV_CURVA });
+
+  if(NAV_EFECTO === '4') gota();
+  // 5: gota + "gelatina" al llegar (se aplasta y vuelve).
+  if(NAV_EFECTO === '5'){
+    gota(0.45, 380);
+    anim([
+      { transform: `${ty(destino)} scale(1,1)` },
+      { transform: `${ty(destino)} scale(1.04,0.9)`, offset: 0.4 },
+      { transform: `${ty(destino)} scale(0.99,1.03)`, offset: 0.75 },
+      { transform: `${ty(destino)} scale(1,1)` },
+    ], { duration: 300, delay: 380, easing: 'ease-out' });
+  }
+  // 6: la punta llega rápido y la cola se arrastra más lenta (estela larga).
+  if(NAV_EFECTO === '6') gota(0.28, 560);
+  // 7: gota + el ícono del botón nuevo "salta" cuando la gota llega.
+  if(NAV_EFECTO === '7'){
+    gota();
+    const ico = el.querySelector('.side-nav-ico');
+    if(ico && ico.animate) ico.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.28)' }, { transform: 'scale(1)' }],
+      { duration: 340, delay: 190, easing: 'cubic-bezier(0.34,1.4,0.64,1)' });
+  }
+  // 8: burbuja — se achica, viaja chiquita y se vuelve a inflar en el botón nuevo.
+  if(NAV_EFECTO === '8') anim([
+    { transform: `${ty(desde)} scale(1)`, transformOrigin: 'center' },
+    { transform: `${ty(desde)} scale(0.55)`, transformOrigin: 'center', offset: 0.22 },
+    { transform: `${ty(destino)} scale(0.55)`, transformOrigin: 'center', offset: 0.7 },
+    { transform: `${ty(destino)} scale(1)`, transformOrigin: 'center' },
+  ], { duration: 460, easing: 'ease-in-out' });
+  // 9: gota que se tiñe de dorado mientras viaja.
+  if(NAV_EFECTO === '9'){
+    gota();
+    anim([{ backgroundColor: getComputedStyle(ind).backgroundColor }, { backgroundColor: '#F5E3B4', offset: 0.4 }, { backgroundColor: getComputedStyle(ind).backgroundColor }],
+      { duration: 420, easing: 'ease-out' });
+  }
+}
+addEventListener('load', () => moverIndicadorNav(document.querySelector('.side-nav-item.active')));
+
 // claro dónde está sin tener que leer un título.
 function marcarNavActivo(id){
   document.querySelectorAll('.side-nav-item').forEach(b => b.classList.remove('active'));
   const el = document.getElementById(id);
   if(el) el.classList.add('active');
+  moverIndicadorNav(el);
   // El botón de Menú se deshabilita al entrar (ver intentarLoginProductos), para no poder
   // re-abrirlo mientras ya estás adentro. Antes solo se reactivaba en cerrarProductos()
   // ("Volver a pedidos") — si salías del módulo por cualquier otro botón (Mesas, Caja,
@@ -1380,7 +1548,7 @@ function irAVistaPedidos(){
     if(!ok) return;
     detenerTimerMesas();
     document.getElementById('vistaMesas').style.display = 'none';
-    document.getElementById('vistaCaja').style.display = 'none';
+    document.getElementById('vistaCaja').style.display = 'none'; document.getElementById('vistaRanking').style.display = 'none';
     document.getElementById('vistaProductos').style.display = 'none';
     document.getElementById('vistaPedidos').style.display = 'block';
     marcarNavActivo('navPedidosBtn');
@@ -1425,7 +1593,7 @@ function intentarLoginProductos(){
     document.getElementById('loginOverlay').style.display = 'none';
     document.getElementById('vistaPedidos').style.display = 'none';
     document.getElementById('vistaMesas').style.display = 'none';
-    document.getElementById('vistaCaja').style.display = 'none';
+    document.getElementById('vistaCaja').style.display = 'none'; document.getElementById('vistaRanking').style.display = 'none';
     document.getElementById('vistaProductos').style.display = 'block';
     marcarNavActivo('editarMenuBtn');
     document.getElementById('editarMenuBtn').disabled = true;
@@ -2606,7 +2774,7 @@ function abrirMesas(){
     if(!ok) return;
     document.getElementById('vistaPedidos').style.display = 'none';
     document.getElementById('vistaProductos').style.display = 'none';
-    document.getElementById('vistaCaja').style.display = 'none';
+    document.getElementById('vistaCaja').style.display = 'none'; document.getElementById('vistaRanking').style.display = 'none';
     document.getElementById('vistaMesas').style.display = 'block';
     marcarNavActivo('mesasBtn');
     iniciarTimerMesas();
@@ -2664,7 +2832,7 @@ function abrirNuevoPedido(){
   document.getElementById('vistaPedidos').style.display = 'none';
   document.getElementById('vistaMesas').style.display = 'none';
   document.getElementById('vistaProductos').style.display = 'none';
-  document.getElementById('vistaCaja').style.display = 'none';
+  document.getElementById('vistaCaja').style.display = 'none'; document.getElementById('vistaRanking').style.display = 'none';
   document.getElementById('vistaNuevoPedido').style.display = 'block';
   document.getElementById('npTitulo').textContent = 'Nuevo pedido';
   marcarNavActivo('nuevoPedidoBtn');
@@ -3415,6 +3583,186 @@ function confirmarNuevoPedido(){
   }).finally(() => { unlockUI(); btn.textContent = 'Confirmar y mandar a cocina'; });
 }
 
+/* ======================= TRANSICIÓN AL CAMBIAR DE MÓDULO ======================= */
+// Cada módulo (Pedidos, Mesas, Caja, Ranking, Menú, Nuevo) es un div que se muestra/oculta
+// con style.display desde muchos lugares distintos. En vez de tocar cada uno, un observador
+// mira cuándo una vista pasa de oculta a visible: sube la página arriba de todo (antes se
+// quedaba en la altura donde estabas en el módulo anterior) y le da una entrada corta.
+// Solo transform/opacity, y nada de animación si el sistema pide movimiento reducido.
+const VISTAS_ORDEN = ['vistaPedidos','vistaNuevoPedido','vistaMesas','vistaCaja','vistaRanking','vistaProductos'];
+let TRANSICION_VISTAS = 'ninguna';
+let vistaAnterior = 'vistaPedidos';
+
+const TRANSICIONES = {
+  // A: sube apenas mientras aparece
+  A: () => ({ frames: [{ opacity: 0, transform: 'translateY(10px)' }, { opacity: 1, transform: 'none' }], ms: 240 }),
+  // B: fundido solo
+  B: () => ({ frames: [{ opacity: 0 }, { opacity: 1 }], ms: 180 }),
+  // C: entra de costado, según si el módulo está más abajo o más arriba en el menú
+  C: (dir) => ({ frames: [{ opacity: 0, transform: `translateX(${dir * 24}px)` }, { opacity: 1, transform: 'none' }], ms: 260 }),
+  // D: crece un poquito desde el centro
+  D: () => ({ frames: [{ opacity: 0, transform: 'scale(0.985)' }, { opacity: 1, transform: 'none' }], ms: 220 }),
+};
+
+function animarEntradaVista(id){
+  const el = document.getElementById(id);
+  const dir = VISTAS_ORDEN.indexOf(id) >= VISTAS_ORDEN.indexOf(vistaAnterior) ? 1 : -1;
+  vistaAnterior = id;
+  window.scrollTo(0, 0);
+  if(TRANSICION_VISTAS === 'ninguna' || !el.animate) return;
+  if(window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const t = TRANSICIONES[TRANSICION_VISTAS](dir);
+  el.animate(t.frames, { duration: t.ms, easing: 'cubic-bezier(0.23,1,0.32,1)' });
+}
+
+(function observarVistas(){
+  if(!window.MutationObserver) return;
+  const obs = new MutationObserver(cambios => {
+    cambios.forEach(c => {
+      const el = c.target;
+      const antes = (c.oldValue || '').replace(/\s/g, '').includes('display:none');
+      if(antes && el.style.display !== 'none') animarEntradaVista(el.id);
+    });
+  });
+  VISTAS_ORDEN.forEach(id => {
+    const el = document.getElementById(id);
+    if(el) obs.observe(el, { attributes: true, attributeFilter: ['style'], attributeOldValue: true });
+  });
+})();
+
+/* ======================= RANKING DE PLATOS ======================= */
+// Los datos llegan una sola vez por rango de fechas, con el desglose por canal ya hecho en
+// el backend (ver rankingPlatos): cambiar Comidas/Bebidas, canal u orden solo vuelve a
+// dibujar, no consulta de nuevo.
+let rankingDatos = null;
+let rankingVerTodos = false;
+const rankingFiltro = { grupo: 'comidas', canal: 'todos', orden: 'cantidad' };
+const RANKING_TOP = 10;
+
+function fechaInputStr(d){
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+
+function abrirRanking(){
+  avisoSiHayPedidoSinConfirmar().then(ok => {
+    if(!ok) return;
+    detenerTimerMesas();
+    ['vistaPedidos','vistaMesas','vistaProductos','vistaCaja','vistaNuevoPedido'].forEach(id => {
+      const el = document.getElementById(id); if(el) el.style.display = 'none';
+    });
+    document.getElementById('vistaRanking').style.display = 'block';
+    marcarNavActivo('rankingBtn');
+    if(!document.getElementById('rankingDesde').value) rankingAtajo('mes');
+  });
+}
+
+function cerrarRanking(){
+  document.getElementById('vistaRanking').style.display = 'none';
+  document.getElementById('vistaPedidos').style.display = 'block';
+  marcarNavActivo('navPedidosBtn');
+}
+
+// Atajos de fecha: completan Desde/Hasta y consultan. Con null solo despintan el atajo
+// marcado (cuando se eligen fechas a mano y se toca Actualizar).
+function rankingAtajo(cual){
+  document.querySelectorAll('#rankingAtajos .rk-chip').forEach(b => b.classList.toggle('on', b.dataset.atajo === cual));
+  if(!cual) return;
+  const hoy = new Date();
+  let desde = new Date(hoy), hasta = new Date(hoy);
+  if(cual === '7') desde.setDate(hoy.getDate() - 6);
+  if(cual === 'mes') desde = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+  if(cual === 'mesPasado'){ desde = new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1); hasta = new Date(hoy.getFullYear(), hoy.getMonth(), 0); }
+  document.getElementById('rankingDesde').value = fechaInputStr(desde);
+  document.getElementById('rankingHasta').value = fechaInputStr(hasta);
+  cargarRanking();
+}
+
+function cargarRanking(){
+  const desde = document.getElementById('rankingDesde').value;
+  const hasta = document.getElementById('rankingHasta').value;
+  if(!desde || !hasta) return;
+  rankingVerTodos = false;
+  document.getElementById('rankingContenido').innerHTML = '<div class="empty-orders">Cargando…</div>';
+  fetchGetProtegido('rankingPlatos', { desde, hasta })
+    .then(res => {
+      if(!res || !res.ok){ document.getElementById('rankingContenido').innerHTML = '<div class="empty-orders">No se pudo cargar el ranking</div>'; return; }
+      rankingDatos = res;
+      renderRanking();
+    })
+    .catch(() => { document.getElementById('rankingContenido').innerHTML = '<div class="empty-orders">Sin conexión</div>'; });
+}
+
+function rankingSet(clave, valor){
+  rankingFiltro[clave] = valor;
+  const contenedor = { grupo:'rankingGrupo', canal:'rankingCanal', orden:'rankingOrden' }[clave];
+  document.querySelectorAll('#' + contenedor + ' button').forEach(b => b.classList.toggle('on', b.dataset.v === valor));
+  rankingVerTodos = false;
+  renderRanking();
+}
+
+// "12,5 doc." para empanadas; para el resto el número tal cual (con ",5" si hubo mitad y mitad).
+function rankingCantidadTxt(n, unidad){
+  const num = (Math.round(n * 10) / 10).toLocaleString('es-AR');
+  return unidad === 'docena' ? num + ' doc.' : num;
+}
+
+function renderRanking(){
+  const cont = document.getElementById('rankingContenido');
+  if(!rankingDatos) return;
+  const { grupo, canal, orden } = rankingFiltro;
+  const campo = canal === 'todos' ? 'total' : canal;
+  const platos = (rankingDatos.platos || [])
+    .filter(p => esCategoriaBebida(p.categoria) === (grupo === 'bebidas'))
+    .filter(p => p.cantidad[campo] > 0)
+    .sort((a, b) => (b[orden][campo] - a[orden][campo]) || (b.cantidad[campo] - a.cantidad[campo]));
+
+  if(!platos.length){
+    cont.innerHTML = `<div class="empty-orders">No hay ${grupo} cobradas${canal === 'todos' ? '' : ' en ' + TIPO_LABEL[canal]} en este rango</div>`;
+    return;
+  }
+
+  const totalMonto = platos.reduce((s, p) => s + p.monto[campo], 0);
+  const maximo = platos[0][orden][campo] || 1;
+  const visibles = rankingVerTodos ? platos : platos.slice(0, RANKING_TOP);
+  const canales = ['mesa','retiro','envio'];
+
+  const leyenda = canal === 'todos'
+    ? `<div class="rk-leyenda">${canales.map(c => `<span><i style="background:var(--tipo-${c})"></i>${TIPO_LABEL[c]}</span>`).join('')}</div>`
+    : '';
+
+  const filas = visibles.map((p, i) => {
+    // En "Todos" la barra se parte en colores por canal (cuánto de ese plato salió en mesa,
+    // retiro y envío); con un canal elegido es una sola barra.
+    const barra = canal === 'todos'
+      ? canales.map(c => p[orden][c] > 0 ? `<i class="${c}" style="width:${p[orden][c] / maximo * 100}%"></i>` : '').join('')
+      : `<i class="uno" style="width:${p[orden][campo] / maximo * 100}%"></i>`;
+    const detalleCanales = canal === 'todos'
+      ? `<div class="rk-canales">${canales.filter(c => p.cantidad[c] > 0).map(c => `${TIPO_LABEL[c]} ${rankingCantidadTxt(p.cantidad[c], p.unidad)}`).join(' · ')}</div>`
+      : '';
+    return `
+      <div class="rk-fila ${i < 3 ? 'top' + (i + 1) : ''}" style="animation-delay:${Math.min(i, 12) * 30}ms">
+        <div class="rk-pos">${i + 1}</div>
+        <div class="rk-nombre">${esc(p.nombre)}<small>${esc(p.categoria)}</small></div>
+        <div class="rk-num">
+          <b>${orden === 'monto' ? formatPrecio(p.monto[campo]) : rankingCantidadTxt(p.cantidad[campo], p.unidad)}</b>
+          <span>${orden === 'monto' ? rankingCantidadTxt(p.cantidad[campo], p.unidad) : formatPrecio(p.monto[campo])}</span>
+        </div>
+        <div class="rk-barra">${barra}</div>
+        ${detalleCanales}
+      </div>`;
+  }).join('');
+
+  const verTodos = platos.length > RANKING_TOP
+    ? `<button class="editar-menu-btn rk-ver-todos" onclick="rankingVerTodos=!rankingVerTodos;renderRanking()">${rankingVerTodos ? 'Ver solo el top ' + RANKING_TOP : 'Ver todos (' + platos.length + ')'}</button>`
+    : '';
+
+  cont.innerHTML = `
+    <div class="rk-resumen"><b>${platos.length}</b> ${grupo === 'bebidas' ? 'bebidas distintas' : 'platos distintos'} · <b>${formatPrecio(totalMonto)}</b> en ${grupo} · ${rankingDatos.cantidadPedidos} pedidos cobrados en el período</div>
+    ${leyenda}
+    <div class="rk-lista">${filas}</div>
+    ${verTodos}`;
+}
+
 /* ======================= CIERRE DE CAJA ======================= */
 function abrirCaja(){
   avisoSiHayPedidoSinConfirmar().then(ok => {
@@ -3423,6 +3771,7 @@ function abrirCaja(){
     document.getElementById('vistaPedidos').style.display = 'none';
     document.getElementById('vistaMesas').style.display = 'none';
     document.getElementById('vistaProductos').style.display = 'none';
+    document.getElementById('vistaRanking').style.display = 'none';
     document.getElementById('vistaCaja').style.display = 'block';
     marcarNavActivo('cajaBtn');
     // Siempre vuelve a "hoy" al entrar al módulo, sin importar qué filtro haya quedado
@@ -3440,7 +3789,7 @@ function abrirCaja(){
 }
 
 function cerrarCaja(){
-  document.getElementById('vistaCaja').style.display = 'none';
+  document.getElementById('vistaCaja').style.display = 'none'; document.getElementById('vistaRanking').style.display = 'none';
   document.getElementById('vistaPedidos').style.display = 'block';
   marcarNavActivo('navPedidosBtn');
 }
