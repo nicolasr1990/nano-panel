@@ -43,7 +43,9 @@
 
     --radius-sm:10px; --radius-md:16px; --radius-lg:22px; --radius-xl:30px;
     /* Sombras bien suaves — solo para separar tarjetas del fondo, no para los botones */
-    --shadow-sm:0 1px 3px rgba(29,25,17,0.06); --shadow-md:0 10px 26px rgba(29,25,17,0.12);
+    --shadow-sm:0 1px 2px rgba(29,25,17,0.05),0 3px 8px -4px rgba(29,25,17,0.10);
+    --shadow-md:0 2px 4px rgba(29,25,17,0.05),0 12px 22px -10px rgba(29,25,17,0.26);
+    --shadow-oscura:0 2px 4px rgba(22,18,9,0.10),0 16px 34px -14px rgba(22,18,9,0.55);
     --display:'Outfit',sans-serif; --body:'Inter',-apple-system,sans-serif;
     --transition:all 0.2s cubic-bezier(0.4,0,0.2,1);
     /* Curvas y duraciones para el pulido de interacción de escritorio (ver @media 900px) */
@@ -212,8 +214,8 @@
   /* Grupo de mesa (contiene varias rondas) */
   .mesa-group{
     border-radius:var(--radius-lg);margin-bottom:16px;padding:14px 14px 16px;
-    background:linear-gradient(180deg,var(--tipo-mesa-bg) 0%,var(--surface) 34%);
-    border:2px solid var(--tipo-mesa-border);box-shadow:var(--shadow-sm);
+    background:var(--surface);
+    border:1px solid var(--border-soft);border-top:5px solid var(--tipo-mesa);box-shadow:var(--shadow-sm);
   }
   .mesa-group-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;padding:0 2px;flex-wrap:wrap;gap:6px}
   .mesa-group-head .titulo{display:flex;align-items:center;gap:8px;font-family:var(--display);font-weight:800;font-size:15.5px;color:var(--ink)}
@@ -223,7 +225,7 @@
     background:var(--tipo-mesa);color:#fff;font-family:var(--body);font-weight:700;
     font-size:12.5px;letter-spacing:0.02em;cursor:pointer;transition:var(--transition);
   }
-  .cerrar-mesa-btn:hover{background:#B37D00;border-color:#B37D00}
+  .cerrar-mesa-btn:hover{background:#8F6400;border-color:#8F6400}
   .cerrar-mesa-btn:active{transform:scale(0.97)}
   .imprimir-cuenta-btn{
     width:100%;margin-top:10px;padding:12px;border-radius:var(--radius-md);border:1.5px solid var(--border-strong);
@@ -235,17 +237,20 @@
 
   /* Order Cards */
   .order-card{
-    background:var(--surface);border:2px solid var(--border);
+    background:var(--surface);border:1px solid var(--border-soft);
     border-radius:var(--radius-lg);padding:16px 18px;margin-bottom:14px;
-    border-top:6px solid var(--border);transition:var(--transition);
+    border-top:5px solid var(--border);transition:var(--transition);
     box-shadow:var(--shadow-sm);
     animation:slideUp 0.3s var(--ease-out) backwards;
   }
   /* La franja superior y un lavado suave de fondo se tiñen según el tipo de pedido */
-  .order-card.tipo-mesa{background:linear-gradient(165deg,var(--tipo-mesa-bg) 0%,var(--surface) 55%);border-color:var(--tipo-mesa-border);border-top-color:var(--tipo-mesa)}
-  .order-card.tipo-retiro{background:linear-gradient(165deg,var(--tipo-retiro-bg) 0%,var(--surface) 55%);border-color:var(--tipo-retiro-border);border-top-color:var(--tipo-retiro)}
-  .order-card.tipo-envio{background:linear-gradient(165deg,var(--tipo-envio-bg) 0%,var(--surface) 55%);border-color:var(--tipo-envio-border);border-top-color:var(--tipo-envio)}
-  .mesa-group .order-card{margin-bottom:10px;background:var(--surface)}
+  .order-card.tipo-mesa{border-top-color:var(--tipo-mesa)}
+  .order-card.tipo-retiro{border-top-color:var(--tipo-retiro)}
+  .order-card.tipo-envio{border-top-color:var(--tipo-envio)}
+  /* Dentro del grupo de una mesa, cada pedido es un bloque hueso sin borde ni sombra —
+     antes era una tarjeta adentro de otra tarjeta, con dos bordes dorados. */
+  .mesa-group .order-card{margin-bottom:10px;background:var(--surface-alt);border:0;border-radius:var(--radius-md);box-shadow:none;padding:14px 16px;animation:none}
+  .mesa-group .order-card:hover{transform:none;box-shadow:none}
   .mesa-group .order-card:last-child{margin-bottom:0}
   .order-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-md)}
 
@@ -323,9 +328,9 @@
   }
   /* Fill sólido en vez de tinte pastel: es el dato más importante de la card,
      tiene que leerse de un vistazo aunque la pantalla esté lejos (cocina). */
-  .status-pill.nuevo{background:var(--danger);color:#fff;border:1px solid var(--danger);box-shadow:0 3px 10px rgba(212,47,34,0.35)}
-  .status-pill.prep{background:var(--warning);color:#fff;border:1px solid var(--warning);box-shadow:0 3px 10px rgba(180,116,10,0.35)}
-  .status-pill.listo{background:var(--success);color:#fff;border:1px solid var(--success);box-shadow:0 3px 10px rgba(23,138,70,0.35)}
+  .status-pill.nuevo{background:var(--danger);color:#fff;border:1px solid var(--danger);box-shadow:0 1px 2px rgba(130,20,12,0.30)}
+  .status-pill.prep{background:var(--warning);color:#fff;border:1px solid var(--warning);box-shadow:0 1px 2px rgba(110,70,5,0.30)}
+  .status-pill.listo{background:var(--success);color:#fff;border:1px solid var(--success);box-shadow:0 1px 2px rgba(10,80,40,0.30)}
   /* Forma de pago del pedido — solo retiro/envío la traen desde que el cliente pidió
      (mesa recién la sabe al cerrar la mesa, ver METODO_LABEL más abajo). */
   .metodo-pago-chip{
@@ -489,7 +494,7 @@
   .mesa-inactiva-row{display:flex;justify-content:space-between;align-items:center;background:var(--surface-tint);border:1px solid var(--border);border-radius:var(--radius-md);padding:10px 14px;font-size:13px;font-weight:600;color:var(--ink-secondary)}
   .mesa-celda{
     position:relative;aspect-ratio:1;border-radius:var(--radius-md);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
-    cursor:pointer;transition:var(--transition);border:2px solid var(--border);background:var(--surface);
+    cursor:pointer;transition:var(--transition);border:1.5px solid var(--border-soft);background:var(--surface);
     box-shadow:var(--shadow-sm);
   }
   .mesa-celda:hover{transform:translateY(-2px)}
@@ -501,10 +506,14 @@
     display:flex;align-items:center;justify-content:center;transition:var(--transition);
   }
   .mesa-editar-btn:hover{background:rgba(0,0,0,0.18);color:var(--ink)}
-  .mesa-celda.libre{background:var(--success-bg);border-color:var(--success-border)}
+  .mesa-celda.libre{background:var(--surface);border-color:var(--border-soft)}
   .mesa-celda.libre .num{color:var(--success)}
-  .mesa-celda.ocupada{background:var(--tipo-mesa-bg);border-color:var(--tipo-mesa-border)}
+  .mesa-celda.libre::after{content:'Libre';font-size:10px;font-weight:700;color:var(--ink-muted);letter-spacing:0.02em}
+  .mesa-celda.ocupada{background:var(--tipo-mesa-bg);border:2px solid var(--tipo-mesa);box-shadow:0 1px 2px rgba(92,62,0,0.14),0 8px 16px -10px rgba(92,62,0,0.35)}
   .mesa-celda.ocupada .num{color:var(--tipo-mesa-ink)}
+  /* El lápiz de editar es secundario: chiquito y tenue, aparece entero al pasar el mouse */
+  .mesa-editar-btn{background:transparent;opacity:0.45}
+  .mesa-celda:hover .mesa-editar-btn,.mesa-editar-btn:focus-visible{opacity:1;background:rgba(0,0,0,0.06)}
 
   /* ======================= Nuevo pedido (kiosko de la tablet) ======================= */
   .np-tipo-opciones{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px}
@@ -679,7 +688,7 @@
   .ui-confirm-btn-cancel{background:var(--surface-alt);border-color:var(--border-strong);color:var(--ink)}
   .ui-confirm-btn-cancel:hover{background:var(--surface-tint)}
   .ui-confirm-btn-ok{background:var(--tipo-mesa);border-color:var(--tipo-mesa);color:#fff}
-  .ui-confirm-btn-ok:hover{background:#B37D00;border-color:#B37D00}
+  .ui-confirm-btn-ok:hover{background:#8F6400;border-color:#8F6400}
   /* Variante roja para acciones destructivas de verdad (eliminar un pedido/gasto) —
      distinta del dorado genérico de "Aceptar", para que se note que no hay vuelta atrás. */
   .ui-confirm-btn-danger{background:var(--danger);border-color:var(--danger);color:#fff}
@@ -777,6 +786,23 @@
   .caja-total-card .label{font-size:12px;letter-spacing:0.06em;text-transform:uppercase;color:var(--accent-light);font-weight:700}
   .caja-total-card .monto{font-family:var(--display);font-size:34px;font-weight:800;margin-top:4px}
   .caja-total-card .sub{font-size:12px;color:rgba(255,255,255,0.65);margin-top:6px}
+  .caja-total-card{box-shadow:var(--shadow-oscura)}
+  .caja-total-card .monto{font-variant-numeric:tabular-nums;letter-spacing:-0.02em}
+  .caja-totales{display:grid;grid-template-columns:1fr;gap:12px;margin-bottom:16px}
+  .caja-totales .caja-total-card{margin:0}
+  @media (min-width:900px){.caja-totales{grid-template-columns:2fr 1fr}}
+  .caja-total-card.secundaria{background:var(--surface);color:var(--ink);border:1px solid var(--border-soft);box-shadow:var(--shadow-sm)}
+  .caja-total-card.secundaria .label{color:var(--ink-secondary)}
+  .caja-total-card.secundaria .sub{color:var(--ink-muted)}
+  /* Listas vacías de ingresos/gastos: una línea discreta, no un bloque de 60px de alto */
+  #vistaCaja .empty-orders{padding:6px 2px 10px;text-align:left;font-size:12.5px}
+  .caja-gastos-lista{margin:10px 0}
+  /* Jerarquía de botones en Caja: agregar = secundario, cerrar = acción principal */
+  .caja-acciones .editar-menu-btn{background:var(--surface);color:var(--ink);border:1.5px solid var(--border);box-shadow:none}
+  .caja-acciones .editar-menu-btn:hover{background:var(--surface-alt);border-color:var(--border-strong)}
+  .caja-acciones .cerrar-mesa-btn{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .caja-acciones .cerrar-mesa-btn:hover{background:var(--navy-soft);border-color:var(--navy-soft)}
+  .caja-metodo-card .monto,.caja-canal-row .monto,.rk-num b{font-variant-numeric:tabular-nums}
   /* "Total recaudado" (resumen por fecha) usa verde en vez del navy del turno en vivo —
      son dos cosas distintas (ventas totales de un período vs. efectivo en el cajón ahora
      mismo) y antes se veían idénticas, como si fueran el mismo dato. */
@@ -818,6 +844,8 @@
 
   /* Foco visible al navegar con teclado (Tab) — antes no había ninguna señal */
   :focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+  ::selection{background:var(--accent-soft);color:var(--ink)}
+  html{scrollbar-color:var(--border-strong) transparent;scrollbar-width:thin}
 
   /* Reduce movimiento si el sistema operativo lo pide, sin sacar animaciones por completo */
   @media (prefers-reduced-motion: reduce){
@@ -934,6 +962,8 @@
        (cruza los 900px) no se queda con el hover "pegado" tras un tap. */
     @media (hover:hover) and (pointer:fine){
       #ordersList .order-card:hover{transform:translateY(-4px);box-shadow:var(--shadow-md);border-color:var(--border-strong)}
+      #ordersList .mesa-group .order-card:hover{transform:none;box-shadow:none}
+      #ordersList .mesa-group:hover{box-shadow:var(--shadow-md)}
       .filters button:hover{transform:translateY(-2px)}
       .mesa-celda:hover{transform:translateY(-4px) scale(1.04);box-shadow:var(--shadow-md)}
       .cat-block summary:hover{background:var(--surface-tint)}
@@ -3837,14 +3867,17 @@ function renderCajaTurno(){
       <span class="desde">Abierta desde el ${horaApertura} hs · inicial ${formatPrecio(t.monto_inicial)}</span>
       <button class="editar-menu-btn" onclick="cargarCajaActual()">↻ Actualizar</button>
     </div>
-    <div class="caja-total-card">
-      <div class="label">Efectivo esperado en caja</div>
-      <div class="monto">${formatPrecio(t.efectivo_esperado)}</div>
-      <div class="sub">${formatPrecio(t.monto_inicial)} inicial + ${formatPrecio(t.total_efectivo_ventas)} en ventas (${t.cantidad_pedidos_efectivo}) + ${formatPrecio(t.total_ingresos_efectivo)} en ingresos − ${formatPrecio(t.total_gastos)} en gastos</div>
-    </div>
-    <div class="caja-total-card" style="margin-top:10px">
-      <div class="label">Cuenta Corriente</div>
-      <div class="monto">${formatPrecio(t.total_cuenta_corriente)}</div>
+    <div class="caja-totales">
+      <div class="caja-total-card">
+        <div class="label">Efectivo esperado en caja</div>
+        <div class="monto">${formatPrecio(t.efectivo_esperado)}</div>
+        <div class="sub">${formatPrecio(t.monto_inicial)} inicial + ${formatPrecio(t.total_efectivo_ventas)} en ventas (${t.cantidad_pedidos_efectivo}) + ${formatPrecio(t.total_ingresos_efectivo)} en ingresos − ${formatPrecio(t.total_gastos)} en gastos</div>
+      </div>
+      <div class="caja-total-card secundaria">
+        <div class="label">Cuenta corriente</div>
+        <div class="monto">${formatPrecio(t.total_cuenta_corriente)}</div>
+        <div class="sub">Fiado del turno, no entra al cajón</div>
+      </div>
     </div>
     <div class="caja-gastos-lista">
       ${t.ingresos.length === 0 ? '<div class="empty-orders">Todavía no se cargó ningún ingreso</div>' : t.ingresos.map(i => `
