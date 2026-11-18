@@ -1005,6 +1005,31 @@
     #ordersList > *:nth-child(6){animation-delay:200ms}
     #ordersList > *:nth-child(n+7){animation-delay:220ms}
   }
+
+  /* ===== Editar un pedido ===== */
+  .order-actions button.editar-ped{flex:0 0 auto;min-width:0;padding:11px 14px}
+  .ed-box{max-width:520px}
+  .ed-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border-soft)}
+  .ed-item:last-child{border-bottom:0}
+  .ed-item .nom{flex:1;min-width:0;font-size:14px;font-weight:600;color:var(--ink)}
+  .ed-item .nota{display:block;font-size:11.5px;color:var(--accent);font-weight:600;margin-top:2px}
+  .ed-item.quitado .nom{text-decoration:line-through;color:var(--ink-muted)}
+  .ed-antes{font-size:11px;font-weight:600;color:var(--ink-muted);margin-left:4px}
+  .ed-qty{display:inline-flex;align-items:center;gap:2px;background:var(--surface-alt);border:1px solid var(--border);border-radius:999px;padding:2px}
+  .ed-qty button{width:30px;height:30px;border-radius:50%;border:0;background:transparent;font-size:17px;font-weight:700;color:var(--ink);cursor:pointer}
+  .ed-qty button:hover{background:var(--surface-tint)}
+  .ed-qty b{min-width:22px;text-align:center;font-variant-numeric:tabular-nums}
+  .ed-precio{min-width:74px;text-align:right;font-weight:700;font-variant-numeric:tabular-nums;color:var(--ink)}
+  .ed-item .del{width:28px;height:28px;border-radius:50%;border:0;background:var(--danger-bg);color:var(--danger);font-weight:800;cursor:pointer;flex-shrink:0}
+  .ed-volver{border:1px solid var(--border-strong);background:transparent;border-radius:999px;padding:6px 12px;font-family:var(--body);font-size:12px;font-weight:700;color:var(--ink-secondary);cursor:pointer}
+  .ed-nuevo{display:inline-block;font-size:10px;font-weight:800;letter-spacing:0.06em;padding:2px 7px;border-radius:999px;background:var(--success-bg);color:var(--success);border:1px solid var(--success-border);margin-right:4px;vertical-align:1px}
+  .ed-sub{font-size:12px;color:var(--ink-secondary);background:var(--surface-alt);border-radius:10px;padding:8px 10px;margin:4px 0 6px}
+  .ed-aviso{font-size:12.5px;font-weight:700;color:var(--warning);background:var(--warning-bg, rgba(196,122,8,0.12));border:1px solid var(--warning-border, rgba(196,122,8,0.35));border-radius:10px;padding:9px 11px;margin-top:10px}
+  .ed-pie{padding:12px 18px 18px;border-top:1px solid var(--border-soft)}
+  .ed-agregar{width:100%;margin-bottom:10px;background:transparent!important;color:var(--ink)!important;border:1.5px dashed var(--border-strong)!important}
+  .ed-pie .caja-acciones button{min-width:0;flex:1;padding:12px;margin:0;border-radius:var(--radius-md);font-size:13px}
+  #edicionGuardarBtn:disabled{opacity:0.45;cursor:not-allowed}
+
   /* ======================= ESTILO "VIDRIO NANO" (nov 2026) =======================
      Paneles de vidrio esmerilado sobre un fondo que se mueve muy lento con los colores del
      logo: el dorado del aro, el ámbar y el naranja de la llama. El menú es vidrio negro, como
@@ -1445,6 +1470,24 @@
 <!-- Modal propio de alerta/confirmación — reemplaza a alert()/confirm() nativos del
      navegador (esos muestran el nombre del sitio delante del mensaje y no se pueden
      personalizar). Un solo overlay reutilizado por uiAlert()/uiConfirm(). -->
+<div id="editarPedidoOverlay" class="np-overlay" style="display:none">
+  <div class="np-review-box ed-box">
+    <div class="np-review-head">
+      <span id="edicionTitulo">Editar pedido</span>
+      <button class="video-close" onclick="cerrarEdicion()" aria-label="Cerrar">✕</button>
+    </div>
+    <div class="np-review-lista" id="edicionLista"></div>
+    <div class="ed-pie">
+      <button class="editar-menu-btn ed-agregar" onclick="edicionAgregar()">+ Agregar plato o bebida</button>
+      <div class="np-review-total"><span>Total</span><b id="edicionTotal">$0</b></div>
+      <div class="caja-acciones">
+        <button class="editar-menu-btn" onclick="cerrarEdicion()">Cancelar</button>
+        <button class="cerrar-mesa-btn" id="edicionGuardarBtn" onclick="guardarEdicion()" disabled>Guardar cambios</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div id="uiConfirmOverlay" class="np-overlay" style="display:none">
   <div class="np-review-box np-confirm-box">
     <div class="np-review-head"><span>Nano Resto Bar</span></div>
@@ -2353,7 +2396,7 @@ function rondaMinimizadaHtml(o){
       </summary>
       <div class="ronda-detalle">
         <ul>${o.items.map(i => `<li><span class="line">${i.cantidad}× ${i.nombre}${i.nota?`<span class="note">📝 ${esc(i.nota)}</span>`:''}</span></li>`).join('')}</ul>
-        <div class="order-actions"><button class="deshacer" onclick="deshacer('${o.id_pedido}')">Deshacer</button></div>
+        <div class="order-actions"><button class="editar-ped" onclick="abrirEdicionPedido('${o.id_pedido}')">Editar</button><button class="deshacer" onclick="deshacer('${o.id_pedido}')">Deshacer</button></div>
       </div>
     </details>`;
 }
@@ -2378,6 +2421,7 @@ function orderCardHtml(o){
       </ul>
       <div class="order-actions">
         ${nextActionButtons(o)}
+        <button class="editar-ped" onclick="abrirEdicionPedido('${o.id_pedido}')">Editar</button>
         <button class="deshacer" onclick="deshacer('${o.id_pedido}')">${o.estado === 'nuevo' ? 'Cancelar pedido' : 'Deshacer'}</button>
       </div>
     </div>`;
@@ -3047,6 +3091,7 @@ function mostrarPasoNuevoPedido(pasoId){
 }
 
 function cerrarNuevoPedido(){
+  if(edicion && edicion.agregando){ salirDeAgregarEdicion(); return; }
   nuevoPedido = { tipo: null, mesa: null, nombreCliente: '', telefono: '', direccion: '', metodoPago: null, cart: {}, comboCart: [], catActiva: null };
   document.getElementById('npCartbar').style.display = 'none';
   document.getElementById('vistaNuevoPedido').style.display = 'none';
@@ -3125,6 +3170,7 @@ function irAPasoProductosNP(){
 }
 
 function volverAPasoAnterior(){
+  if(edicion && edicion.agregando){ salirDeAgregarEdicion(); return; }
   document.getElementById('npTitulo').textContent = 'Nuevo pedido';
   if(nuevoPedido.tipo === 'mesa'){
     mostrarPasoNuevoPedido('npPasoMesa');
@@ -3713,6 +3759,7 @@ function npBuildItemsForApi(lines){
 
 function confirmarNuevoPedido(){
   if(uiBloqueada) return;
+  if(edicion && edicion.agregando) return confirmarAgregadoEdicion();
   const lines = npAllCartLines();
   if(lines.length === 0) return;
   if(lines.some(l => l.faltaOpcion)){ showToast('Falta elegir una opción obligatoria en algún ítem'); return; }
@@ -3890,6 +3937,201 @@ pintarBotonModo();
     });
   }).observe(raiz, { childList:true, subtree:true });
 })();
+
+/* ======================= EDITAR UN PEDIDO =======================
+   Caso real (nov 2026): para cambiar un solo plato o bebida había que cancelar el pedido
+   entero y volver a cargarlo. Ahora, mientras no se cobró (Nuevo, En preparación o Listo),
+   se puede bajar/subir cantidades, quitar ítems y agregar otros. Para agregar se reusa la
+   pantalla de "Nuevo pedido" (con docenas, mitad y mitad y opciones obligatorias), que en
+   vez de crear un pedido devuelve lo elegido a esta ventana. Nada se guarda hasta "Guardar
+   cambios"; si el pedido ya estaba en cocina, sale un ticket con solo lo que cambió. */
+let edicion = null; // { pedido, cantidades:{idItem:cant}, agregados:[...], agregando }
+
+function abrirEdicionPedido(id){
+  if(uiBloqueada) return;
+  const p = staffOrders.find(o => o.id_pedido === id);
+  if(!p) return;
+  if(!['nuevo','prep','listo'].includes(p.estado)) return showToast('Este pedido ya no se puede editar');
+  if(!p.items.every(i => i.id != null)){
+    return uiAlert('Para editar pedidos falta actualizar el servidor (Supabase). Avisale a quien lo administra.');
+  }
+  edicion = {
+    pedido: JSON.parse(JSON.stringify(p)),
+    cantidades: Object.fromEntries(p.items.map(i => [i.id, Number(i.cantidad)])),
+    agregados: [],
+    agregando: false,
+  };
+  renderEdicion();
+  document.getElementById('editarPedidoOverlay').style.display = 'flex';
+}
+
+function cerrarEdicion(){
+  document.getElementById('editarPedidoOverlay').style.display = 'none';
+  edicion = null;
+}
+
+function edicionHayCambios(){
+  if(!edicion) return false;
+  return edicion.agregados.length > 0 || edicion.pedido.items.some(i => edicion.cantidades[i.id] !== Number(i.cantidad));
+}
+
+function edicionCambiar(id, delta){
+  edicion.cantidades[id] = Math.max(0, (edicion.cantidades[id] || 0) + delta);
+  renderEdicion();
+}
+function edicionQuitar(id){ edicion.cantidades[id] = 0; renderEdicion(); }
+function edicionRestaurar(id){
+  const it = edicion.pedido.items.find(i => i.id === id);
+  if(it) edicion.cantidades[id] = Number(it.cantidad);
+  renderEdicion();
+}
+function edicionQuitarAgregado(key){
+  edicion.agregados = edicion.agregados.filter(a => a.key !== key);
+  renderEdicion();
+}
+
+// Total como va a quedar: lo que ya estaba (a su precio guardado) + lo agregado + lo que el
+// pedido tenía aparte de los ítems (el costo de envío).
+function edicionTotal(){
+  const p = edicion.pedido;
+  const itemsOriginal = p.items.reduce((s, i) => s + Number(i.precio_unit) * Number(i.cantidad), 0);
+  const extra = Math.max(0, Number(p.total) - itemsOriginal);
+  const items = p.items.reduce((s, i) => s + Number(i.precio_unit) * (edicion.cantidades[i.id] || 0), 0);
+  const agregados = edicion.agregados.reduce((s, a) => s + a.price * a.qty, 0);
+  return items + agregados + extra;
+}
+
+function renderEdicion(){
+  const p = edicion.pedido;
+  const etiqueta = p.tipo === 'mesa' ? 'Mesa ' + p.mesa : TIPO_LABEL[p.tipo] + (p.nombre_cliente ? ' — ' + p.nombre_cliente : '');
+  document.getElementById('edicionTitulo').textContent = `Editar pedido · ${etiqueta} · #${p.id_pedido.slice(-4)}`;
+
+  const filas = p.items.map(i => {
+    const q = edicion.cantidades[i.id] || 0;
+    const nota = i.nota ? `<span class="nota">📝 ${esc(i.nota)}</span>` : '';
+    if(q === 0){
+      return `<div class="ed-item quitado">
+        <span class="nom">${Number(i.cantidad)}× ${esc(i.nombre)}${nota}</span>
+        <button class="ed-volver" onclick="edicionRestaurar(${i.id})">Volver a poner</button>
+      </div>`;
+    }
+    const cambio = q !== Number(i.cantidad) ? ` <span class="ed-antes">antes ${Number(i.cantidad)}</span>` : '';
+    return `<div class="ed-item">
+      <span class="nom">${esc(i.nombre)}${cambio}${nota}</span>
+      <span class="ed-qty"><button onclick="edicionCambiar(${i.id},-1)" aria-label="Uno menos">−</button><b>${q}</b><button onclick="edicionCambiar(${i.id},1)" aria-label="Uno más">+</button></span>
+      <span class="ed-precio">${formatPrecio(Number(i.precio_unit) * q)}</span>
+      <button class="del" onclick="edicionQuitar(${i.id})" aria-label="Quitar">✕</button>
+    </div>`;
+  }).join('');
+
+  const nuevos = edicion.agregados.map(a => `<div class="ed-item agregado">
+      <span class="nom"><span class="ed-nuevo">NUEVO</span> ${a.qty}× ${esc(a.name)}${a.desc ? `<span class="nota">📝 ${esc(a.desc)}</span>` : ''}</span>
+      <span class="ed-precio">${formatPrecio(a.price * a.qty)}</span>
+      <button class="del" onclick="edicionQuitarAgregado('${a.key}')" aria-label="Quitar">✕</button>
+    </div>`).join('');
+
+  // Retiro/envío pagado por transferencia antes de llegar: si el total cambia, la diferencia
+  // se cobra o se devuelve aparte — que quien edita lo vea antes de guardar.
+  const total = edicionTotal();
+  const aviso = p.tipo !== 'mesa' && p.metodo_pago === 'transferencia' && Math.round(total) !== Math.round(Number(p.total))
+    ? `<div class="ed-aviso">Este pedido ya se pagó por transferencia (${formatPrecio(p.total)}). ${total > p.total ? 'Hay que cobrarle la diferencia: ' + formatPrecio(total - p.total) : 'Hay que devolverle ' + formatPrecio(p.total - total)}.</div>`
+    : '';
+  const enCocina = ['prep','listo'].includes(p.estado)
+    ? '<div class="ed-sub">Ya está en cocina: al guardar se imprime un ticket solo con lo que cambió.</div>' : '';
+
+  document.getElementById('edicionLista').innerHTML = enCocina + filas + nuevos + aviso;
+  document.getElementById('edicionTotal').textContent = formatPrecio(total);
+  document.getElementById('edicionGuardarBtn').disabled = !edicionHayCambios();
+}
+
+// ---- Agregar: abre la pantalla de Nuevo pedido en modo "agregar a este pedido" ----
+function edicionAgregar(){
+  const p = edicion.pedido;
+  edicion.agregando = true;
+  document.getElementById('editarPedidoOverlay').style.display = 'none';
+  nuevoPedido = { tipo: p.tipo, mesa: p.mesa, nombreCliente: p.nombre_cliente || '', telefono: '', direccion: '', metodoPago: null, cart: {}, comboCart: [], catActiva: nuevoPedido.catActiva || (menuNuevoPedidoData.categorias[0] ? menuNuevoPedidoData.categorias[0].id : null) };
+  ['vistaPedidos','vistaMesas','vistaProductos','vistaCaja','vistaRanking'].forEach(v => { const el = document.getElementById(v); if(el) el.style.display = 'none'; });
+  document.getElementById('vistaNuevoPedido').style.display = 'block';
+  irAPasoProductosNP();
+  document.getElementById('npTitulo').textContent = 'Agregar al pedido #' + p.id_pedido.slice(-4);
+  document.getElementById('npConfirmarBtn').textContent = 'Agregar al pedido';
+  updateNpCartbar();
+}
+
+// Lo elegido vuelve a la ventana de edición (todavía sin guardar).
+function confirmarAgregadoEdicion(){
+  const lines = npAllCartLines();
+  if(lines.length === 0) return;
+  if(lines.some(l => l.faltaOpcion)){ showToast('Falta elegir una opción obligatoria en algún ítem'); return; }
+  const api = npBuildItemsForApi(lines);
+  lines.forEach((l, k) => edicion.agregados.push({ key: 'n' + Date.now() + '-' + k, name: l.name, desc: l.desc || '', qty: l.qty, price: l.price, catName: l.catName, api: api[k] }));
+  cerrarRevisionPedido();
+  salirDeAgregarEdicion();
+}
+
+function salirDeAgregarEdicion(){
+  edicion.agregando = false;
+  nuevoPedido = { tipo: null, mesa: null, nombreCliente: '', telefono: '', direccion: '', metodoPago: null, cart: {}, comboCart: [], catActiva: nuevoPedido.catActiva };
+  document.getElementById('npCartbar').style.display = 'none';
+  document.getElementById('npConfirmarBtn').textContent = 'Confirmar y mandar a cocina';
+  document.getElementById('vistaNuevoPedido').style.display = 'none';
+  document.getElementById('vistaPedidos').style.display = 'block';
+  marcarNavActivo('navPedidosBtn');
+  renderEdicion();
+  document.getElementById('editarPedidoOverlay').style.display = 'flex';
+}
+
+function guardarEdicion(){
+  if(uiBloqueada || !edicion) return;
+  const p = edicion.pedido;
+  const quitar = [], cambios = [];
+  p.items.forEach(i => {
+    const q = edicion.cantidades[i.id] || 0;
+    if(q === 0) quitar.push(i.id);
+    else if(q !== Number(i.cantidad)) cambios.push({ id: i.id, cantidad: q });
+  });
+  if(quitar.length === p.items.length && edicion.agregados.length === 0){
+    return uiAlert('Le estás sacando todo al pedido. Para eso usá "Cancelar pedido" o "Deshacer" en la tarjeta.');
+  }
+  lockUI();
+  const btn = document.getElementById('edicionGuardarBtn');
+  btn.textContent = 'Guardando...';
+  postAction('editarPedido', { id_pedido: p.id_pedido, cambios, quitar, agregar: edicion.agregados.map(a => a.api) })
+    .then(res => {
+      if(!res.ok){
+        const msg = { no_se_puede_editar: 'Este pedido ya se cobró o se canceló, no se puede editar.', accion_no_soportada: 'Falta actualizar el servidor (Supabase) para poder editar pedidos.', pedido_vacio: 'El pedido no puede quedar vacío.' }[res.error];
+        return showToast(msg || 'No se pudo guardar: ' + (res.error || ''));
+      }
+      if(['prep','listo'].includes(p.estado)) imprimirCambioCocina(p, edicion);
+      showToast('Pedido actualizado');
+      cerrarEdicion();
+      cargarPedidos();
+    })
+    .catch(() => showToast('Sin conexión, no se guardó el cambio'))
+    .finally(() => { unlockUI(); btn.textContent = 'Guardar cambios'; });
+}
+
+// Ticket para cocina con SOLO lo que cambió (sin bebidas, igual que la comanda normal).
+function imprimirCambioCocina(p, ed){
+  const lineas = [];
+  p.items.forEach(i => {
+    if(esCategoriaBebida(i.categoria)) return;
+    const antes = Number(i.cantidad), ahora = ed.cantidades[i.id] || 0;
+    if(ahora < antes) lineas.push({ signo:'QUITAR', cant: antes - ahora, nombre: i.nombre, nota: i.nota });
+    if(ahora > antes) lineas.push({ signo:'AGREGAR', cant: ahora - antes, nombre: i.nombre, nota: i.nota });
+  });
+  ed.agregados.forEach(a => { if(!esCategoriaBebida(a.catName)) lineas.push({ signo:'AGREGAR', cant: a.qty, nombre: a.name, nota: a.desc }); });
+  if(lineas.length === 0){ showToast('Solo cambiaron bebidas — no hace falta ticket para cocina'); return; }
+  const el = document.getElementById('comprobante');
+  el.innerHTML = `
+    <div class="ticket-logo"><img src="${LOGO_SRC}" alt="Logo"></div>
+    <h1>Cambio en pedido</h1>
+    <div class="nota">${p.tipo === 'mesa' ? 'MESA ' + p.mesa : TIPO_LABEL[p.tipo].toUpperCase() + (p.nombre_cliente ? ' — ' + esc(p.nombre_cliente) : '')} · #${p.id_pedido.slice(-4)} · ${horaTicket()}</div>
+    <div class="sep"></div>
+    ${lineas.map(l => `<div class="linea-cocina"><span class="cant">${l.signo === 'QUITAR' ? '✖ QUITAR' : '+ AGREGAR'} ${l.cant}×</span><span>${esc(l.nombre)}</span></div>${l.nota ? `<div class="item-nota">↳ ${esc(l.nota)}</div>` : ''}`).join('')}
+  `;
+  esperarLogoYimprimir(el);
+}
 
 /* ======================= RANKING DE PLATOS ======================= */
 // Los datos llegan una sola vez por rango de fechas, con el desglose por canal ya hecho en
