@@ -3952,9 +3952,12 @@ function abrirEdicionPedido(id){
   const p = staffOrders.find(o => o.id_pedido === id);
   if(!p) return;
   if(!['nuevo','prep','listo'].includes(p.estado)) return showToast('Este pedido ya no se puede editar');
-  if(!p.items.every(i => i.id != null)){
+  if(p.items.every(i => i.id == null)){
     return uiAlert('Para editar pedidos falta actualizar el servidor (Supabase). Avisale a quien lo administra.');
   }
+  // Recién editado: lo agregado todavía no tiene su número del servidor hasta la próxima
+  // actualización de la lista (un par de segundos).
+  if(p.items.some(i => i.id == null)){ cargarPedidos(); return showToast('Actualizando el pedido, probá de nuevo en un segundo'); }
   edicion = {
     pedido: JSON.parse(JSON.stringify(p)),
     cantidades: Object.fromEntries(p.items.map(i => [i.id, Number(i.cantidad)])),
@@ -4103,6 +4106,17 @@ function guardarEdicion(){
         return showToast(msg || 'No se pudo guardar: ' + (res.error || ''));
       }
       if(['prep','listo'].includes(p.estado)) imprimirCambioCocina(p, edicion);
+      // El pedido se corrige ya mismo en la lista del panel (no recién cuando vuelve la
+      // próxima consulta al servidor): si justo después tocan "Cobrar" o "Imprimir cuenta",
+      // tienen que ver el total y los platos nuevos, nunca los de antes de editar.
+      const local = staffOrders.find(o => o.id_pedido === p.id_pedido);
+      if(local){
+        local.items = p.items.filter(i => (edicion.cantidades[i.id] || 0) > 0)
+          .map(i => Object.assign({}, i, { cantidad: edicion.cantidades[i.id] }))
+          .concat(edicion.agregados.map(a => ({ id: null, nombre: a.name, categoria: a.catName, cantidad: a.qty, precio_unit: a.price, nota: a.desc })));
+        local.total = Number(res.total);
+        renderStaffOrders();
+      }
       showToast('Pedido actualizado');
       cerrarEdicion();
       cargarPedidos();
